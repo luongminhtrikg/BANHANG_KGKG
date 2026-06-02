@@ -392,7 +392,16 @@
             document.getElementById('sales-history-table').innerHTML = transactions.filter(t => t.type === 'cash' || t.type === 'debt').slice().reverse().map(t => {
                 let cus = customers.find(c => c.id === t.customerId) || { name: 'Khách vãng lai', phone: '-' }, staff = staffs.find(s => s.id === t.staffId) || { name: '-' };
                 let payBadge = t.type === 'cash' ? `<span style="background:#d1fae5; color:#065f46; padding:3px 6px; border-radius:4px; font-weight:bold; font-size:0.8rem;">💵 Thu Tiền</span>` : `<span style="background:#fee2e2; color:#991b1b; padding:3px 6px; border-radius:4px; font-weight:bold; font-size:0.8rem;">⚠️ Nợ Sổ</span>`;
-                return `<tr><td><b>${t.id}</b><br><small style="color:#64748b;">${formatFullDate(t.date)}</small></td><td><b>${cus.name}</b><br><small style="color:#64748b;">${cus.phone}</small></td><td>${t.details}</td><td style="font-weight:bold; color:var(--primary);">${formatMoney(t.amount)} đ</td><td>${payBadge}</td><td>${staff.name}</td><td><button class="small-btn" style="background:#475569;" onclick="printSalesOrder('${t.id}')">🖨️ In Lại</button></td></tr>`;
+                
+                // Nút in mặc định ai cũng thấy
+                let actionBtns = `<button class="small-btn" style="background:#475569; margin-bottom: 5px;" onclick="printSalesOrder('${t.id}')">🖨️ In Lại</button>`;
+                
+                // Nếu là Chủ Tiệm (ADMIN) thì hiện thêm nút XÓA
+                if (isAdmin) {
+                    actionBtns += `<br><button class="small-btn" style="background:var(--danger);" onclick="deleteTransaction('${t.id}')">🗑️ Xóa Phiếu</button>`;
+                }
+
+                return `<tr><td><b>${t.id}</b><br><small style="color:#64748b;">${formatFullDate(t.date)}</small></td><td><b>${cus.name}</b><br><small style="color:#64748b;">${cus.phone}</small></td><td>${t.details}</td><td style="font-weight:bold; color:var(--primary);">${formatMoney(t.amount)} đ</td><td>${payBadge}</td><td>${staff.name}</td><td>${actionBtns}</td></tr>`;
             }).join('');
 
             if(isAdmin) document.getElementById('staff-table').innerHTML = staffs.map(s => `<tr><td><b>${s.id}</b></td><td><input type="text" class="inline-input" value="${s.name}" onchange="updateStaffField('${s.id}', 'name', this.value)"></td><td><input type="text" class="inline-input" value="${s.password}" onchange="updateStaffField('${s.id}', 'password', this.value)" style="color:var(--danger)"></td></tr>`).join('');
