@@ -269,8 +269,8 @@
         // BƯỚC 1: CẤU HÌNH FIREBASE ĐỒNG BỘ ĐÁM MÂY
         // ==========================================
         const firebaseConfig = {
-            // BRO HÃY DÁN ĐƯỜNG LINK DATABASE CỦA BRO VÀO GIỮA 2 DẤU NGOẶC KÉP BÊN DƯỚI NÀY NẾU CÓ
-          databaseURL: "https://luonggiakg-default-rtdb.firebaseio.com/"
+            // Đã cập nhật đúng link Firebase của tiệm
+            databaseURL: "https://luonggiakg-default-rtdb.firebaseio.com/"
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
@@ -326,7 +326,7 @@
         }
 
         // ==========================================
-        // BƯỚC 4: CÁC HÀM XỬ LÝ NGHIỆP VỤ (GIỮ NGUYÊN BẢN V12.2 GỐC)
+        // BƯỚC 4: CÁC HÀM XỬ LÝ NGHIỆP VỤ (THÊM XÓA SỬA)
         // ==========================================
         function formatMoney(amount) { return Number(amount).toLocaleString('vi-VN'); }
         function formatFullDate(dateStr) { if(!dateStr) return '-'; let d = new Date(dateStr); if(isNaN(d.getTime())) return dateStr; return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`; }
@@ -393,10 +393,9 @@
                 let cus = customers.find(c => c.id === t.customerId) || { name: 'Khách vãng lai', phone: '-' }, staff = staffs.find(s => s.id === t.staffId) || { name: '-' };
                 let payBadge = t.type === 'cash' ? `<span style="background:#d1fae5; color:#065f46; padding:3px 6px; border-radius:4px; font-weight:bold; font-size:0.8rem;">💵 Thu Tiền</span>` : `<span style="background:#fee2e2; color:#991b1b; padding:3px 6px; border-radius:4px; font-weight:bold; font-size:0.8rem;">⚠️ Nợ Sổ</span>`;
                 
-                // Nút in mặc định ai cũng thấy
                 let actionBtns = `<button class="small-btn" style="background:#475569; margin-bottom: 5px;" onclick="printSalesOrder('${t.id}')">🖨️ In Lại</button>`;
                 
-                // Nếu là Chủ Tiệm (ADMIN) thì hiện thêm nút XÓA
+                // HIỆN NÚT XÓA CHO ADMIN
                 if (isAdmin) {
                     actionBtns += `<br><button class="small-btn" style="background:var(--danger);" onclick="deleteTransaction('${t.id}')">🗑️ Xóa Phiếu</button>`;
                 }
@@ -464,6 +463,34 @@
             displayTx.forEach(t => { let dStr = '-', pStr = '-'; if(t.type === 'debt') { dStr = `<span style="color:var(--danger); font-weight:bold;">+ ${formatMoney(t.amount)} đ</span>`; totalInPeriodDebt += t.amount; } if(t.type === 'pay') { pStr = `<span style="color:var(--success); font-weight:bold;">- ${formatMoney(t.amount)} đ</span>`; totalInPeriodPay += t.amount; } html += `<tr><td style="border:1px solid #ccc;"><b>${formatFullDate(t.date)}</b></td><td style="border:1px solid #ccc;">${t.details}</td><td style="border:1px solid #ccc;">${dStr}</td><td style="border:1px solid #ccc;">${pStr}</td></tr>`; });
             let finalDebt = oldDebt + totalInPeriodDebt - totalInPeriodPay; html += `</tbody></table><div style="margin-top:15px; text-align:right; background:#f8fafc; padding:12px; border:1px solid var(--border);"><p>Nợ cũ: <b>${formatMoney(oldDebt)} đ</b> | Phát sinh: <b style="color:var(--danger);">+ ${formatMoney(totalInPeriodDebt)} đ</b> | Đã trả: <b style="color:var(--success);">- ${formatMoney(totalInPeriodPay)} đ</b></p><h3 style="color:var(--danger); margin:5px 0;">SỐ TIỀN CÒN NỢ HIỆN TẠI: ${finalDebt < 0 ? 0 : formatMoney(finalDebt)} đ</h3></div>`;
             document.getElementById('report-result').innerHTML = html;
+        }
+
+        // HÀM XÓA PHIẾU VÀ HOÀN TRẢ KHO CHO CHỦ TIỆM
+        function deleteTransaction(txId) {
+            if(activeStaffId !== 'ADMIN') return alert('Chỉ có Chủ tiệm mới có quyền xóa hóa đơn!');
+            
+            if(confirm(`CẢNH BÁO: Bro có chắc chắn muốn XÓA hóa đơn [ ${txId} ] này không?\n\n*Hàng hóa trong hóa đơn này sẽ được tự động CỘNG TRẢ LẠI vào kho.`)) {
+                let txIndex = transactions.findIndex(t => t.id === txId);
+                if(txIndex > -1) {
+                    let tx = transactions[txIndex];
+                    
+                    // 1. Hoàn lại số lượng tồn kho
+                    if(tx.itemsRaw) {
+                        tx.itemsRaw.forEach(item => {
+                            let p = inventory.find(i => i.id === item.id);
+                            if(p) p.stock += item.qty;
+                        });
+                    }
+                    
+                    // 2. Xóa hóa đơn khỏi danh sách
+                    transactions.splice(txIndex, 1);
+                    
+                    // 3. Đẩy lên Cloud và cập nhật lại giao diện
+                    syncToCloud();
+                    renderData();
+                    alert('Đã xóa hóa đơn và hoàn trả hàng về kho thành công!');
+                }
+            }
         }
 
         // ==========================================
