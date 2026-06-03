@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Laptop Lương Gia KG - Hệ Thống V12.6 (Có Logo)</title>
+    <title>Laptop Lương Gia KG - Hệ Thống V12.7 (Đa Mẫu In)</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -80,8 +80,7 @@
             body { flex-direction: column; }
             .top-bar { padding: 5px 10px; }
             .sidebar { position: fixed; bottom: 0; left: 0; width: 100%; height: 60px; display: flex; flex-direction: row; background: #0f172a; margin: 0; padding: 0; z-index: 1000; overflow-x: auto; box-shadow: 0 -2px 10px rgba(0,0,0,0.2); }
-            .sidebar h2 { display: none; }
-            .sidebar .logo-container { display: none; } /* Ẩn logo ở menu mobile cho đỡ chật */
+            .sidebar h2, .sidebar .logo-container { display: none; } 
             .nav-btn { flex: 1; min-width: 75px; margin: 0; padding: 5px; text-align: center; border-radius: 0; border-right: 1px solid #1e293b; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 0.75rem; white-space: normal; line-height: 1.2; }
             .nav-btn:last-child { border-right: none; }
             .nav-btn.active { background: var(--primary); border-top: 3px solid #60a5fa; }
@@ -93,35 +92,13 @@
             .modal-content { margin: 10% auto; padding: 15px; width: 95%; }
         }
 
-        /* ========================================================
-           PHÔI IN ĐÁP ỨNG ĐA KÍCH THƯỚC (K80 / A5 / A4)
-           ======================================================== */
+        /* KHU VỰC IN */
         #print-section { display: none; }
         @media print {
             @page { margin: 0; }
             body * { display: none !important; }
-            #print-section { 
-                display: block !important; 
-                width: 100%; 
-                margin: 0; 
-                padding: 15px; 
-                color: #000; 
-                background: #fff; 
-                font-family: 'Arial', sans-serif; 
-                font-size: 13px; 
-                box-sizing: border-box; 
-            }
-            #print-section * { display: revert !important; line-height: 1.4; }
-            .print-header { text-align: center; margin-bottom: 12px; border-bottom: 1px dashed #000; padding-bottom: 12px; }
-            .print-header img { max-width: 60px; height: auto; margin-bottom: 5px; filter: grayscale(100%); }
-            .print-header h2 { margin: 0; font-size: 18px; font-weight: bold; text-transform: uppercase;}
-            .print-header p { margin: 3px 0; font-size: 12px; }
-            .print-table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
-            .print-table th, .print-table td { padding: 6px 2px; text-align: left; vertical-align: top; }
-            .print-table th { border-bottom: 1px dashed #000; font-weight: bold; }
-            .print-table tr.item-row { border-bottom: 1px dotted #ccc; }
-            .print-total { text-align: right; font-weight: bold; font-size: 16px; margin-top: 10px; border-top: 1px dashed #000; padding-top: 10px; }
-            .print-footer { text-align: center; margin-top: 20px; font-size: 12px; font-style: italic; }
+            #print-section { display: block !important; background: #fff; color: #000; box-sizing: border-box; }
+            #print-section * { display: revert !important; }
         }
     </style>
 </head>
@@ -138,6 +115,7 @@
                 <img id="login-logo" src="" style="width: 70px; display: none; margin: 0 auto; border-radius: 8px;">
             </div>
             <h2>ĐĂNG NHẬP HỆ THỐNG</h2>
+            <div style="font-size: 0.85rem; color: #10b981; margin-bottom:10px;">(Hệ thống tự động ghi nhớ tài khoản trên thiết bị này)</div>
             <select id="login-user"></select>
             <input type="password" id="login-pass" placeholder="Nhập mật khẩu..." onkeypress="if(event.key === 'Enter') doLogin()">
             <button onclick="doLogin()">ĐĂNG NHẬP</button>
@@ -153,7 +131,7 @@
         <div class="logo-container" style="text-align: center; margin-bottom: 5px;">
             <img id="sidebar-logo" src="" style="width: 60px; border-radius: 8px; display: none; margin: 0 auto;">
         </div>
-        <h2>LƯƠNG GIA KG<br><small style="font-size: 0.8rem; color: #94a3b8;">V12.6 Pro</small></h2>
+        <h2>LƯƠNG GIA KG<br><small style="font-size: 0.8rem; color: #94a3b8;">V12.7 Pro</small></h2>
         <button class="nav-btn active" onclick="switchTab('pos')">🛒 Bán Hàng</button>
         <button class="nav-btn" onclick="switchTab('service-desk')">🛠️ Nhận Máy</button>
         <button class="nav-btn" onclick="switchTab('sales-history')">📜 Lịch Sử</button>
@@ -165,7 +143,7 @@
 
     <div class="main-content">
         <div id="pos" class="tab-content active">
-            <h2 style="margin-top: 0; font-size: 1.2rem; border-bottom: 2px solid var(--primary); padding-bottom: 8px;">Tạo Phiếu Xuất Hàng</h2>
+            <h2 id="pos-title" style="margin-top: 0; font-size: 1.2rem; border-bottom: 2px solid var(--primary); padding-bottom: 8px;">Tạo Phiếu Xuất Hàng</h2>
             <div class="form-group">
                 <label>1. Chọn Khách Hàng mua hàng:</label>
                 <div style="display:flex; gap:10px;">
@@ -202,7 +180,7 @@
                 </div>
                 <div class="form-group"><label>Ghi chú:</label><input type="text" id="pos-note" placeholder="BH 3 tháng..."></div>
             </div>
-            <button class="action-btn" style="background: var(--success); padding: 15px;" onclick="checkout()">LẬP PHIẾU & IN</button>
+            <button class="action-btn" style="background: var(--success); padding: 15px;" onclick="checkout()">LẬP PHIẾU & CHỌN IN</button>
         </div>
 
         <div id="service-desk" class="tab-content">
@@ -223,7 +201,7 @@
                     <div class="form-group"><label>Báo Giá (đ):</label><input type="number" id="srv-quote" value="0"></div>
                     <div class="form-group"><label>Hẹn Trả (Dự kiến):</label><input type="date" id="srv-due-date"></div>
                 </div>
-                <button class="action-btn" style="background: var(--success); padding: 15px;" onclick="receiveDeviceSubmit()">NHẬN MÁY & IN BIÊN NHẬN</button>
+                <button class="action-btn" style="background: var(--success); padding: 15px;" onclick="receiveDeviceSubmit()">NHẬN MÁY & CHỌN IN</button>
             </div>
 
             <h3 style="margin-bottom: 5px; font-size:1rem;">Máy Đang Nằm Viện</h3>
@@ -331,12 +309,13 @@
         </div>
     </div>
 
-    <div id="previewPrintModal" class="modal">
-        <div class="modal-content" style="max-width: 500px; background: #fff; color: #000;">
-            <span class="close-btn" onclick="document.getElementById('previewPrintModal').style.display='none'">&times;</span>
-            <h3 style="margin-top: 0; border-bottom: 1px solid #ccc; padding-bottom: 5px; color: var(--primary);">Bản Xem Trước Phiếu In</h3>
-            <div id="modal-print-body" style="padding: 10px 0; font-family: Arial, sans-serif; background: #fff; color: #000; max-height: 50vh; overflow-y: auto;"></div>
-            <button class="action-btn" style="background: var(--success); margin-top: 15px;" onclick="window.print()">🖨️ TIẾN HÀNH IN PHIẾU</button>
+    <div id="printSelectModal" class="modal">
+        <div class="modal-content" style="max-width: 380px; text-align: center;">
+            <span class="close-btn" onclick="document.getElementById('printSelectModal').style.display='none'">&times;</span>
+            <h3 style="margin-top: 0; color: var(--primary);">CHỌN KHỔ GIẤY IN</h3>
+            <p style="font-size:0.95rem; color:#64748b; margin-bottom: 25px;">Hãy chọn mẫu phù hợp với máy in của tiệm:</p>
+            <button class="action-btn" style="background: #10b981; padding: 15px; font-size:1.1rem; margin-bottom:15px; box-shadow: 0 4px 6px rgba(16,185,129,0.3);" onclick="executePrint('k80')">🖨️ IN MÁY POS (Bill nhỏ)</button>
+            <button class="action-btn" style="background: #4f46e5; padding: 15px; font-size:1.1rem; box-shadow: 0 4px 6px rgba(79,70,229,0.3);" onclick="executePrint('a4')">🖨️ IN A4 / A5 (Máy bàn)</button>
         </div>
     </div>
 
@@ -345,7 +324,7 @@
     <div id="quickAddCusModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="document.getElementById('quickAddCusModal').style.display='none'">&times;</span><h3 style="margin-top:0; color:#10b981;">Thêm Khách Nhanh</h3><div class="form-group"><label>Mã KH:</label><input type="text" id="qcus-id" disabled></div><div class="form-group"><label>Tên Khách:</label><input type="text" id="qcus-name"></div><div class="form-group"><label>SĐT:</label><input type="text" id="qcus-phone"></div><button class="action-btn" style="background:#10b981;" onclick="quickSaveCustomer()">Lưu & Chọn</button></div></div>
     <div id="quickAddModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="document.getElementById('quickAddModal').style.display='none'">&times;</span><h3 style="margin-top:0; color:var(--primary);">Thêm Hàng Nhanh</h3><div class="form-group"><label>Mã SP:</label><input type="text" id="qa-id" disabled></div><div class="form-group"><label>Tên Hàng:</label><input type="text" id="qa-name"></div><div class="form-row"><div class="form-group"><label>Giá:</label><input type="number" id="qa-price" value="0"></div><div class="form-group"><label>Tồn:</label><input type="number" id="qa-stock" value="1"></div></div><button class="action-btn" onclick="quickSaveProduct()">Lưu & Chọn</button></div></div>
     <div id="payDebtModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="document.getElementById('payDebtModal').style.display='none'">&times;</span><h3 style="margin-top:0; color:var(--success);">Lập Phiếu Thu Nợ</h3><input type="hidden" id="pay-cus-id"><p>Khách hàng: <b id="pay-cus-name" style="color:var(--primary);"></b></p><p>Tổng nợ hiện tại: <b id="pay-cus-current-debt" style="color:var(--danger);">0</b> đ</p><div class="form-group"><label>Số tiền khách trả (đ):</label><input type="number" id="pay-amount" value="0"></div><button class="action-btn" style="background: var(--success);" onclick="submitPayDebt()">THU TIỀN</button></div></div>
-    <div id="debtModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="document.getElementById('debtModal').style.display='none'">&times;</span><h3 id="report-customer-name" style="margin-top:0;"></h3><div class="form-row" style="background: #f1f5f9; padding: 10px; border-radius: 6px; margin-bottom: 10px;"><input type="hidden" id="report-customer-id"><div class="form-group"><label>Từ ngày:</label><input type="date" id="filter-from"></div><div class="form-group"><label>Đến ngày:</label><input type="date" id="filter-to"></div><button class="action-btn small-btn" onclick="generateReport()" style="align-self: flex-end; height: 38px;">Lọc</button></div><div id="report-result" style="overflow-x: auto; max-height: 400px;"></div></div></div>
+    <div id="debtModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="document.getElementById('debtModal').style.display='none'">&times;</span><h3 id="report-customer-name" style="margin-top:0;"></h3><div class="form-row" style="background: #f1f5f9; padding: 10px; border-radius: 6px; margin-bottom: 10px;"><input type="hidden" id="report-customer-id"><div class="form-group"><label>Từ ngày:</label><input type="date" id="filter-from"></div><div class="form-group"><label>Đến ngày:</label><input type="date" id="filter-to"></div><button class="action-btn small-btn" onclick="generateReport()" style="align-self: flex-end; height: 38px;">Lọc</button></div><div id="report-result" style="overflow-x: auto; max-height: 400px; margin-bottom:15px;"></div> <button class="action-btn" style="background: var(--warning); color: #000;" onclick="triggerPrintReport()">🖨️ IN BẢNG KÊ NỢ</button></div></div>
 
     <script>
         // ==========================================
@@ -355,11 +334,10 @@
             name: "LƯƠNG GIA KG", 
             address: "37 ấp 5, An Biên, Kiên Giang", 
             phone: "0941.113.411",
-            // BRO THAY LINK ẢNH LOGO CỦA BRO VÀO ĐÂY NHÉ:
-            logo: "https://lh3.googleusercontent.com/a-/ALV-UjWzTvjHG4OBNpugamMnKuu6riIGjM9m2q-6cUsdRxkLgNcqGfui=w1197" 
+            // Đổi link hình ở dưới để lấy logo tiệm bro:
+            logo: "https://cdn-icons-png.flaticon.com/512/3131/3131602.png" 
         };
 
-        // Đổ logo ra màn hình
         if(SHOP_INFO.logo) {
             document.getElementById('sidebar-logo').src = SHOP_INFO.logo;
             document.getElementById('sidebar-logo').style.display = 'block';
@@ -368,7 +346,7 @@
         }
 
         // ==========================================
-        // CẤU HÌNH FIREBASE ĐỒNG BỘ ĐÁM MÂY CHUẨN
+        // CẤU HÌNH FIREBASE 
         // ==========================================
         const firebaseConfig = {
             databaseURL: "https://luonggiakg-default-rtdb.asia-southeast1.firebasedatabase.app/"
@@ -376,13 +354,14 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        setTimeout(() => { let l = document.getElementById('loading-overlay'); if(l && l.style.display !== 'none') { l.style.display = 'none'; } }, 4000);
+        setTimeout(() => { let l = document.getElementById('loading-overlay'); if(l && l.style.display !== 'none') { l.style.display = 'none'; } }, 3500);
 
         let staffs=[], inventory=[], customers=[], transactions=[], serviceOrders=[], cart=[], cashflow=[];
         let activeStaffId = null;
+        let editingTxId = null; // Biến nhớ mã hóa đơn khi Sửa
 
         // ==========================================
-        // LẮNG NGHE DỮ LIỆU ĐÁM MÂY
+        // LẮNG NGHE DỮ LIỆU ĐÁM MÂY & GHI NHỚ ĐĂNG NHẬP
         // ==========================================
         db.ref().on('value', (snapshot) => {
             document.getElementById('loading-overlay').style.display = 'none';
@@ -390,15 +369,8 @@
             
             if (!data.staffs) {
                 let initData = {
-                    staffs: [ 
-                        {id:'ADMIN', name:'Lương Minh Trí (Đại diện cửa hàng)', password:'123'}, 
-                        {id:'NV01', name:'Huỳnh Trung Hiếu', password:'1'}, 
-                        {id:'NV02', name:'Lương Hữu Bằng', password:'2'},
-                        {id:'POS01', name:'Máy POS', password:'3'}
-                    ],
-                    inventory: [ {id:'SP01', name:'Sạc Laptop Dell', price:250000, stock:10} ],
-                    customers: [ {id:'KH01', name:'Khách Lẻ', phone:'-'} ],
-                    transactions: [], serviceOrders: [], cashflow: []
+                    staffs: [ {id:'ADMIN', name:'Lương Minh Trí (Đại diện cửa hàng)', password:'123'}, {id:'NV01', name:'Huỳnh Trung Hiếu', password:'1'}, {id:'NV02', name:'Lương Hữu Bằng', password:'2'}, {id:'POS01', name:'Máy POS', password:'3'} ],
+                    inventory: [ {id:'SP01', name:'Sạc Laptop Dell', price:250000, stock:10} ], customers: [ {id:'KH01', name:'Khách Lẻ', phone:'-'} ], transactions: [], serviceOrders: [], cashflow: []
                 };
                 db.ref().set(initData);
                 return;
@@ -410,6 +382,18 @@
             let loginSel = document.getElementById('login-user');
             if(loginSel.options.length === 0) { loginSel.innerHTML = staffs.map(s => `<option value="${s.id}">${s.name}</option>`).join(''); }
             
+            // CHECK GHI NHỚ TÀI KHOẢN
+            let savedUser = localStorage.getItem('luonggia_saved_user');
+            if(savedUser && !activeStaffId) {
+                let checkStaff = staffs.find(s => s.id === savedUser);
+                if(checkStaff) {
+                    activeStaffId = checkStaff.id;
+                    document.getElementById('login-overlay').style.display = 'none';
+                    document.getElementById('top-user-name').innerText = checkStaff.name;
+                    document.getElementById('menu-admin').style.display = (activeStaffId === 'ADMIN') ? 'block' : 'none';
+                }
+            }
+
             if(activeStaffId) renderData();
         });
 
@@ -424,6 +408,7 @@
             let target = staffs.find(s => s.id === u);
             if(target && target.password === p) {
                 activeStaffId = u;
+                localStorage.setItem('luonggia_saved_user', u); // Lưu tài khoản để lần sau vào luôn
                 document.getElementById('login-overlay').style.display = 'none';
                 document.getElementById('top-user-name').innerText = target.name;
                 document.getElementById('login-pass').value = '';
@@ -431,7 +416,11 @@
                 renderData();
             } else { alert('Mật khẩu không đúng! Vui lòng thử lại.'); }
         }
-        function logout() { activeStaffId = null; document.getElementById('login-overlay').style.display = 'flex'; }
+        function logout() { 
+            activeStaffId = null; 
+            localStorage.removeItem('luonggia_saved_user'); // Xóa trí nhớ
+            document.getElementById('login-overlay').style.display = 'flex'; 
+        }
 
         // ==========================================
         // CÁC HÀM CƠ BẢN
@@ -446,8 +435,14 @@
             document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
             document.querySelectorAll('.nav-btn').forEach(btn => { if(btn.getAttribute('onclick').includes(tabId)) btn.classList.add('active'); });
+            
+            if(tabId === 'pos' && editingTxId) { document.getElementById('pos-title').innerHTML = `Đang Sửa Hóa Đơn: <span style="color:var(--danger)">${editingTxId}</span> <button class="small-btn" onclick="cancelEditTx()">Hủy Sửa</button>`; } 
+            else { document.getElementById('pos-title').innerHTML = 'Tạo Phiếu Xuất Hàng'; }
+
             renderData();
         }
+
+        function cancelEditTx() { editingTxId = null; cart = []; renderCart(); switchTab('pos'); }
 
         function getCustomerDebtInfo(customerId) {
             let totalDebt = 0, maxOverdueDays = 0, today = new Date(); today.setHours(0,0,0,0);
@@ -462,25 +457,16 @@
             if(!activeStaffId) return;
             let isAdmin = (activeStaffId === 'ADMIN'), todayStr = new Date().toISOString().split('T')[0], todayObj = new Date(todayStr);
 
-            // 1. Dropdown Bán hàng
             let customerOptions = customers.map(cus => `<option value="${cus.id}">${cus.name} (${cus.phone})</option>`).join('');
             document.getElementById('pos-customer').innerHTML = customerOptions || '<option value="">(Trống)</option>'; 
             document.getElementById('srv-customer').innerHTML = customerOptions || '<option value="">(Trống)</option>';
             document.getElementById('pos-product').innerHTML = inventory.map(item => `<option value="${item.id}">${item.name} (${formatMoney(item.price)}đ)</option>`).join('') || '<option value="">(Trống)</option>';
 
-            // 2. Kho Hàng
-            document.getElementById('inv-lock-status').innerText = isAdmin ? "🔓 (Có quyền sửa/xóa)" : "🔒 (Chỉ xem)";
+            document.getElementById('inv-lock-status').innerText = isAdmin ? "🔓 (Quyền sửa/xóa)" : "🔒 (Chỉ xem)";
             document.getElementById('inv-add-form').style.display = isAdmin ? 'block' : 'none';
-            document.getElementById('inv-head').innerHTML = `<tr><th>Mã</th><th>Tên Hàng</th><th>Giá Bán</th><th>Tồn</th>${isAdmin ? '<th>Thao tác</th>' : ''}</tr>`;
-            document.getElementById('inventory-table').innerHTML = inventory.map(item => `<tr>
-                <td>${item.id}</td>
-                <td><input type="text" class="inline-input" value="${item.name}" onchange="updateInvField('${item.id}', 'name', this.value)" ${isAdmin ? '' : 'disabled'}></td>
-                <td><input type="number" class="inline-input" value="${item.price}" onchange="updateInvField('${item.id}', 'price', this.value)" ${isAdmin ? '' : 'disabled'}></td>
-                <td><input type="number" class="inline-input" value="${item.stock}" onchange="updateInvField('${item.id}', 'stock', this.value)" ${isAdmin ? '' : 'disabled'}></td>
-                ${isAdmin ? `<td><button class="danger-btn" onclick="deleteInventory('${item.id}')">Xóa</button></td>` : ''}
-            </tr>`).join('');
+            document.getElementById('inv-head').innerHTML = `<tr><th>Mã</th><th>Tên Hàng</th><th>Giá Bán</th><th>Tồn</th>${isAdmin ? '<th>Xóa</th>' : ''}</tr>`;
+            document.getElementById('inventory-table').innerHTML = inventory.map(item => `<tr><td>${item.id}</td><td><input type="text" class="inline-input" value="${item.name}" onchange="updateInvField('${item.id}', 'name', this.value)" ${isAdmin ? '' : 'disabled'}></td><td><input type="number" class="inline-input" value="${item.price}" onchange="updateInvField('${item.id}', 'price', this.value)" ${isAdmin ? '' : 'disabled'}></td><td><input type="number" class="inline-input" value="${item.stock}" onchange="updateInvField('${item.id}', 'stock', this.value)" ${isAdmin ? '' : 'disabled'}></td>${isAdmin ? `<td><button class="danger-btn" onclick="deleteInventory('${item.id}')">X</button></td>` : ''}</tr>`).join('');
 
-            // 3. Khách hàng
             document.getElementById('customer-table').innerHTML = customers.map(cus => {
                 let debtInfo = getCustomerDebtInfo(cus.id), alertHtml = (debtInfo.totalDebt > 0 && debtInfo.maxOverdueDays >= 30) ? `<br><span class="debt-alert">Quá hạn >30 ngày</span>` : '';
                 let nameHtml = isAdmin ? `<input type="text" class="inline-input" value="${cus.name}" onchange="updateCusField('${cus.id}', 'name', this.value)">` : `<b>${cus.name}</b>`;
@@ -489,22 +475,20 @@
                 return `<tr><td>${nameHtml}<br>${phoneHtml}${alertHtml}</td><td style="color:${debtInfo.totalDebt > 0 ? 'var(--danger)' : 'black'}; font-weight:bold;">${formatMoney(debtInfo.totalDebt)} đ</td><td>${actionButtons}</td></tr>`;
             }).join('');
 
-            // 4. Lịch sử Sửa máy
             document.getElementById('service-table').innerHTML = serviceOrders.slice().reverse().map(order => {
                 let cus = customers.find(c => c.id === order.customerId) || { name: 'Khách ẩn' }, staff = staffs.find(s => s.id === order.staffId) || { name: '-' };
                 let rDate = new Date(order.receiveDate), dDate = order.dueDate ? new Date(order.dueDate) : null, diffDays = Math.floor((todayObj - rDate) / 86400000), isCompleted = (order.status === 'Đã trả khách'), rowClass = '', statusLabel = order.status;
                 if (!isCompleted) { if (dDate && todayObj > dDate) { rowClass = 'row-overdue-red'; statusLabel = `❌ Trễ hẹn`; } else if (diffDays > 7) { rowClass = 'row-overweek-orange'; statusLabel = `⚠️ Găm lâu`; } }
                 let actionHtml = !isCompleted ? `<select style="padding:4px; font-size:0.85rem; border-radius:4px;" onchange="changeDeviceStatus('${order.id}', this.value)"><option value="" disabled selected>Đổi</option><option value="Đang sửa">Đang sửa</option><option value="Chờ linh kiện">Chờ linh</option><option value="Đã xong - Chờ khách">Chờ khách</option><option value="Đã trả khách">Đã trả (Xong)</option></select>` : `<span style="color:var(--success); font-weight:bold;">✓ Xong</span>`;
-                return `<tr class="${rowClass}"><td><b>${order.id}</b><br><button class="small-btn" style="background:#6366f1; padding:3px 6px; margin-top:5px; font-size:0.75rem;" onclick="printServiceOrder('${order.id}')">🖨️ In</button>${isAdmin ? `<br><button class="small-btn" style="background:var(--danger); padding:3px 6px; margin-top:5px; font-size:0.75rem;" onclick="deleteServiceOrder('${order.id}')">Xóa</button>` : ''}</td><td><b>${cus.name}</b><br><b style="color:var(--primary);">${order.model}</b></td><td>${order.condition}<br><b style="color:var(--danger);">${formatMoney(order.quote)}đ</b></td><td>${formatFullDate(order.dueDate)}</td><td><span style="font-weight:bold;">[${statusLabel}]</span><br><small>Nhận: ${staff.name}</small><br>${actionHtml}</td></tr>`;
+                return `<tr class="${rowClass}"><td><b>${order.id}</b><br><button class="small-btn" style="background:#6366f1; padding:3px 6px; margin-top:5px; font-size:0.75rem;" onclick="triggerPrintService('${order.id}')">🖨️ In</button>${isAdmin ? `<br><button class="small-btn" style="background:var(--danger); padding:3px 6px; margin-top:5px; font-size:0.75rem;" onclick="deleteServiceOrder('${order.id}')">Xóa</button>` : ''}</td><td><b>${cus.name}</b><br><b style="color:var(--primary);">${order.model}</b></td><td>${order.condition}<br><b style="color:var(--danger);">${formatMoney(order.quote)}đ</b></td><td>${formatFullDate(order.dueDate)}</td><td><span style="font-weight:bold;">[${statusLabel}]</span><br><small>Nhận: ${staff.name}</small><br>${actionHtml}</td></tr>`;
             }).join('');
 
-            // 5. Lịch sử Bán hàng
             document.getElementById('sales-history-table').innerHTML = transactions.filter(t => t.type === 'cash' || t.type === 'debt').slice().reverse().map(t => {
                 let cus = customers.find(c => c.id === t.customerId) || { name: 'Khách bị xóa', phone: '-' }, staff = staffs.find(s => s.id === t.staffId) || { name: '-' };
                 let payBadge = t.type === 'cash' ? `<span style="background:#d1fae5; color:#065f46; padding:3px 6px; border-radius:4px; font-weight:bold; font-size:0.8rem;">💵 Tiền Mặt</span>` : `<span style="background:#fee2e2; color:#991b1b; padding:3px 6px; border-radius:4px; font-weight:bold; font-size:0.8rem;">⚠️ Nợ Sổ</span>`;
-                let actionBtns = `<button class="small-btn" style="background:#475569; margin-bottom: 5px; width:100%;" onclick="printSalesOrderById('${t.id}')">🖨️ In Lại</button>`;
+                let actionBtns = `<button class="small-btn" style="background:#475569; margin-bottom: 5px; width:100%;" onclick="triggerPrintSales('${t.id}')">🖨️ In Lại</button>`;
                 if (isAdmin) {
-                    actionBtns += `<br><button class="small-btn" style="background:var(--warning); margin-bottom: 5px; width:100%; color:#000;" onclick="editTransaction('${t.id}')">✏️ Sửa TT</button>`;
+                    actionBtns += `<br><button class="small-btn" style="background:var(--warning); margin-bottom: 5px; width:100%; color:#000;" onclick="editFullTransaction('${t.id}')">✏️ Sửa Lại Đơn</button>`;
                     actionBtns += `<br><button class="small-btn" style="background:var(--danger); width:100%;" onclick="deleteTransaction('${t.id}')">🗑️ Xóa</button>`;
                 }
                 return `<tr><td><b>${t.id}</b><br><small>${formatFullDate(t.date)}</small></td><td><b>${cus.name}</b></td><td>${t.details}<br><small style="font-style:italic;">${t.note ? 'Ghi chú: '+t.note : ''}</small></td><td style="font-weight:bold; color:var(--primary);">${formatMoney(t.amount)} đ</td><td>${payBadge}<br><small>${staff.name}</small></td><td>${actionBtns}</td></tr>`;
@@ -519,48 +503,47 @@
         // SỬA / XÓA DỮ LIỆU BỞI ADMIN
         // ==========================================
         function updateInvField(id, field, val) { if(activeStaffId==='ADMIN') { let i = inventory.find(x=>x.id===id); if(i) { i[field] = (field==='price'||field==='stock') ? Number(val)||0 : val; syncToCloud(); } } }
-        function deleteInventory(id) { if(activeStaffId==='ADMIN' && confirm('Xóa vĩnh viễn mặt hàng này khỏi kho?')) { inventory = inventory.filter(i => i.id !== id); syncToCloud(); renderData(); } }
-        
+        function deleteInventory(id) { if(activeStaffId==='ADMIN' && confirm('Xóa vĩnh viễn mặt hàng này?')) { inventory = inventory.filter(i => i.id !== id); syncToCloud(); renderData(); } }
         function updateCusField(id, field, val) { if(activeStaffId==='ADMIN') { let c = customers.find(x=>x.id===id); if(c) { c[field] = val; syncToCloud(); } } }
-        function deleteCustomer(id) { if(activeStaffId==='ADMIN' && confirm('Xóa khách hàng này? Lưu ý: Không nên xóa nếu khách đang có nợ tiền!')) { customers = customers.filter(c => c.id !== id); syncToCloud(); renderData(); } }
-        
-        function editTransaction(txId) {
+        function deleteCustomer(id) { if(activeStaffId==='ADMIN' && confirm('Xóa khách hàng này?')) { customers = customers.filter(c => c.id !== id); syncToCloud(); renderData(); } }
+
+        function deleteTransaction(txId) {
             if(activeStaffId !== 'ADMIN') return;
-            let tx = transactions.find(t => t.id === txId);
-            if(!tx) return;
-            let newType = prompt(`-- SỬA PHIẾU BÁN HÀNG --\nĐổi phương thức thanh toán:\n- Nhập số 1: Trả TIỀN MẶT / CK\n- Nhập số 2: GHI NỢ`, tx.type === 'cash' ? '1' : '2');
-            if(newType === '1') tx.type = 'cash';
-            else if(newType === '2') tx.type = 'debt';
-            else if(newType !== null) return alert('Nhập sai, đã hủy sửa!');
-            let newNote = prompt(`Sửa ghi chú đơn hàng:`, tx.note || '');
-            if(newNote !== null) tx.note = newNote;
-            syncToCloud(); renderData();
+            if(confirm(`XÓA hóa đơn [ ${txId} ]?\n\n*Hàng hóa sẽ được CỘNG LẠI vào kho.`)) {
+                let txIndex = transactions.findIndex(t => t.id === txId);
+                if(txIndex > -1) {
+                    let tx = transactions[txIndex];
+                    if(tx.itemsRaw) { tx.itemsRaw.forEach(item => { let p = inventory.find(i => i.id === item.id); if(p) p.stock += item.qty; }); }
+                    transactions.splice(txIndex, 1); syncToCloud(); renderData();
+                }
+            }
         }
 
-        // ==========================================
-        // NGHIỆP VỤ THU CHI (SỔ QUỸ)
-        // ==========================================
-        function addCashflow() {
-            let amount = parseFloat(document.getElementById('cb-amount').value)||0, type = document.getElementById('cb-type').value, reason = document.getElementById('cb-reason').value.trim();
-            if(amount <= 0 || !reason) return alert('Vui lòng nhập đủ số tiền và lý do!');
-            let now = new Date();
-            cashflow.push({ id: 'CF_'+Date.now(), date: now.toISOString().split('T')[0], time: formatTime(now), type, amount, reason, staffId: activeStaffId });
-            syncToCloud(); document.getElementById('cb-amount').value = 0; document.getElementById('cb-reason').value = ''; renderData();
-        }
-        function deleteCashflow(id) { if(activeStaffId !== 'ADMIN') return alert('Chỉ Chủ tiệm mới được xóa phiếu!'); let idx = cashflow.findIndex(c => c.id === id); if(idx > -1 && confirm('Xóa khoản thu/chi này?')) { cashflow.splice(idx, 1); syncToCloud(); renderData(); } }
-        function renderCashbook() {
-            let todayStr = new Date().toISOString().split('T')[0], sumSales = 0, sumPay = 0, sumExtraIn = 0, sumOut = 0;
-            transactions.filter(t => t.date === todayStr).forEach(t => { if(t.type === 'cash') sumSales += t.amount; else if(t.type === 'pay') sumPay += t.amount; });
-            let todayCF = cashflow.filter(c => c.date === todayStr);
-            todayCF.forEach(c => { if(c.type === 'thu') sumExtraIn += c.amount; else sumOut += c.amount; });
-
-            document.getElementById('cb-sum-sales').innerText = formatMoney(sumSales) + ' đ'; document.getElementById('cb-sum-pay').innerText = formatMoney(sumPay) + ' đ';
-            document.getElementById('cb-sum-extra-in').innerText = formatMoney(sumExtraIn) + ' đ'; document.getElementById('cb-sum-out').innerText = formatMoney(sumOut) + ' đ';
-            document.getElementById('cb-net-total').innerText = formatMoney(sumSales + sumPay + sumExtraIn - sumOut) + ' đ';
-            document.getElementById('cashbook-table').innerHTML = todayCF.slice().reverse().map(c => {
-                let stf = staffs.find(s=>s.id===c.staffId) || {name:'-'}; let clr = c.type==='thu' ? 'var(--success)' : 'var(--danger)', txt = c.type==='thu' ? '+ Thu Khác' : '- Chi Tiền';
-                return `<tr><td>${formatFullDate(c.date)}<br><small>${c.time}</small></td><td style="color:${clr}; font-weight:bold;">${txt}</td><td style="color:${clr}; font-weight:bold;">${formatMoney(c.amount)} đ</td><td>${c.reason}</td><td>${stf.name}</td><td>${activeStaffId==='ADMIN'?`<button class="danger-btn" onclick="deleteCashflow('${c.id}')">Xóa</button>`:'-'}</td></tr>`;
-            }).join('');
+        // TÍNH NĂNG ĐẶC BIỆT: SỬA TẬN GỐC HÓA ĐƠN VÀ HOÀN KHO TẠM
+        function editFullTransaction(txId) {
+            if(activeStaffId !== 'ADMIN') return;
+            let txIndex = transactions.findIndex(t => t.id === txId);
+            if(txIndex > -1 && confirm(`Bốc hóa đơn [ ${txId} ] ra Giỏ Hàng để sửa lại?\n\n- Hóa đơn cũ sẽ tạm thời bị hủy, hàng sẽ được hoàn kho chờ.\n- Bạn sửa xong bấm [LẬP PHIẾU] nó sẽ lưu đè lại đúng số phiếu này!`)) {
+                let tx = transactions[txIndex];
+                
+                // 1. Hoàn trả kho lập tức
+                if(tx.itemsRaw) { tx.itemsRaw.forEach(item => { let p = inventory.find(i => i.id === item.id); if(p) p.stock += item.qty; }); }
+                
+                // 2. Bốc hàng vào Cart
+                cart = JSON.parse(JSON.stringify(tx.itemsRaw || []));
+                document.getElementById('pos-customer').value = tx.customerId;
+                document.getElementById('pos-payment').value = tx.type;
+                document.getElementById('pos-note').value = tx.note || '';
+                
+                // 3. Xóa tạm vé cũ và Nhớ số ID
+                transactions.splice(txIndex, 1);
+                editingTxId = txId;
+                syncToCloud();
+                
+                // 4. Mở sang Tab bán hàng
+                renderCart();
+                switchTab('pos');
+            }
         }
 
         // ==========================================
@@ -572,58 +555,44 @@
         function removeCartItem(idx) { cart.splice(idx, 1); renderCart(); }
         function renderCart() { let html = '', total = 0; cart.forEach((item, idx) => { total += item.price * item.qty; html += `<li class="cart-item"><div><b>${item.name}</b><br><small>SL: ${item.qty} x ${formatMoney(item.price)}đ</small></div><button class="danger-btn" onclick="removeCartItem(${idx})">Xóa</button></li>`; }); document.getElementById('cart-items').innerHTML = html || '<li class="cart-item" style="color:#aaa;">Chưa có món nào</li>'; document.getElementById('cart-total').innerText = formatMoney(total); }
 
-        function updateStaffField(id, field, val) { if(activeStaffId==='ADMIN') { let s = staffs.find(x=>x.id===id); if(s) { s[field] = val.trim(); syncToCloud(); } } }
-
-        function openQuickAddCusModal() { document.getElementById('quickAddCusModal').style.display='block'; document.getElementById('qcus-id').value='KH_'+Date.now().toString().slice(-4); }
-        function quickSaveCustomer() { let id=document.getElementById('qcus-id').value.trim(), name=document.getElementById('qcus-name').value.trim(), phone=document.getElementById('qcus-phone').value.trim(); if(!name) return alert('Nhập tên khách!'); customers.push({ id, name, phone }); syncToCloud(); document.getElementById('quickAddCusModal').style.display='none'; document.getElementById('pos-customer').value=id; renderData(); }
-        
-        function openQuickAddModal() { document.getElementById('quickAddModal').style.display='block'; document.getElementById('qa-id').value='SP_'+Date.now().toString().slice(-4); }
-        function quickSaveProduct() { let id=document.getElementById('qa-id').value.trim(), name=document.getElementById('qa-name').value.trim(), price=parseFloat(document.getElementById('qa-price').value)||0, stock=parseInt(document.getElementById('qa-stock').value)||1; if(!name) return alert('Nhập tên hàng!'); inventory.push({ id, name, price, stock }); syncToCloud(); document.getElementById('quickAddModal').style.display='none'; document.getElementById('pos-product').value=id; renderData(); onProductSelectChange(); }
-        
-        function addInventory() { let id=document.getElementById('new-inv-id').value.trim(), name=document.getElementById('new-inv-name').value.trim(), price=parseFloat(document.getElementById('new-inv-price').value)||0, stock=parseInt(document.getElementById('new-inv-stock').value)||0; if(!id) id = 'SP_'+Date.now().toString().slice(-4); if(name) { inventory.push({ id, name, price, stock }); syncToCloud(); document.getElementById('new-inv-name').value=''; renderData(); } }
-        function addCustomer() { let id='KH_'+Date.now().toString().slice(-4), name=document.getElementById('new-cus-name').value.trim(), phone=document.getElementById('new-cus-phone').value.trim(); if(name) { customers.push({ id, name, phone }); syncToCloud(); document.getElementById('new-cus-name').value=''; document.getElementById('new-cus-phone').value=''; renderData(); } }
-
         function checkout() {
             if(cart.length === 0) return alert('Chưa chọn mặt hàng nào!');
             let cusId = document.getElementById('pos-customer').value;
             if(!cusId) return alert('Vui lòng chọn khách hàng!');
+            let payment = document.getElementById('pos-payment').value, note = document.getElementById('pos-note').value.trim(), total = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
             
-            let payment = document.getElementById('pos-payment').value;
-            let note = document.getElementById('pos-note').value.trim();
-            let total = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
-            
-            // Trừ tồn kho lập tức
+            // Trừ tồn kho 
             cart.forEach(c => { let p = inventory.find(i => i.id === c.id); if(p) p.stock -= c.qty; });
             
-            let newTxId = 'TX_' + Date.now().toString().slice(-5);
-            let newTx = { id: newTxId, customerId: cusId, date: new Date().toISOString().split('T')[0], type: payment, amount: total, details: cart.map(c => `${c.name} (x${c.qty})`).join(', '), itemsRaw: JSON.parse(JSON.stringify(cart)), staffId: activeStaffId, note: note };
+            // Nếu đang ở chế độ SỬA -> Lấy lại ID cũ, không tạo ID mới
+            let finalTxId = editingTxId ? editingTxId : 'TX_' + Date.now().toString().slice(-5);
+            let newTx = { id: finalTxId, customerId: cusId, date: new Date().toISOString().split('T')[0], type: payment, amount: total, details: cart.map(c => `${c.name} (x${c.qty})`).join(', '), itemsRaw: JSON.parse(JSON.stringify(cart)), staffId: activeStaffId, note: note };
+            transactions.push(newTx); syncToCloud(); 
             
-            transactions.push(newTx);
-            syncToCloud(); 
-            
-            // Hiển thị hộp thoại In
-            printSalesOrderRaw(newTx);
-            
-            cart = []; document.getElementById('pos-note').value = ''; 
-            renderCart(); renderData();
+            cart = []; document.getElementById('pos-note').value = ''; editingTxId = null;
+            renderCart(); switchTab('pos'); triggerPrintSales(newTx.id);
         }
 
-        function receiveDeviceSubmit() {
-            let customerId = document.getElementById('srv-customer').value, model = document.getElementById('srv-model').value.trim(), accessories = document.getElementById('srv-accessories').value.trim(), condition = document.getElementById('srv-condition').value.trim(), quote = parseFloat(document.getElementById('srv-quote').value) || 0, dueDate = document.getElementById('srv-due-date').value;
-            if(!model || !condition) return alert('Vui lòng điền đủ Model và Tình trạng lỗi!');
-            let newId = 'NM_' + Date.now().toString().slice(-4);
-            serviceOrders.push({ id: newId, customerId, model, accessories, condition, quote, receiveDate: new Date().toISOString().split('T')[0], dueDate, status: 'Đang sửa', staffId: activeStaffId });
-            syncToCloud(); document.getElementById('srv-model').value = ''; document.getElementById('srv-accessories').value = ''; document.getElementById('srv-condition').value = ''; document.getElementById('srv-quote').value = 0; document.getElementById('srv-due-date').value = ''; renderData();
-            printServiceOrder(newId);
-        }
-
+        // ==========================================
+        // CÁC HÀM KHÁC
+        // ==========================================
+        function addCashflow() { let amount = parseFloat(document.getElementById('cb-amount').value)||0, type = document.getElementById('cb-type').value, reason = document.getElementById('cb-reason').value.trim(); if(amount <= 0 || !reason) return alert('Nhập đủ số tiền và lý do!'); let now = new Date(); cashflow.push({ id: 'CF_'+Date.now(), date: now.toISOString().split('T')[0], time: formatTime(now), type, amount, reason, staffId: activeStaffId }); syncToCloud(); document.getElementById('cb-amount').value = 0; document.getElementById('cb-reason').value = ''; renderData(); }
+        function deleteCashflow(id) { if(activeStaffId !== 'ADMIN') return; let idx = cashflow.findIndex(c => c.id === id); if(idx > -1 && confirm('Xóa khoản thu/chi này?')) { cashflow.splice(idx, 1); syncToCloud(); renderData(); } }
+        function renderCashbook() { let todayStr = new Date().toISOString().split('T')[0], sumSales = 0, sumPay = 0, sumExtraIn = 0, sumOut = 0; transactions.filter(t => t.date === todayStr).forEach(t => { if(t.type === 'cash') sumSales += t.amount; else if(t.type === 'pay') sumPay += t.amount; }); let todayCF = cashflow.filter(c => c.date === todayStr); todayCF.forEach(c => { if(c.type === 'thu') sumExtraIn += c.amount; else sumOut += c.amount; }); document.getElementById('cb-sum-sales').innerText = formatMoney(sumSales) + ' đ'; document.getElementById('cb-sum-pay').innerText = formatMoney(sumPay) + ' đ'; document.getElementById('cb-sum-extra-in').innerText = formatMoney(sumExtraIn) + ' đ'; document.getElementById('cb-sum-out').innerText = formatMoney(sumOut) + ' đ'; document.getElementById('cb-net-total').innerText = formatMoney(sumSales + sumPay + sumExtraIn - sumOut) + ' đ'; document.getElementById('cashbook-table').innerHTML = todayCF.slice().reverse().map(c => { let stf = staffs.find(s=>s.id===c.staffId) || {name:'-'}; let clr = c.type==='thu' ? 'var(--success)' : 'var(--danger)', txt = c.type==='thu' ? '+ Thu Khác' : '- Chi Tiền'; return `<tr><td>${formatFullDate(c.date)}<br><small>${c.time}</small></td><td style="color:${clr}; font-weight:bold;">${txt}</td><td style="color:${clr}; font-weight:bold;">${formatMoney(c.amount)} đ</td><td>${c.reason}</td><td>${stf.name}</td><td>${activeStaffId==='ADMIN'?`<button class="danger-btn" onclick="deleteCashflow('${c.id}')">Xóa</button>`:'-'}</td></tr>`; }).join(''); }
+        function openQuickAddCusModal() { document.getElementById('quickAddCusModal').style.display='block'; document.getElementById('qcus-id').value='KH_'+Date.now().toString().slice(-4); }
+        function quickSaveCustomer() { let id=document.getElementById('qcus-id').value.trim(), name=document.getElementById('qcus-name').value.trim(), phone=document.getElementById('qcus-phone').value.trim(); if(!name) return alert('Nhập tên khách!'); customers.push({ id, name, phone }); syncToCloud(); document.getElementById('quickAddCusModal').style.display='none'; document.getElementById('pos-customer').value=id; renderData(); }
+        function openQuickAddModal() { document.getElementById('quickAddModal').style.display='block'; document.getElementById('qa-id').value='SP_'+Date.now().toString().slice(-4); }
+        function quickSaveProduct() { let id=document.getElementById('qa-id').value.trim(), name=document.getElementById('qa-name').value.trim(), price=parseFloat(document.getElementById('qa-price').value)||0, stock=parseInt(document.getElementById('qa-stock').value)||1; if(!name) return alert('Nhập tên hàng!'); inventory.push({ id, name, price, stock }); syncToCloud(); document.getElementById('quickAddModal').style.display='none'; document.getElementById('pos-product').value=id; renderData(); onProductSelectChange(); }
+        function addInventory() { let id=document.getElementById('new-inv-id').value.trim(), name=document.getElementById('new-inv-name').value.trim(), price=parseFloat(document.getElementById('new-inv-price').value)||0, stock=parseInt(document.getElementById('new-inv-stock').value)||0; if(!id) id = 'SP_'+Date.now().toString().slice(-4); if(name) { inventory.push({ id, name, price, stock }); syncToCloud(); document.getElementById('new-inv-name').value=''; renderData(); } }
+        function addCustomer() { let id='KH_'+Date.now().toString().slice(-4), name=document.getElementById('new-cus-name').value.trim(), phone=document.getElementById('new-cus-phone').value.trim(); if(name) { customers.push({ id, name, phone }); syncToCloud(); document.getElementById('new-cus-name').value=''; document.getElementById('new-cus-phone').value=''; renderData(); } }
+        function receiveDeviceSubmit() { let customerId = document.getElementById('srv-customer').value, model = document.getElementById('srv-model').value.trim(), accessories = document.getElementById('srv-accessories').value.trim(), condition = document.getElementById('srv-condition').value.trim(), quote = parseFloat(document.getElementById('srv-quote').value) || 0, dueDate = document.getElementById('srv-due-date').value; if(!model || !condition) return alert('Vui lòng điền đủ Model và Tình trạng lỗi!'); let newId = 'NM_' + Date.now().toString().slice(-4); serviceOrders.push({ id: newId, customerId, model, accessories, condition, quote, receiveDate: new Date().toISOString().split('T')[0], dueDate, status: 'Đang sửa', staffId: activeStaffId }); syncToCloud(); document.getElementById('srv-model').value = ''; document.getElementById('srv-accessories').value = ''; document.getElementById('srv-condition').value = ''; document.getElementById('srv-quote').value = 0; document.getElementById('srv-due-date').value = ''; renderData(); triggerPrintService(newId); }
         function changeDeviceStatus(id, newStatus) { let order = serviceOrders.find(o => o.id === id); if(order) { order.status = newStatus; syncToCloud(); renderData(); } }
-        function deleteServiceOrder(id) { if(activeStaffId !== 'ADMIN') return; let idx = serviceOrders.findIndex(o => o.id === id); if(idx > -1 && confirm(`Bro chắc chắn muốn XÓA phiếu nhận máy [${id}] này?`)) { serviceOrders.splice(idx, 1); syncToCloud(); renderData(); } }
-
+        function deleteServiceOrder(id) { if(activeStaffId !== 'ADMIN') return; let idx = serviceOrders.findIndex(o => o.id === id); if(idx > -1 && confirm(`XÓA phiếu nhận máy [${id}]?`)) { serviceOrders.splice(idx, 1); syncToCloud(); renderData(); } }
+        function updateStaffField(id, field, val) { if(activeStaffId==='ADMIN') { let s = staffs.find(x=>x.id===id); if(s) { s[field] = val.trim(); syncToCloud(); } } }
         function openPayDebtModal(id, name) { let debtInfo = getCustomerDebtInfo(id); if(debtInfo.totalDebt <= 0) return alert('Khách này không có nợ!'); document.getElementById('payDebtModal').style.display = 'block'; document.getElementById('pay-cus-id').value = id; document.getElementById('pay-cus-name').innerText = name; document.getElementById('pay-cus-current-debt').innerText = formatMoney(debtInfo.totalDebt); document.getElementById('pay-amount').value = debtInfo.totalDebt; }
         function submitPayDebt() { let id = document.getElementById('pay-cus-id').value, amount = parseFloat(document.getElementById('pay-amount').value) || 0, debtInfo = getCustomerDebtInfo(id); if(amount <= 0 || amount > debtInfo.totalDebt) return alert('Số tiền không hợp lệ!'); transactions.push({ id: 'TX_' + Date.now().toString().slice(-5), customerId: id, date: new Date().toISOString().split('T')[0], type: 'pay', amount: amount, details: 'Khách trả nợ', staffId: activeStaffId, itemsRaw: [], note: '' }); syncToCloud(); alert('Đã thu nợ!'); document.getElementById('payDebtModal').style.display = 'none'; renderData(); }
-
         function openReportModal(customerId, customerName) { document.getElementById('debtModal').style.display = 'block'; document.getElementById('report-customer-name').innerText = "Đối chiếu: " + customerName; document.getElementById('report-customer-id').value = customerId; generateReport(); }
+        
         function generateReport() {
             let cusId = document.getElementById('report-customer-id').value, fromDate = document.getElementById('filter-from').value, toDate = document.getElementById('filter-to').value, allCusTx = transactions.filter(t => t.customerId === cusId), oldDebt = 0;
             if(fromDate) { allCusTx.forEach(t => { if(t.date < fromDate) { if(t.type === 'debt') oldDebt += t.amount; if(t.type === 'pay') oldDebt -= t.amount; } }); }
@@ -635,102 +604,187 @@
             document.getElementById('report-result').innerHTML = html;
         }
 
-        function deleteTransaction(txId) {
-            if(activeStaffId !== 'ADMIN') return alert('Chỉ có Chủ tiệm mới có quyền xóa hóa đơn!');
-            if(confirm(`XÓA hóa đơn [ ${txId} ]?\n\n*Hàng hóa sẽ được cộng lại vào kho.`)) {
-                let txIndex = transactions.findIndex(t => t.id === txId);
-                if(txIndex > -1) {
-                    let tx = transactions[txIndex];
-                    if(tx.itemsRaw) { tx.itemsRaw.forEach(item => { let p = inventory.find(i => i.id === item.id); if(p) p.stock += item.qty; }); }
-                    transactions.splice(txIndex, 1);
-                    syncToCloud(); renderData(); alert('Đã xóa phiếu và hoàn kho thành công!');
+
+        // ==========================================
+        // KHU VỰC ĐIỀU HƯỚNG MẪU IN (POS vs A4/A5)
+        // ==========================================
+        let currentPrintConfig = null; // { type, id }
+
+        function triggerPrintSales(txId) { currentPrintConfig = { type: 'sales', id: txId }; document.getElementById('printSelectModal').style.display = 'block'; }
+        function triggerPrintService(orderId) { currentPrintConfig = { type: 'service', id: orderId }; document.getElementById('printSelectModal').style.display = 'block'; }
+        function triggerPrintReport() { currentPrintConfig = { type: 'report' }; document.getElementById('printSelectModal').style.display = 'block'; }
+
+        function executePrint(paperType) {
+            let htmlTemplate = '';
+            let logoHtml = SHOP_INFO.logo ? `<img src="${SHOP_INFO.logo}" style="max-width: 60px; height: auto; margin-bottom: 5px; filter: grayscale(100%);">` : '';
+
+            // ================= IN HÓA ĐƠN BÁN HÀNG =================
+            if(currentPrintConfig.type === 'sales') {
+                let tx = transactions.find(t => t.id === currentPrintConfig.id);
+                if(!tx) return;
+                let cus = customers.find(c => c.id === tx.customerId) || { name: 'Khách lẻ', phone: '-' }, staff = staffs.find(s => s.id === tx.staffId) || { name: '-' };
+                
+                if(paperType === 'k80') {
+                    // MẪU MÁY POS K80 (CHỮ TO, RÕ, KHÔNG VIỀN)
+                    let itemsHtml = '';
+                    if(tx.itemsRaw && tx.itemsRaw.length > 0) {
+                        tx.itemsRaw.forEach(item => { itemsHtml += `<tr><td colspan="2" style="font-weight:bold; padding-top:4px;">${item.name}</td></tr><tr style="border-bottom:1px dotted #ccc;"><td>${item.qty} x ${formatMoney(item.price)}</td><td style="text-align:right;">${formatMoney(item.price * item.qty)}</td></tr>`; });
+                    } else { itemsHtml = `<tr><td colspan="2" style="font-weight:bold;">${tx.details}</td></tr><tr style="border-bottom:1px dotted #ccc;"><td>1 x ${formatMoney(tx.amount)}</td><td style="text-align:right;">${formatMoney(tx.amount)}</td></tr>`; }
+
+                    htmlTemplate = `
+                    <div style="width: 78mm; margin: 0 auto; font-family: 'Courier New', Courier, monospace; font-size: 15px; color:#000;">
+                        <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:8px; margin-bottom:8px;">
+                            ${logoHtml}
+                            <h2 style="margin:0; font-size:18px;">${SHOP_INFO.name}</h2>
+                            <p style="margin:2px 0; font-size:12px;">ĐC: ${SHOP_INFO.address}<br>ĐT: ${SHOP_INFO.phone}</p>
+                            <p style="margin-top:5px; font-weight:bold; font-size:16px;">HÓA ĐƠN BÁN HÀNG</p>
+                        </div>
+                        <div style="font-size:14px; line-height:1.4; margin-bottom:8px;">
+                            Phiếu: ${tx.id}<br>Ngày: ${formatFullDate(tx.date)}<br>Khách: ${cus.name}<br>T.Toán: ${tx.type === 'cash' ? 'Tiền mặt/CK' : 'Ghi Nợ'}<br>KTV: ${staff.name.split(' (')[0]}
+                        </div>
+                        <table style="width:100%; border-collapse:collapse; font-size:14px;">
+                            <thead><tr><th style="text-align:left; border-bottom:1px dashed #000; padding-bottom:4px;">Mặt hàng</th><th style="text-align:right; border-bottom:1px dashed #000; padding-bottom:4px;">Thành tiền</th></tr></thead>
+                            <tbody>${itemsHtml}</tbody>
+                        </table>
+                        <div style="text-align:right; font-weight:bold; font-size:16px; margin-top:10px; border-top:1px dashed #000; padding-top:10px;">TỔNG: ${formatMoney(tx.amount)} đ</div>
+                        ${tx.note ? `<div style="font-size:12px; margin-top:5px;">Lưu ý: ${tx.note}</div>` : ''}
+                        <div style="text-align:center; margin-top:15px; font-size:13px; font-style:italic;">Cảm ơn quý khách! Hẹn gặp lại.</div>
+                    </div>`;
+                } 
+                else if(paperType === 'a4') {
+                    // MẪU A4/A5 CHO MÁY BÀN (BẢNG CÓ VIỀN, TIÊU ĐỀ LỚN)
+                    let itemsHtml = '';
+                    if(tx.itemsRaw && tx.itemsRaw.length > 0) {
+                        tx.itemsRaw.forEach((item, i) => { itemsHtml += `<tr><td style="border:1px solid #000; padding:8px; text-align:center;">${i+1}</td><td style="border:1px solid #000; padding:8px;">${item.name}</td><td style="border:1px solid #000; padding:8px; text-align:center;">${item.qty}</td><td style="border:1px solid #000; padding:8px; text-align:right;">${formatMoney(item.price)}</td><td style="border:1px solid #000; padding:8px; text-align:right;">${formatMoney(item.price * item.qty)}</td></tr>`; });
+                    } else { itemsHtml = `<tr><td style="border:1px solid #000; padding:8px; text-align:center;">1</td><td style="border:1px solid #000; padding:8px;">${tx.details}</td><td style="border:1px solid #000; padding:8px; text-align:center;">1</td><td style="border:1px solid #000; padding:8px; text-align:right;">${formatMoney(tx.amount)}</td><td style="border:1px solid #000; padding:8px; text-align:right;">${formatMoney(tx.amount)}</td></tr>`; }
+
+                    htmlTemplate = `
+                    <div style="max-width:800px; margin:0 auto; font-family:Arial, sans-serif; font-size:14px; color:#000;">
+                        <table style="width:100%; border:none; margin-bottom:15px;">
+                            <tr>
+                                <td style="width:100px; border:none; text-align:center;">${logoHtml}</td>
+                                <td style="border:none;">
+                                    <h2 style="margin:0; font-size:20px;">${SHOP_INFO.name}</h2>
+                                    <p style="margin:3px 0;">ĐC: ${SHOP_INFO.address}<br>ĐT: ${SHOP_INFO.phone}</p>
+                                </td>
+                                <td style="border:none; text-align:right;">
+                                    Số phiếu: <b>${tx.id}</b><br>Ngày lập: ${formatFullDate(tx.date)}
+                                </td>
+                            </tr>
+                        </table>
+                        <h2 style="text-align:center; margin:20px 0; font-size:24px;">HÓA ĐƠN BÁN HÀNG</h2>
+                        <div style="margin-bottom:15px;">Khách hàng: <b>${cus.name}</b> (SĐT: ${cus.phone})<br>Thanh toán: <b>${tx.type === 'cash' ? 'Tiền mặt/CK' : 'Ghi Nợ'}</b></div>
+                        <table style="width:100%; border-collapse:collapse; margin-bottom:15px;">
+                            <thead><tr style="background:#f1f1f1;"><th style="border:1px solid #000; padding:8px; width:50px;">STT</th><th style="border:1px solid #000; padding:8px;">Tên hàng hóa / Dịch vụ</th><th style="border:1px solid #000; padding:8px; width:50px;">SL</th><th style="border:1px solid #000; padding:8px; width:120px;">Đơn giá</th><th style="border:1px solid #000; padding:8px; width:150px;">Thành tiền</th></tr></thead>
+                            <tbody>${itemsHtml}</tbody>
+                        </table>
+                        <div style="text-align:right; font-size:18px; font-weight:bold; margin-bottom:10px;">TỔNG CẦN THANH TOÁN: ${formatMoney(tx.amount)} VNĐ</div>
+                        ${tx.note ? `<div style="font-style:italic;">* Ghi chú: ${tx.note}</div>` : ''}
+                        <table style="width:100%; border:none; margin-top:30px; text-align:center;">
+                            <tr><td style="border:none; width:50%;"><b>Khách Mua Hàng</b><br><br><br><br></td><td style="border:none; width:50%;"><b>Người Lập Phiếu</b><br><br><br><br>${staff.name.split(' (')[0]}</td></tr>
+                        </table>
+                    </div>`;
                 }
             }
-        }
 
-        // ==========================================
-        // KHU VỰC IN ĐÁP ỨNG MỌI KHỔ GIẤY (CÓ LOGO)
-        // ==========================================
-        function printSalesOrderById(txId) {
-            let tx = transactions.find(t => t.id === txId); 
-            if(tx) printSalesOrderRaw(tx);
-        }
+            // ================= IN BIÊN NHẬN SỬA CHỮA =================
+            else if(currentPrintConfig.type === 'service') {
+                let order = serviceOrders.find(o => o.id === currentPrintConfig.id);
+                if(!order) return;
+                let cus = customers.find(c => c.id === order.customerId) || { name: 'Khách', phone: '-' }, staff = staffs.find(s => s.id === order.staffId) || { name: '-' };
+                
+                if(paperType === 'k80') {
+                    htmlTemplate = `
+                    <div style="width: 78mm; margin: 0 auto; font-family: 'Courier New', Courier, monospace; font-size: 15px; color:#000;">
+                        <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:8px; margin-bottom:8px;">
+                            ${logoHtml}
+                            <h2 style="margin:0; font-size:18px;">${SHOP_INFO.name}</h2>
+                            <p style="margin:2px 0; font-size:12px;">ĐC: ${SHOP_INFO.address}<br>ĐT: ${SHOP_INFO.phone}</p>
+                            <p style="margin-top:5px; font-weight:bold; font-size:16px;">BIÊN NHẬN SỬA CHỮA</p>
+                        </div>
+                        <div style="font-size:14px; line-height:1.5;">
+                            <b>Mã phiếu:</b> ${order.id}<br><b>Ngày nhận:</b> ${formatFullDate(order.receiveDate)}<br><b>Khách:</b> ${cus.name} (${cus.phone})<br>
+                            <div style="border-top:1px dashed #000; margin:6px 0;"></div>
+                            <b>Máy:</b> ${order.model}<br><b>Phụ kiện:</b> ${order.accessories || 'Không'}<br><b>Lỗi:</b> ${order.condition}<br>
+                            <div style="border-top:1px dashed #000; margin:6px 0;"></div>
+                            <b>Báo giá:</b> ${formatMoney(order.quote)} đ<br><b>Hẹn trả:</b> ${formatFullDate(order.dueDate)}<br><b>KTV:</b> ${staff.name.split(' (')[0]}
+                        </div>
+                        <div style="display:flex; justify-content:space-between; text-align:center; font-size:13px; margin-top:20px; border-top:1px dashed #000; padding-top:15px;">
+                            <div style="width:50%;">Khách Ký<br><br><br></div><div style="width:50%;">KTV Ký<br><br><br></div>
+                        </div>
+                        <div style="text-align:center; margin-top:10px; font-size:12px; font-style:italic;">Quý khách vui lòng mang theo biên nhận này khi nhận máy.</div>
+                    </div>`;
+                }
+                else if(paperType === 'a4') {
+                    htmlTemplate = `
+                    <div style="max-width:800px; margin:0 auto; font-family:Arial, sans-serif; font-size:15px; color:#000;">
+                        <table style="width:100%; border:none; margin-bottom:15px;">
+                            <tr>
+                                <td style="width:100px; border:none; text-align:center;">${logoHtml}</td>
+                                <td style="border:none;">
+                                    <h2 style="margin:0; font-size:20px;">${SHOP_INFO.name}</h2>
+                                    <p style="margin:3px 0;">ĐC: ${SHOP_INFO.address}<br>ĐT: ${SHOP_INFO.phone}</p>
+                                </td>
+                                <td style="border:none; text-align:right;">Số phiếu: <b>${order.id}</b><br>Ngày nhận: ${formatFullDate(order.receiveDate)}</td>
+                            </tr>
+                        </table>
+                        <h2 style="text-align:center; margin:20px 0; font-size:24px;">BIÊN NHẬN SỬA CHỮA MÁY</h2>
+                        <table style="width:100%; border-collapse:collapse; margin-bottom:20px;">
+                            <tr><td style="border:1px solid #000; padding:10px; width:30%; font-weight:bold;">Khách hàng / SĐT:</td><td style="border:1px solid #000; padding:10px;">${cus.name} - ${cus.phone}</td></tr>
+                            <tr><td style="border:1px solid #000; padding:10px; font-weight:bold;">Loại Máy / Model:</td><td style="border:1px solid #000; padding:10px;">${order.model}</td></tr>
+                            <tr><td style="border:1px solid #000; padding:10px; font-weight:bold;">Phụ kiện kèm theo:</td><td style="border:1px solid #000; padding:10px;">${order.accessories || 'Không có'}</td></tr>
+                            <tr><td style="border:1px solid #000; padding:10px; font-weight:bold;">Tình trạng báo lỗi:</td><td style="border:1px solid #000; padding:10px; color:#991b1b;">${order.condition}</td></tr>
+                            <tr><td style="border:1px solid #000; padding:10px; font-weight:bold;">Báo giá ước tính:</td><td style="border:1px solid #000; padding:10px; font-weight:bold;">${formatMoney(order.quote)} VNĐ</td></tr>
+                            <tr><td style="border:1px solid #000; padding:10px; font-weight:bold;">Hẹn trả dự kiến:</td><td style="border:1px solid #000; padding:10px;">${formatFullDate(order.dueDate)}</td></tr>
+                        </table>
+                        <div style="font-style:italic; margin-bottom: 20px;">Lưu ý: Quý khách vui lòng kiểm tra kỹ thông tin và mang theo biên nhận này khi đến nhận lại máy.</div>
+                        <table style="width:100%; border:none; text-align:center;">
+                            <tr><td style="border:none; width:50%;"><b>Khách Hàng</b><br><br><br><br></td><td style="border:none; width:50%;"><b>Đại Diện Tiếp Nhận</b><br><br><br><br>${staff.name.split(' (')[0]}</td></tr>
+                        </table>
+                    </div>`;
+                }
+            }
 
-        function printSalesOrderRaw(tx) {
-            let cus = customers.find(c => c.id === tx.customerId) || { name: 'Khách lẻ', phone: '-' }, staff = staffs.find(s => s.id === tx.staffId) || { name: '-' };
-            let itemsHtml = '';
-            if(tx.itemsRaw && tx.itemsRaw.length > 0) {
-                tx.itemsRaw.forEach((item) => { 
-                    itemsHtml += `
-                    <tr><td colspan="2" style="font-weight:bold;">${item.name}</td></tr>
-                    <tr class="item-row"><td>${item.qty} x ${formatMoney(item.price)}</td><td style="text-align:right;">${formatMoney(item.price * item.qty)}</td></tr>`; 
-                });
-            } else { itemsHtml = `<tr><td colspan="2" style="font-weight:bold;">${tx.details}</td></tr><tr class="item-row"><td>1 x ${formatMoney(tx.amount)}</td><td style="text-align:right;">${formatMoney(tx.amount)}</td></tr>`; }
+            // ================= IN BẢNG KÊ NỢ (BÁO CÁO) =================
+            else if(currentPrintConfig.type === 'report') {
+                let cusId = document.getElementById('report-customer-id').value;
+                let cus = customers.find(c => c.id === cusId) || { name: 'Khách', phone: '-' };
+                
+                // Lấy y chang bảng dữ liệu đang hiển thị trong modal Nợ
+                let tableContent = document.getElementById('report-result').innerHTML;
 
-            let logoHtml = SHOP_INFO.logo ? `<img src="${SHOP_INFO.logo}" style="max-width: 60px; height: auto; margin-bottom: 5px; filter: grayscale(100%);">` : '';
+                if(paperType === 'k80') {
+                    htmlTemplate = `
+                    <div style="width: 78mm; margin: 0 auto; font-family: 'Courier New', Courier, monospace; font-size: 13px; color:#000;">
+                        <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:8px; margin-bottom:8px;">
+                            <h2 style="margin:0; font-size:16px;">${SHOP_INFO.name}</h2><p style="margin:2px 0;">ĐC: ${SHOP_INFO.address}<br>ĐT: ${SHOP_INFO.phone}</p>
+                            <p style="margin-top:5px; font-weight:bold; font-size:15px;">BẢNG KÊ CÔNG NỢ</p>
+                        </div>
+                        <div style="margin-bottom:8px;"><b>Khách:</b> ${cus.name} (${cus.phone})<br><b>Ngày in:</b> ${formatFullDate(new Date().toISOString())}</div>
+                        ${tableContent.replace(/border:1px solid #ccc;/g, 'border-bottom:1px dotted #999; padding:2px;')}
+                        <div style="text-align:center; margin-top:15px;">Cảm ơn quý khách!</div>
+                    </div>`;
+                }
+                else if (paperType === 'a4') {
+                    htmlTemplate = `
+                    <div style="max-width:800px; margin:0 auto; font-family:Arial, sans-serif; font-size:14px; color:#000;">
+                        <table style="width:100%; border:none; margin-bottom:15px;">
+                            <tr>
+                                <td style="width:100px; border:none; text-align:center;">${logoHtml}</td>
+                                <td style="border:none;"><h2 style="margin:0; font-size:20px;">${SHOP_INFO.name}</h2><p style="margin:3px 0;">ĐC: ${SHOP_INFO.address}<br>ĐT: ${SHOP_INFO.phone}</p></td>
+                            </tr>
+                        </table>
+                        <h2 style="text-align:center; margin:20px 0; font-size:24px;">BẢNG KÊ CHI TIẾT CÔNG NỢ</h2>
+                        <div style="margin-bottom:15px;">Khách hàng: <b>${cus.name}</b><br>Số điện thoại: <b>${cus.phone}</b><br>Thời điểm in: ${formatFullDate(new Date().toISOString())}</div>
+                        ${tableContent.replace(/border:1px solid #ccc;/g, 'border:1px solid #000; padding:8px;').replace(/<table/g, '<table style="width:100%; border-collapse:collapse; text-align:left;"')}
+                        <table style="width:100%; border:none; margin-top:40px; text-align:center;"><tr><td style="border:none; width:50%;"><b>Xác Nhận Của Khách Hàng</b><br><br><br><br></td><td style="border:none; width:50%;"><b>Đại Diện Cửa Hàng</b><br><br><br><br></td></tr></table>
+                    </div>`;
+                }
+            }
 
-            let htmlTemplate = `
-                <div class="print-header">
-                    ${logoHtml}
-                    <h2>${SHOP_INFO.name}</h2>
-                    <p>ĐC: ${SHOP_INFO.address}<br>ĐT: ${SHOP_INFO.phone}</p>
-                    <p style="margin-top:5px; font-weight:bold; font-size:14px;">HÓA ĐƠN BÁN HÀNG</p>
-                </div>
-                <div style="font-size:13px; margin-bottom:8px; line-height: 1.5;">
-                    Mã phiếu: ${tx.id}<br>
-                    Ngày: ${formatFullDate(tx.date)}<br>
-                    Khách hàng: ${cus.name}<br>
-                    Thanh toán: ${tx.type === 'cash' ? 'Tiền mặt/CK' : 'Ghi Nợ'}<br>
-                    Đại diện: ${staff.name.split(' (')[0]}
-                </div>
-                <table class="print-table">
-                    <thead><tr><th>Mặt hàng</th><th style="text-align:right;">Thành tiền</th></tr></thead>
-                    <tbody>${itemsHtml}</tbody>
-                </table>
-                <div class="print-total">TỔNG CỘNG: ${formatMoney(tx.amount)} đ</div>
-                ${tx.note ? `<div style="font-size:12px; margin-top:5px;">Lưu ý: ${tx.note}</div>` : ''}
-                <div class="print-footer">Xin cảm ơn quý khách!<br>Hẹn gặp lại</div>
-            `;
-            document.getElementById('modal-print-body').innerHTML = htmlTemplate; 
-            document.getElementById('print-section').innerHTML = htmlTemplate; 
-            document.getElementById('previewPrintModal').style.display = 'block';
-        }
-
-        function printServiceOrder(orderId) {
-            let order = serviceOrders.find(o => o.id === orderId); if(!order) return;
-            let cus = customers.find(c => c.id === order.customerId) || { name: 'Khách', phone: '-' }, staff = staffs.find(s => s.id === order.staffId) || { name: '-' };
-            
-            let logoHtml = SHOP_INFO.logo ? `<img src="${SHOP_INFO.logo}" style="max-width: 60px; height: auto; margin-bottom: 5px; filter: grayscale(100%);">` : '';
-
-            let htmlTemplate = `
-                <div class="print-header">
-                    ${logoHtml}
-                    <h2>${SHOP_INFO.name}</h2>
-                    <p>ĐC: ${SHOP_INFO.address}<br>ĐT: ${SHOP_INFO.phone}</p>
-                    <p style="margin-top:5px; font-weight:bold; font-size:14px;">BIÊN NHẬN SỬA CHỮA</p>
-                </div>
-                <div style="font-size:13px; line-height:1.5;">
-                    <b>Số phiếu:</b> ${order.id}<br>
-                    <b>Ngày nhận:</b> ${formatFullDate(order.receiveDate)}<br>
-                    <b>Khách hàng:</b> ${cus.name} (${cus.phone})<br>
-                    <div style="border-top:1px dashed #000; margin:8px 0;"></div>
-                    <b>Model máy:</b> ${order.model}<br>
-                    <b>Phụ kiện:</b> ${order.accessories || 'Không'}<br>
-                    <b>Lỗi báo:</b> ${order.condition}<br>
-                    <div style="border-top:1px dashed #000; margin:8px 0;"></div>
-                    <b>Báo giá dự kiến:</b> ${formatMoney(order.quote)} đ<br>
-                    <b>Hẹn trả (dự kiến):</b> ${formatFullDate(order.dueDate)}<br>
-                    <b>Đại diện tiếp nhận:</b> ${staff.name.split(' (')[0]}<br>
-                </div>
-                <div style="display:flex; justify-content:space-between; text-align:center; font-size:13px; margin-top:20px; border-top:1px dashed #000; padding-top:15px;">
-                    <div style="width:50%;">Khách Ký<br><br><br></div>
-                    <div style="width:50%;">Đại Diện<br><br><br></div>
-                </div>
-                <div class="print-footer">Lưu ý: Quý khách vui lòng mang theo biên nhận này khi đến nhận máy.</div>
-            `;
-            document.getElementById('modal-print-body').innerHTML = htmlTemplate; 
-            document.getElementById('print-section').innerHTML = htmlTemplate; 
-            document.getElementById('previewPrintModal').style.display = 'block';
+            document.getElementById('print-section').innerHTML = htmlTemplate;
+            document.getElementById('printSelectModal').style.display = 'none';
+            window.print();
         }
     </script>
 </body>
