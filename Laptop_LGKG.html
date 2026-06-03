@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Laptop Lương Gia KG - Hệ Thống V12.5</title>
+    <title>Laptop Lương Gia KG - Hệ Thống V12.6 (Có Logo)</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -81,6 +81,7 @@
             .top-bar { padding: 5px 10px; }
             .sidebar { position: fixed; bottom: 0; left: 0; width: 100%; height: 60px; display: flex; flex-direction: row; background: #0f172a; margin: 0; padding: 0; z-index: 1000; overflow-x: auto; box-shadow: 0 -2px 10px rgba(0,0,0,0.2); }
             .sidebar h2 { display: none; }
+            .sidebar .logo-container { display: none; } /* Ẩn logo ở menu mobile cho đỡ chật */
             .nav-btn { flex: 1; min-width: 75px; margin: 0; padding: 5px; text-align: center; border-radius: 0; border-right: 1px solid #1e293b; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 0.75rem; white-space: normal; line-height: 1.2; }
             .nav-btn:last-child { border-right: none; }
             .nav-btn.active { background: var(--primary); border-top: 3px solid #60a5fa; }
@@ -101,7 +102,7 @@
             body * { display: none !important; }
             #print-section { 
                 display: block !important; 
-                width: 100%; /* Cho phép co giãn tự do theo khổ giấy chọn ở máy in */
+                width: 100%; 
                 margin: 0; 
                 padding: 15px; 
                 color: #000; 
@@ -112,6 +113,7 @@
             }
             #print-section * { display: revert !important; line-height: 1.4; }
             .print-header { text-align: center; margin-bottom: 12px; border-bottom: 1px dashed #000; padding-bottom: 12px; }
+            .print-header img { max-width: 60px; height: auto; margin-bottom: 5px; filter: grayscale(100%); }
             .print-header h2 { margin: 0; font-size: 18px; font-weight: bold; text-transform: uppercase;}
             .print-header p { margin: 3px 0; font-size: 12px; }
             .print-table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
@@ -132,6 +134,9 @@
 
     <div id="login-overlay">
         <div class="login-box">
+            <div style="text-align: center; margin-bottom: 15px;">
+                <img id="login-logo" src="" style="width: 70px; display: none; margin: 0 auto; border-radius: 8px;">
+            </div>
             <h2>ĐĂNG NHẬP HỆ THỐNG</h2>
             <select id="login-user"></select>
             <input type="password" id="login-pass" placeholder="Nhập mật khẩu..." onkeypress="if(event.key === 'Enter') doLogin()">
@@ -145,7 +150,10 @@
     </div>
 
     <div class="sidebar">
-        <h2>LƯƠNG GIA KG<br><small style="font-size: 0.8rem; color: #94a3b8;">V12.5 Pro</small></h2>
+        <div class="logo-container" style="text-align: center; margin-bottom: 5px;">
+            <img id="sidebar-logo" src="" style="width: 60px; border-radius: 8px; display: none; margin: 0 auto;">
+        </div>
+        <h2>LƯƠNG GIA KG<br><small style="font-size: 0.8rem; color: #94a3b8;">V12.6 Pro</small></h2>
         <button class="nav-btn active" onclick="switchTab('pos')">🛒 Bán Hàng</button>
         <button class="nav-btn" onclick="switchTab('service-desk')">🛠️ Nhận Máy</button>
         <button class="nav-btn" onclick="switchTab('sales-history')">📜 Lịch Sử</button>
@@ -328,7 +336,7 @@
             <span class="close-btn" onclick="document.getElementById('previewPrintModal').style.display='none'">&times;</span>
             <h3 style="margin-top: 0; border-bottom: 1px solid #ccc; padding-bottom: 5px; color: var(--primary);">Bản Xem Trước Phiếu In</h3>
             <div id="modal-print-body" style="padding: 10px 0; font-family: Arial, sans-serif; background: #fff; color: #000; max-height: 50vh; overflow-y: auto;"></div>
-            <button class="action-btn" style="background: var(--success); margin-top: 15px;" onclick="window.print()">🖨️ TIẾN HÀNH IN PHIẾU (Chọn khổ giấy)</button>
+            <button class="action-btn" style="background: var(--success); margin-top: 15px;" onclick="window.print()">🖨️ TIẾN HÀNH IN PHIẾU</button>
         </div>
     </div>
 
@@ -341,6 +349,25 @@
 
     <script>
         // ==========================================
+        // KHAI BÁO THÔNG TIN TIỆM & LOGO
+        // ==========================================
+        const SHOP_INFO = { 
+            name: "LƯƠNG GIA KG", 
+            address: "37 ấp 5, An Biên, Kiên Giang", 
+            phone: "0941.113.411",
+            // BRO THAY LINK ẢNH LOGO CỦA BRO VÀO ĐÂY NHÉ:
+            logo: "https://lh3.googleusercontent.com/a-/ALV-UjWzTvjHG4OBNpugamMnKuu6riIGjM9m2q-6cUsdRxkLgNcqGfui=w1197" 
+        };
+
+        // Đổ logo ra màn hình
+        if(SHOP_INFO.logo) {
+            document.getElementById('sidebar-logo').src = SHOP_INFO.logo;
+            document.getElementById('sidebar-logo').style.display = 'block';
+            document.getElementById('login-logo').src = SHOP_INFO.logo;
+            document.getElementById('login-logo').style.display = 'block';
+        }
+
+        // ==========================================
         // CẤU HÌNH FIREBASE ĐỒNG BỘ ĐÁM MÂY CHUẨN
         // ==========================================
         const firebaseConfig = {
@@ -351,7 +378,6 @@
 
         setTimeout(() => { let l = document.getElementById('loading-overlay'); if(l && l.style.display !== 'none') { l.style.display = 'none'; } }, 4000);
 
-        const SHOP_INFO = { name: "LƯƠNG GIA KG", address: "37 ấp 5, An Biên, Kiên Giang", phone: "0941.113.411" };
         let staffs=[], inventory=[], customers=[], transactions=[], serviceOrders=[], cart=[], cashflow=[];
         let activeStaffId = null;
 
@@ -623,7 +649,7 @@
         }
 
         // ==========================================
-        // KHU VỰC IN ĐÁP ỨNG MỌI KHỔ GIẤY
+        // KHU VỰC IN ĐÁP ỨNG MỌI KHỔ GIẤY (CÓ LOGO)
         // ==========================================
         function printSalesOrderById(txId) {
             let tx = transactions.find(t => t.id === txId); 
@@ -641,8 +667,11 @@
                 });
             } else { itemsHtml = `<tr><td colspan="2" style="font-weight:bold;">${tx.details}</td></tr><tr class="item-row"><td>1 x ${formatMoney(tx.amount)}</td><td style="text-align:right;">${formatMoney(tx.amount)}</td></tr>`; }
 
+            let logoHtml = SHOP_INFO.logo ? `<img src="${SHOP_INFO.logo}" style="max-width: 60px; height: auto; margin-bottom: 5px; filter: grayscale(100%);">` : '';
+
             let htmlTemplate = `
                 <div class="print-header">
+                    ${logoHtml}
                     <h2>${SHOP_INFO.name}</h2>
                     <p>ĐC: ${SHOP_INFO.address}<br>ĐT: ${SHOP_INFO.phone}</p>
                     <p style="margin-top:5px; font-weight:bold; font-size:14px;">HÓA ĐƠN BÁN HÀNG</p>
@@ -670,8 +699,12 @@
         function printServiceOrder(orderId) {
             let order = serviceOrders.find(o => o.id === orderId); if(!order) return;
             let cus = customers.find(c => c.id === order.customerId) || { name: 'Khách', phone: '-' }, staff = staffs.find(s => s.id === order.staffId) || { name: '-' };
+            
+            let logoHtml = SHOP_INFO.logo ? `<img src="${SHOP_INFO.logo}" style="max-width: 60px; height: auto; margin-bottom: 5px; filter: grayscale(100%);">` : '';
+
             let htmlTemplate = `
                 <div class="print-header">
+                    ${logoHtml}
                     <h2>${SHOP_INFO.name}</h2>
                     <p>ĐC: ${SHOP_INFO.address}<br>ĐT: ${SHOP_INFO.phone}</p>
                     <p style="margin-top:5px; font-weight:bold; font-size:14px;">BIÊN NHẬN SỬA CHỮA</p>
