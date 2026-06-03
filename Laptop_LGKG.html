@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Laptop Lương Gia KG - Hệ Thống V12.8 (Chuẩn Công Nợ)</title>
+    <title>Laptop Lương Gia KG - Hệ Thống V12.9 (Căn Lề In Chuẩn)</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -95,9 +95,9 @@
         /* KHU VỰC IN */
         #print-section { display: none; }
         @media print {
-            @page { margin: 0; }
+            @page { margin: 5mm; } /* Đặt lề mỏng vừa đủ để máy in không bị cắt lẹm */
             body * { display: none !important; }
-            #print-section { display: block !important; background: #fff; color: #000; box-sizing: border-box; }
+            #print-section { display: block !important; background: #fff; color: #000; box-sizing: border-box; width: 100%; }
             #print-section * { display: revert !important; }
             
             /* Đưa màu sắc về đen trắng cho máy in nhiệt K80 */
@@ -134,7 +134,7 @@
         <div class="logo-container" style="text-align: center; margin-bottom: 5px;">
             <img id="sidebar-logo" src="" style="width: 60px; border-radius: 8px; display: none; margin: 0 auto;">
         </div>
-        <h2>LƯƠNG GIA KG<br><small style="font-size: 0.8rem; color: #94a3b8;">V12.8 Pro</small></h2>
+        <h2>LƯƠNG GIA KG<br><small style="font-size: 0.8rem; color: #94a3b8;">V12.9 Pro</small></h2>
         <button class="nav-btn active" onclick="switchTab('pos')">🛒 Bán Hàng</button>
         <button class="nav-btn" onclick="switchTab('service-desk')">🛠️ Nhận Máy</button>
         <button class="nav-btn" onclick="switchTab('sales-history')">📜 Lịch Sử</button>
@@ -331,7 +331,8 @@
     <div id="payDebtModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="document.getElementById('payDebtModal').style.display='none'">&times;</span><h3 style="margin-top:0; color:var(--success);">Lập Phiếu Thu Nợ</h3><input type="hidden" id="pay-cus-id"><p>Khách hàng: <b id="pay-cus-name" style="color:var(--primary);"></b></p><p>Tổng nợ hiện tại: <b id="pay-cus-current-debt" style="color:var(--danger);">0</b> đ</p><div class="form-group"><label>Số tiền khách trả (đ):</label><input type="number" id="pay-amount" value="0"></div><button class="action-btn" style="background: var(--success);" onclick="submitPayDebt()">THU TIỀN VÀO SỔ</button></div></div>
     
     <div id="debtModal" class="modal">
-        <div class="modal-content" style="max-width: 750px;"> <span class="close-btn" onclick="document.getElementById('debtModal').style.display='none'">&times;</span>
+        <div class="modal-content" style="max-width: 750px;"> 
+            <span class="close-btn" onclick="document.getElementById('debtModal').style.display='none'">&times;</span>
             <h3 id="report-customer-name" style="margin-top:0; color:var(--primary);"></h3>
             
             <div class="form-row" style="background: #f1f5f9; padding: 15px; border-radius: 6px; margin-bottom: 15px; align-items:flex-end; border:1px solid #cbd5e1;">
@@ -358,8 +359,8 @@
             name: "LƯƠNG GIA KG", 
             address: "37 ấp 5, An Biên, Kiên Giang", 
             phone: "0941.113.411",
-            // Đổi link hình ở dưới để lấy logo tiệm bro:
-            logo: "https://scontent.fsgn2-6.fna.fbcdn.net/v/t39.30808-6/274775481_3181950982079850_8069089602058880142_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=qbkOrTtOvBQQ7kNvwEcKpSh&_nc_oc=Adrs_vJ9-3fOP6CNpmxjhGfn8rgfoELg-MnrOJjeHRWZcaZrJj8Fq6Kp4LtMLiZKFuOTy-dj_Ni9Uh3-o8IvlI42&_nc_zt=23&_nc_ht=scontent.fsgn2-6.fna&_nc_gid=8xBAzfO9rJLoLy5Vn1eV2w&_nc_ss=7b2a8&oh=00_Af8YO3CMJqNHDWD41zqvnJBmGzDIyZMS9dWi6GQ32RYcOw&oe=6A256543" 
+            // Đã cập nhật chính xác link logo của bro vào hệ thống:
+            logo: "https://lh3.googleusercontent.com/a-/ALV-UjWzTvjHG4OBNpugamMnKuu6riIGjM9m2q-6cUsdRxkLgNcqGfui=w1318" 
         };
 
         if(SHOP_INFO.logo) {
@@ -428,7 +429,7 @@
             let target = staffs.find(s => s.id === u);
             if(target && target.password === p) {
                 activeStaffId = u;
-                localStorage.setItem('luonggia_saved_user', u); // Lưu trí nhớ
+                localStorage.setItem('luonggia_saved_user', u); 
                 document.getElementById('login-overlay').style.display = 'none';
                 document.getElementById('top-user-name').innerText = target.name;
                 document.getElementById('login-pass').value = '';
@@ -613,7 +614,6 @@
             document.getElementById('report-customer-name').innerText = "Hồ Sơ Nợ: " + customerName; 
             document.getElementById('report-customer-id').value = customerId; 
             
-            // Tự động set filter từ đầu tháng này đến cuối tháng này
             let now = new Date();
             let firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
             let lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
@@ -637,7 +637,6 @@
             
             let allCusTx = transactions.filter(t => t.customerId === cusId);
             
-            // Tính số dư đầu kỳ (Nợ gối đầu - Trước khoảng thời gian tìm kiếm)
             let oldDebt = 0;
             if(fromDate) { 
                 allCusTx.forEach(t => { 
@@ -647,13 +646,12 @@
                     } 
                 }); 
             }
-            if(oldDebt < 0) oldDebt = 0; // Chống lỗi âm tiền
+            if(oldDebt < 0) oldDebt = 0; 
             
             let displayTx = fromDate ? allCusTx.filter(t => t.date >= fromDate) : allCusTx; 
             if(toDate) displayTx = displayTx.filter(t => t.date <= toDate); 
             displayTx.sort((a,b) => new Date(a.date) - new Date(b.date));
             
-            // Dựng bảng
             let html = `<table style="width:100%; border-collapse:collapse; min-width:500px; text-align:left;">
                 <thead><tr style="background:#f1f5f9;">
                     <th style="padding:8px; border:1px solid #cbd5e1;">Ngày</th>
@@ -698,7 +696,7 @@
         // ==========================================
         // KHU VỰC ĐIỀU HƯỚNG MẪU IN (POS vs A4/A5)
         // ==========================================
-        let currentPrintConfig = null; // { type, id }
+        let currentPrintConfig = null; 
 
         function triggerPrintSales(txId) { currentPrintConfig = { type: 'sales', id: txId }; document.getElementById('printSelectModal').style.display = 'block'; }
         function triggerPrintService(orderId) { currentPrintConfig = { type: 'service', id: orderId }; document.getElementById('printSelectModal').style.display = 'block'; }
@@ -721,7 +719,7 @@
                     } else { itemsHtml = `<tr><td colspan="2" style="font-weight:bold;">${tx.details}</td></tr><tr style="border-bottom:1px dotted #ccc;"><td>1 x ${formatMoney(tx.amount)}</td><td style="text-align:right;">${formatMoney(tx.amount)}</td></tr>`; }
 
                     htmlTemplate = `
-                    <div style="width: 78mm; margin: 0 auto; font-family: 'Courier New', Courier, monospace; font-size: 15px; color:#000;">
+                    <div style="width: 78mm; margin: 0 auto; padding: 5px 10px; font-family: 'Courier New', Courier, monospace; font-size: 15px; color:#000;">
                         <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:8px; margin-bottom:8px;">
                             ${logoHtml}
                             <h2 style="margin:0; font-size:18px;">${SHOP_INFO.name}</h2>
@@ -743,33 +741,33 @@
                 else if(paperType === 'a4') {
                     let itemsHtml = '';
                     if(tx.itemsRaw && tx.itemsRaw.length > 0) {
-                        tx.itemsRaw.forEach((item, i) => { itemsHtml += `<tr><td style="border:1px solid #000; padding:8px; text-align:center;">${i+1}</td><td style="border:1px solid #000; padding:8px;">${item.name}</td><td style="border:1px solid #000; padding:8px; text-align:center;">${item.qty}</td><td style="border:1px solid #000; padding:8px; text-align:right;">${formatMoney(item.price)}</td><td style="border:1px solid #000; padding:8px; text-align:right;">${formatMoney(item.price * item.qty)}</td></tr>`; });
-                    } else { itemsHtml = `<tr><td style="border:1px solid #000; padding:8px; text-align:center;">1</td><td style="border:1px solid #000; padding:8px;">${tx.details}</td><td style="border:1px solid #000; padding:8px; text-align:center;">1</td><td style="border:1px solid #000; padding:8px; text-align:right;">${formatMoney(tx.amount)}</td><td style="border:1px solid #000; padding:8px; text-align:right;">${formatMoney(tx.amount)}</td></tr>`; }
+                        tx.itemsRaw.forEach((item, i) => { itemsHtml += `<tr><td style="border:1px solid #000; padding:10px; text-align:center;">${i+1}</td><td style="border:1px solid #000; padding:10px;">${item.name}</td><td style="border:1px solid #000; padding:10px; text-align:center;">${item.qty}</td><td style="border:1px solid #000; padding:10px; text-align:right;">${formatMoney(item.price)}</td><td style="border:1px solid #000; padding:10px; text-align:right;">${formatMoney(item.price * item.qty)}</td></tr>`; });
+                    } else { itemsHtml = `<tr><td style="border:1px solid #000; padding:10px; text-align:center;">1</td><td style="border:1px solid #000; padding:10px;">${tx.details}</td><td style="border:1px solid #000; padding:10px; text-align:center;">1</td><td style="border:1px solid #000; padding:10px; text-align:right;">${formatMoney(tx.amount)}</td><td style="border:1px solid #000; padding:10px; text-align:right;">${formatMoney(tx.amount)}</td></tr>`; }
 
                     htmlTemplate = `
-                    <div style="max-width:800px; margin:0 auto; font-family:Arial, sans-serif; font-size:14px; color:#000;">
+                    <div style="max-width:800px; margin:0 auto; padding: 40px 30px; font-family:Arial, sans-serif; font-size:15px; color:#000;">
                         <table style="width:100%; border:none; margin-bottom:15px;">
                             <tr>
                                 <td style="width:100px; border:none; text-align:center;">${logoHtml}</td>
                                 <td style="border:none;">
-                                    <h2 style="margin:0; font-size:20px;">${SHOP_INFO.name}</h2>
-                                    <p style="margin:3px 0;">ĐC: ${SHOP_INFO.address}<br>ĐT: ${SHOP_INFO.phone}</p>
+                                    <h2 style="margin:0; font-size:22px;">${SHOP_INFO.name}</h2>
+                                    <p style="margin:5px 0;">ĐC: ${SHOP_INFO.address}<br>ĐT: ${SHOP_INFO.phone}</p>
                                 </td>
                                 <td style="border:none; text-align:right;">
                                     Số phiếu: <b>${tx.id}</b><br>Ngày lập: ${formatFullDate(tx.date)}
                                 </td>
                             </tr>
                         </table>
-                        <h2 style="text-align:center; margin:20px 0; font-size:24px;">HÓA ĐƠN BÁN HÀNG</h2>
-                        <div style="margin-bottom:15px;">Khách hàng: <b>${cus.name}</b> (SĐT: ${cus.phone})<br>Thanh toán: <b>${tx.type === 'cash' ? 'Tiền mặt/CK' : 'Ghi Nợ'}</b></div>
-                        <table style="width:100%; border-collapse:collapse; margin-bottom:15px;">
-                            <thead><tr style="background:#f1f1f1;"><th style="border:1px solid #000; padding:8px; width:50px;">STT</th><th style="border:1px solid #000; padding:8px;">Tên hàng hóa / Dịch vụ</th><th style="border:1px solid #000; padding:8px; width:50px;">SL</th><th style="border:1px solid #000; padding:8px; width:120px;">Đơn giá</th><th style="border:1px solid #000; padding:8px; width:150px;">Thành tiền</th></tr></thead>
+                        <h2 style="text-align:center; margin:30px 0; font-size:26px;">HÓA ĐƠN BÁN HÀNG</h2>
+                        <div style="margin-bottom:20px;">Khách hàng: <b>${cus.name}</b> (SĐT: ${cus.phone})<br>Thanh toán: <b>${tx.type === 'cash' ? 'Tiền mặt / CK' : 'Ghi Nợ'}</b></div>
+                        <table style="width:100%; border-collapse:collapse; margin-bottom:20px;">
+                            <thead><tr style="background:#f1f1f1;"><th style="border:1px solid #000; padding:10px; width:50px;">STT</th><th style="border:1px solid #000; padding:10px;">Tên hàng hóa / Dịch vụ</th><th style="border:1px solid #000; padding:10px; width:50px;">SL</th><th style="border:1px solid #000; padding:10px; width:120px;">Đơn giá</th><th style="border:1px solid #000; padding:10px; width:150px;">Thành tiền</th></tr></thead>
                             <tbody>${itemsHtml}</tbody>
                         </table>
-                        <div style="text-align:right; font-size:18px; font-weight:bold; margin-bottom:10px;">TỔNG CẦN THANH TOÁN: ${formatMoney(tx.amount)} VNĐ</div>
+                        <div style="text-align:right; font-size:19px; font-weight:bold; margin-bottom:15px;">TỔNG CẦN THANH TOÁN: ${formatMoney(tx.amount)} VNĐ</div>
                         ${tx.note ? `<div style="font-style:italic;">* Ghi chú: ${tx.note}</div>` : ''}
-                        <table style="width:100%; border:none; margin-top:30px; text-align:center;">
-                            <tr><td style="border:none; width:50%;"><b>Khách Mua Hàng</b><br><br><br><br></td><td style="border:none; width:50%;"><b>Người Lập Phiếu</b><br><br><br><br>${staff.name.split(' (')[0]}</td></tr>
+                        <table style="width:100%; border:none; margin-top:40px; text-align:center;">
+                            <tr><td style="border:none; width:50%;"><b>Khách Mua Hàng</b><br><br><br><br><br></td><td style="border:none; width:50%;"><b>Người Lập Phiếu</b><br><br><br><br><br>${staff.name.split(' (')[0]}</td></tr>
                         </table>
                     </div>`;
                 }
@@ -783,7 +781,7 @@
                 
                 if(paperType === 'k80') {
                     htmlTemplate = `
-                    <div style="width: 78mm; margin: 0 auto; font-family: 'Courier New', Courier, monospace; font-size: 15px; color:#000;">
+                    <div style="width: 78mm; margin: 0 auto; padding: 5px 10px; font-family: 'Courier New', Courier, monospace; font-size: 15px; color:#000;">
                         <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:8px; margin-bottom:8px;">
                             ${logoHtml}
                             <h2 style="margin:0; font-size:18px;">${SHOP_INFO.name}</h2>
@@ -805,29 +803,29 @@
                 }
                 else if(paperType === 'a4') {
                     htmlTemplate = `
-                    <div style="max-width:800px; margin:0 auto; font-family:Arial, sans-serif; font-size:15px; color:#000;">
+                    <div style="max-width:800px; margin:0 auto; padding: 40px 30px; font-family:Arial, sans-serif; font-size:16px; color:#000;">
                         <table style="width:100%; border:none; margin-bottom:15px;">
                             <tr>
                                 <td style="width:100px; border:none; text-align:center;">${logoHtml}</td>
                                 <td style="border:none;">
-                                    <h2 style="margin:0; font-size:20px;">${SHOP_INFO.name}</h2>
-                                    <p style="margin:3px 0;">ĐC: ${SHOP_INFO.address}<br>ĐT: ${SHOP_INFO.phone}</p>
+                                    <h2 style="margin:0; font-size:22px;">${SHOP_INFO.name}</h2>
+                                    <p style="margin:5px 0;">ĐC: ${SHOP_INFO.address}<br>ĐT: ${SHOP_INFO.phone}</p>
                                 </td>
                                 <td style="border:none; text-align:right;">Số phiếu: <b>${order.id}</b><br>Ngày nhận: ${formatFullDate(order.receiveDate)}</td>
                             </tr>
                         </table>
-                        <h2 style="text-align:center; margin:20px 0; font-size:24px;">BIÊN NHẬN SỬA CHỮA MÁY TÍNH</h2>
+                        <h2 style="text-align:center; margin:30px 0; font-size:26px;">BIÊN NHẬN SỬA CHỮA MÁY TÍNH</h2>
                         <table style="width:100%; border-collapse:collapse; margin-bottom:20px;">
-                            <tr><td style="border:1px solid #000; padding:10px; width:30%; font-weight:bold;">Khách hàng / SĐT:</td><td style="border:1px solid #000; padding:10px;">${cus.name} - ${cus.phone}</td></tr>
-                            <tr><td style="border:1px solid #000; padding:10px; font-weight:bold;">Loại Máy / Model:</td><td style="border:1px solid #000; padding:10px;">${order.model}</td></tr>
-                            <tr><td style="border:1px solid #000; padding:10px; font-weight:bold;">Phụ kiện kèm theo:</td><td style="border:1px solid #000; padding:10px;">${order.accessories || 'Không có'}</td></tr>
-                            <tr><td style="border:1px solid #000; padding:10px; font-weight:bold;">Tình trạng báo lỗi:</td><td style="border:1px solid #000; padding:10px;">${order.condition}</td></tr>
-                            <tr><td style="border:1px solid #000; padding:10px; font-weight:bold;">Báo giá ước tính:</td><td style="border:1px solid #000; padding:10px; font-weight:bold;">${formatMoney(order.quote)} VNĐ</td></tr>
-                            <tr><td style="border:1px solid #000; padding:10px; font-weight:bold;">Hẹn trả dự kiến:</td><td style="border:1px solid #000; padding:10px;">${formatFullDate(order.dueDate)}</td></tr>
+                            <tr><td style="border:1px solid #000; padding:12px; width:30%; font-weight:bold;">Khách hàng / SĐT:</td><td style="border:1px solid #000; padding:12px;">${cus.name} - ${cus.phone}</td></tr>
+                            <tr><td style="border:1px solid #000; padding:12px; font-weight:bold;">Loại Máy / Model:</td><td style="border:1px solid #000; padding:12px;">${order.model}</td></tr>
+                            <tr><td style="border:1px solid #000; padding:12px; font-weight:bold;">Phụ kiện kèm theo:</td><td style="border:1px solid #000; padding:12px;">${order.accessories || 'Không có'}</td></tr>
+                            <tr><td style="border:1px solid #000; padding:12px; font-weight:bold;">Tình trạng báo lỗi:</td><td style="border:1px solid #000; padding:12px;">${order.condition}</td></tr>
+                            <tr><td style="border:1px solid #000; padding:12px; font-weight:bold;">Báo giá ước tính:</td><td style="border:1px solid #000; padding:12px; font-weight:bold;">${formatMoney(order.quote)} VNĐ</td></tr>
+                            <tr><td style="border:1px solid #000; padding:12px; font-weight:bold;">Hẹn trả dự kiến:</td><td style="border:1px solid #000; padding:12px;">${formatFullDate(order.dueDate)}</td></tr>
                         </table>
-                        <div style="font-style:italic; margin-bottom: 20px;">Lưu ý: Quý khách vui lòng kiểm tra kỹ thông tin và mang theo biên nhận này khi đến nhận lại máy.</div>
+                        <div style="font-style:italic; margin-bottom: 25px;">Lưu ý: Quý khách vui lòng kiểm tra kỹ thông tin và mang theo biên nhận này khi đến nhận lại máy.</div>
                         <table style="width:100%; border:none; text-align:center;">
-                            <tr><td style="border:none; width:50%;"><b>Khách Hàng Ký Gửi</b><br><br><br><br></td><td style="border:none; width:50%;"><b>Đại Diện Tiếp Nhận</b><br><br><br><br>${staff.name.split(' (')[0]}</td></tr>
+                            <tr><td style="border:none; width:50%;"><b>Khách Hàng Ký Gửi</b><br><br><br><br><br></td><td style="border:none; width:50%;"><b>Đại Diện Tiếp Nhận</b><br><br><br><br><br>${staff.name.split(' (')[0]}</td></tr>
                         </table>
                     </div>`;
                 }
@@ -838,10 +836,7 @@
                 let cusId = document.getElementById('report-customer-id').value;
                 let cus = customers.find(c => c.id === cusId) || { name: 'Khách', phone: '-' };
                 
-                // Lấy nội dung báo cáo đang render
                 let tableContent = document.getElementById('report-result').innerHTML;
-                
-                // Loại bỏ thuộc tính style dư thừa khi in đen trắng
                 tableContent = tableContent.replace(/color:#dc2626;/g, 'color:#000;');
                 tableContent = tableContent.replace(/color:#10b981;/g, 'color:#000;');
                 tableContent = tableContent.replace(/color:#b45309;/g, 'color:#000;');
@@ -849,8 +844,9 @@
 
                 if(paperType === 'k80') {
                     htmlTemplate = `
-                    <div style="width: 78mm; margin: 0 auto; font-family: 'Courier New', Courier, monospace; font-size: 13px; color:#000;">
+                    <div style="width: 78mm; margin: 0 auto; padding: 5px 10px; font-family: 'Courier New', Courier, monospace; font-size: 13px; color:#000;">
                         <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:8px; margin-bottom:8px;">
+                            ${logoHtml}
                             <h2 style="margin:0; font-size:16px;">${SHOP_INFO.name}</h2><p style="margin:2px 0;">ĐC: ${SHOP_INFO.address}<br>ĐT: ${SHOP_INFO.phone}</p>
                             <p style="margin-top:5px; font-weight:bold; font-size:15px;">BẢNG KÊ CÔNG NỢ</p>
                         </div>
@@ -861,19 +857,19 @@
                 }
                 else if (paperType === 'a4') {
                     htmlTemplate = `
-                    <div style="max-width:800px; margin:0 auto; font-family:Arial, sans-serif; font-size:14px; color:#000;">
+                    <div style="max-width:800px; margin:0 auto; padding: 40px 30px; font-family:Arial, sans-serif; font-size:15px; color:#000;">
                         <table style="width:100%; border:none; margin-bottom:15px;">
                             <tr>
                                 <td style="width:100px; border:none; text-align:center;">${logoHtml}</td>
-                                <td style="border:none;"><h2 style="margin:0; font-size:20px;">${SHOP_INFO.name}</h2><p style="margin:3px 0;">ĐC: ${SHOP_INFO.address}<br>ĐT: ${SHOP_INFO.phone}</p></td>
+                                <td style="border:none;"><h2 style="margin:0; font-size:22px;">${SHOP_INFO.name}</h2><p style="margin:5px 0;">ĐC: ${SHOP_INFO.address}<br>ĐT: ${SHOP_INFO.phone}</p></td>
                             </tr>
                         </table>
-                        <h2 style="text-align:center; margin:20px 0; font-size:24px;">BẢNG KÊ CHI TIẾT CÔNG NỢ</h2>
-                        <div style="margin-bottom:15px;">Tên khách hàng: <b>${cus.name}</b><br>Số điện thoại: <b>${cus.phone}</b><br>Thời điểm đối chiếu: <b>${formatFullDate(new Date().toISOString())}</b></div>
+                        <h2 style="text-align:center; margin:30px 0; font-size:26px;">BẢNG KÊ CHI TIẾT CÔNG NỢ</h2>
+                        <div style="margin-bottom:20px;">Tên khách hàng: <b>${cus.name}</b><br>Số điện thoại: <b>${cus.phone}</b><br>Thời điểm đối chiếu: <b>${formatFullDate(new Date().toISOString())}</b></div>
                         
-                        ${tableContent.replace(/border:1px solid #cbd5e1;/g, 'border:1px solid #000; padding:8px;').replace(/<table/g, '<table style="width:100%; border-collapse:collapse; text-align:left;"')}
+                        ${tableContent.replace(/border:1px solid #cbd5e1;/g, 'border:1px solid #000; padding:10px;').replace(/<table/g, '<table style="width:100%; border-collapse:collapse; text-align:left;"')}
                         
-                        <table style="width:100%; border:none; margin-top:40px; text-align:center;"><tr><td style="border:none; width:50%;"><b>Xác Nhận Của Khách Hàng</b><br><br><br><br></td><td style="border:none; width:50%;"><b>Đại Diện Cửa Hàng</b><br><br><br><br></td></tr></table>
+                        <table style="width:100%; border:none; margin-top:50px; text-align:center;"><tr><td style="border:none; width:50%;"><b>Xác Nhận Của Khách Hàng</b><br><br><br><br><br></td><td style="border:none; width:50%;"><b>Đại Diện Cửa Hàng</b><br><br><br><br><br></td></tr></table>
                     </div>`;
                 }
             }
