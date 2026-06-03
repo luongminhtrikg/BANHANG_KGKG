@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Laptop Lương Gia KG - Hệ Thống V12.7 (Đa Mẫu In)</title>
+    <title>Laptop Lương Gia KG - Hệ Thống V12.8 (Chuẩn Công Nợ)</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -99,6 +99,9 @@
             body * { display: none !important; }
             #print-section { display: block !important; background: #fff; color: #000; box-sizing: border-box; }
             #print-section * { display: revert !important; }
+            
+            /* Đưa màu sắc về đen trắng cho máy in nhiệt K80 */
+            :root { --danger: #000; --success: #000; --warning: #000; --primary: #000; }
         }
     </style>
 </head>
@@ -131,7 +134,7 @@
         <div class="logo-container" style="text-align: center; margin-bottom: 5px;">
             <img id="sidebar-logo" src="" style="width: 60px; border-radius: 8px; display: none; margin: 0 auto;">
         </div>
-        <h2>LƯƠNG GIA KG<br><small style="font-size: 0.8rem; color: #94a3b8;">V12.7 Pro</small></h2>
+        <h2>LƯƠNG GIA KG<br><small style="font-size: 0.8rem; color: #94a3b8;">V12.8 Pro</small></h2>
         <button class="nav-btn active" onclick="switchTab('pos')">🛒 Bán Hàng</button>
         <button class="nav-btn" onclick="switchTab('service-desk')">🛠️ Nhận Máy</button>
         <button class="nav-btn" onclick="switchTab('sales-history')">📜 Lịch Sử</button>
@@ -322,9 +325,30 @@
     <div id="print-section"></div>
 
     <div id="quickAddCusModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="document.getElementById('quickAddCusModal').style.display='none'">&times;</span><h3 style="margin-top:0; color:#10b981;">Thêm Khách Nhanh</h3><div class="form-group"><label>Mã KH:</label><input type="text" id="qcus-id" disabled></div><div class="form-group"><label>Tên Khách:</label><input type="text" id="qcus-name"></div><div class="form-group"><label>SĐT:</label><input type="text" id="qcus-phone"></div><button class="action-btn" style="background:#10b981;" onclick="quickSaveCustomer()">Lưu & Chọn</button></div></div>
+    
     <div id="quickAddModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="document.getElementById('quickAddModal').style.display='none'">&times;</span><h3 style="margin-top:0; color:var(--primary);">Thêm Hàng Nhanh</h3><div class="form-group"><label>Mã SP:</label><input type="text" id="qa-id" disabled></div><div class="form-group"><label>Tên Hàng:</label><input type="text" id="qa-name"></div><div class="form-row"><div class="form-group"><label>Giá:</label><input type="number" id="qa-price" value="0"></div><div class="form-group"><label>Tồn:</label><input type="number" id="qa-stock" value="1"></div></div><button class="action-btn" onclick="quickSaveProduct()">Lưu & Chọn</button></div></div>
-    <div id="payDebtModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="document.getElementById('payDebtModal').style.display='none'">&times;</span><h3 style="margin-top:0; color:var(--success);">Lập Phiếu Thu Nợ</h3><input type="hidden" id="pay-cus-id"><p>Khách hàng: <b id="pay-cus-name" style="color:var(--primary);"></b></p><p>Tổng nợ hiện tại: <b id="pay-cus-current-debt" style="color:var(--danger);">0</b> đ</p><div class="form-group"><label>Số tiền khách trả (đ):</label><input type="number" id="pay-amount" value="0"></div><button class="action-btn" style="background: var(--success);" onclick="submitPayDebt()">THU TIỀN</button></div></div>
-    <div id="debtModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="document.getElementById('debtModal').style.display='none'">&times;</span><h3 id="report-customer-name" style="margin-top:0;"></h3><div class="form-row" style="background: #f1f5f9; padding: 10px; border-radius: 6px; margin-bottom: 10px;"><input type="hidden" id="report-customer-id"><div class="form-group"><label>Từ ngày:</label><input type="date" id="filter-from"></div><div class="form-group"><label>Đến ngày:</label><input type="date" id="filter-to"></div><button class="action-btn small-btn" onclick="generateReport()" style="align-self: flex-end; height: 38px;">Lọc</button></div><div id="report-result" style="overflow-x: auto; max-height: 400px; margin-bottom:15px;"></div> <button class="action-btn" style="background: var(--warning); color: #000;" onclick="triggerPrintReport()">🖨️ IN BẢNG KÊ NỢ</button></div></div>
+    
+    <div id="payDebtModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="document.getElementById('payDebtModal').style.display='none'">&times;</span><h3 style="margin-top:0; color:var(--success);">Lập Phiếu Thu Nợ</h3><input type="hidden" id="pay-cus-id"><p>Khách hàng: <b id="pay-cus-name" style="color:var(--primary);"></b></p><p>Tổng nợ hiện tại: <b id="pay-cus-current-debt" style="color:var(--danger);">0</b> đ</p><div class="form-group"><label>Số tiền khách trả (đ):</label><input type="number" id="pay-amount" value="0"></div><button class="action-btn" style="background: var(--success);" onclick="submitPayDebt()">THU TIỀN VÀO SỔ</button></div></div>
+    
+    <div id="debtModal" class="modal">
+        <div class="modal-content" style="max-width: 750px;"> <span class="close-btn" onclick="document.getElementById('debtModal').style.display='none'">&times;</span>
+            <h3 id="report-customer-name" style="margin-top:0; color:var(--primary);"></h3>
+            
+            <div class="form-row" style="background: #f1f5f9; padding: 15px; border-radius: 6px; margin-bottom: 15px; align-items:flex-end; border:1px solid #cbd5e1;">
+                <input type="hidden" id="report-customer-id">
+                <div class="form-group" style="margin-bottom:0;"><label>Báo cáo Từ ngày:</label><input type="date" id="filter-from"></div>
+                <div class="form-group" style="margin-bottom:0;"><label>Đến ngày:</label><input type="date" id="filter-to"></div>
+                <button class="action-btn small-btn" onclick="generateReport()" style="width: auto; height: 42px; background:var(--primary); font-size:1rem;">🔎 Xem Dữ Liệu</button>
+            </div>
+            
+            <div id="report-result" style="overflow-x: auto; max-height: 50vh; margin-bottom:15px; font-size:0.95rem;"></div> 
+            
+            <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:20px; border-top:1px solid #e2e8f0; padding-top:15px;">
+                <button class="action-btn" style="background: #475569; width:auto; padding:10px 20px;" onclick="triggerPrintReport()">🖨️ IN BẢNG KÊ GỬI KHÁCH</button>
+                <button class="action-btn" style="background: var(--success); width:auto; padding:10px 20px; font-size:1.05rem;" onclick="openPayDebtFromReport()">💵 KHÁCH TRẢ TIỀN NGAY</button>
+            </div>
+        </div>
+    </div>
 
     <script>
         // ==========================================
@@ -335,7 +359,7 @@
             address: "37 ấp 5, An Biên, Kiên Giang", 
             phone: "0941.113.411",
             // Đổi link hình ở dưới để lấy logo tiệm bro:
-            logo: "https://cdn-icons-png.flaticon.com/512/3131/3131602.png" 
+            logo: "https://scontent.fsgn2-6.fna.fbcdn.net/v/t39.30808-6/274775481_3181950982079850_8069089602058880142_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=qbkOrTtOvBQQ7kNvwEcKpSh&_nc_oc=Adrs_vJ9-3fOP6CNpmxjhGfn8rgfoELg-MnrOJjeHRWZcaZrJj8Fq6Kp4LtMLiZKFuOTy-dj_Ni9Uh3-o8IvlI42&_nc_zt=23&_nc_ht=scontent.fsgn2-6.fna&_nc_gid=8xBAzfO9rJLoLy5Vn1eV2w&_nc_ss=7b2a8&oh=00_Af8YO3CMJqNHDWD41zqvnJBmGzDIyZMS9dWi6GQ32RYcOw&oe=6A256543" 
         };
 
         if(SHOP_INFO.logo) {
@@ -358,7 +382,7 @@
 
         let staffs=[], inventory=[], customers=[], transactions=[], serviceOrders=[], cart=[], cashflow=[];
         let activeStaffId = null;
-        let editingTxId = null; // Biến nhớ mã hóa đơn khi Sửa
+        let editingTxId = null; 
 
         // ==========================================
         // LẮNG NGHE DỮ LIỆU ĐÁM MÂY & GHI NHỚ ĐĂNG NHẬP
@@ -382,7 +406,6 @@
             let loginSel = document.getElementById('login-user');
             if(loginSel.options.length === 0) { loginSel.innerHTML = staffs.map(s => `<option value="${s.id}">${s.name}</option>`).join(''); }
             
-            // CHECK GHI NHỚ TÀI KHOẢN
             let savedUser = localStorage.getItem('luonggia_saved_user');
             if(savedUser && !activeStaffId) {
                 let checkStaff = staffs.find(s => s.id === savedUser);
@@ -399,16 +422,13 @@
 
         function syncToCloud() { db.ref().update({ staffs, inventory, customers, transactions, serviceOrders, cashflow }); }
 
-        // ==========================================
-        // XỬ LÝ ĐĂNG NHẬP
-        // ==========================================
         function doLogin() {
             let u = document.getElementById('login-user').value;
             let p = document.getElementById('login-pass').value;
             let target = staffs.find(s => s.id === u);
             if(target && target.password === p) {
                 activeStaffId = u;
-                localStorage.setItem('luonggia_saved_user', u); // Lưu tài khoản để lần sau vào luôn
+                localStorage.setItem('luonggia_saved_user', u); // Lưu trí nhớ
                 document.getElementById('login-overlay').style.display = 'none';
                 document.getElementById('top-user-name').innerText = target.name;
                 document.getElementById('login-pass').value = '';
@@ -416,21 +436,14 @@
                 renderData();
             } else { alert('Mật khẩu không đúng! Vui lòng thử lại.'); }
         }
-        function logout() { 
-            activeStaffId = null; 
-            localStorage.removeItem('luonggia_saved_user'); // Xóa trí nhớ
-            document.getElementById('login-overlay').style.display = 'flex'; 
-        }
+        function logout() { activeStaffId = null; localStorage.removeItem('luonggia_saved_user'); document.getElementById('login-overlay').style.display = 'flex'; }
 
-        // ==========================================
-        // CÁC HÀM CƠ BẢN
-        // ==========================================
         function formatMoney(amount) { return Number(amount).toLocaleString('vi-VN'); }
         function formatFullDate(dateStr) { if(!dateStr) return '-'; let d = new Date(dateStr); if(isNaN(d.getTime())) return dateStr; return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`; }
         function formatTime(d) { return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`; }
 
         function switchTab(tabId) {
-            if(tabId === 'system-admin' && activeStaffId !== 'ADMIN') return alert('Chỉ Quản lý mới vào được phân hệ này!');
+            if(tabId === 'system-admin' && activeStaffId !== 'ADMIN') return alert('Chỉ Chủ tiệm mới vào được phân hệ này!');
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
@@ -499,9 +512,6 @@
             renderCashbook();
         }
 
-        // ==========================================
-        // SỬA / XÓA DỮ LIỆU BỞI ADMIN
-        // ==========================================
         function updateInvField(id, field, val) { if(activeStaffId==='ADMIN') { let i = inventory.find(x=>x.id===id); if(i) { i[field] = (field==='price'||field==='stock') ? Number(val)||0 : val; syncToCloud(); } } }
         function deleteInventory(id) { if(activeStaffId==='ADMIN' && confirm('Xóa vĩnh viễn mặt hàng này?')) { inventory = inventory.filter(i => i.id !== id); syncToCloud(); renderData(); } }
         function updateCusField(id, field, val) { if(activeStaffId==='ADMIN') { let c = customers.find(x=>x.id===id); if(c) { c[field] = val; syncToCloud(); } } }
@@ -519,36 +529,26 @@
             }
         }
 
-        // TÍNH NĂNG ĐẶC BIỆT: SỬA TẬN GỐC HÓA ĐƠN VÀ HOÀN KHO TẠM
         function editFullTransaction(txId) {
             if(activeStaffId !== 'ADMIN') return;
             let txIndex = transactions.findIndex(t => t.id === txId);
             if(txIndex > -1 && confirm(`Bốc hóa đơn [ ${txId} ] ra Giỏ Hàng để sửa lại?\n\n- Hóa đơn cũ sẽ tạm thời bị hủy, hàng sẽ được hoàn kho chờ.\n- Bạn sửa xong bấm [LẬP PHIẾU] nó sẽ lưu đè lại đúng số phiếu này!`)) {
                 let tx = transactions[txIndex];
-                
-                // 1. Hoàn trả kho lập tức
                 if(tx.itemsRaw) { tx.itemsRaw.forEach(item => { let p = inventory.find(i => i.id === item.id); if(p) p.stock += item.qty; }); }
-                
-                // 2. Bốc hàng vào Cart
                 cart = JSON.parse(JSON.stringify(tx.itemsRaw || []));
                 document.getElementById('pos-customer').value = tx.customerId;
                 document.getElementById('pos-payment').value = tx.type;
                 document.getElementById('pos-note').value = tx.note || '';
                 
-                // 3. Xóa tạm vé cũ và Nhớ số ID
                 transactions.splice(txIndex, 1);
                 editingTxId = txId;
                 syncToCloud();
                 
-                // 4. Mở sang Tab bán hàng
                 renderCart();
                 switchTab('pos');
             }
         }
 
-        // ==========================================
-        // NGHIỆP VỤ BÁN HÀNG & NHẬN MÁY
-        // ==========================================
         function calculateLiveSubtotal() { document.getElementById('live-total-text').innerText = formatMoney((parseInt(document.getElementById('pos-qty').value)||0)*(parseFloat(document.getElementById('pos-price-input').value)||0)); }
         function onProductSelectChange() { let p = inventory.find(i => i.id === document.getElementById('pos-product').value); if(p) { document.getElementById('pos-price-input').value = p.price; document.getElementById('pos-qty').value = 1; calculateLiveSubtotal(); } }
         function addToCart() { let p = inventory.find(i => i.id === document.getElementById('pos-product').value), qty = parseInt(document.getElementById('pos-qty').value)||1, price = parseFloat(document.getElementById('pos-price-input').value)||0; if(p) { cart.push({ id: p.id, name: p.name, price: price, qty: qty }); renderCart(); } }
@@ -561,10 +561,8 @@
             if(!cusId) return alert('Vui lòng chọn khách hàng!');
             let payment = document.getElementById('pos-payment').value, note = document.getElementById('pos-note').value.trim(), total = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
             
-            // Trừ tồn kho 
             cart.forEach(c => { let p = inventory.find(i => i.id === c.id); if(p) p.stock -= c.qty; });
             
-            // Nếu đang ở chế độ SỬA -> Lấy lại ID cũ, không tạo ID mới
             let finalTxId = editingTxId ? editingTxId : 'TX_' + Date.now().toString().slice(-5);
             let newTx = { id: finalTxId, customerId: cusId, date: new Date().toISOString().split('T')[0], type: payment, amount: total, details: cart.map(c => `${c.name} (x${c.qty})`).join(', '), itemsRaw: JSON.parse(JSON.stringify(cart)), staffId: activeStaffId, note: note };
             transactions.push(newTx); syncToCloud(); 
@@ -573,9 +571,6 @@
             renderCart(); switchTab('pos'); triggerPrintSales(newTx.id);
         }
 
-        // ==========================================
-        // CÁC HÀM KHÁC
-        // ==========================================
         function addCashflow() { let amount = parseFloat(document.getElementById('cb-amount').value)||0, type = document.getElementById('cb-type').value, reason = document.getElementById('cb-reason').value.trim(); if(amount <= 0 || !reason) return alert('Nhập đủ số tiền và lý do!'); let now = new Date(); cashflow.push({ id: 'CF_'+Date.now(), date: now.toISOString().split('T')[0], time: formatTime(now), type, amount, reason, staffId: activeStaffId }); syncToCloud(); document.getElementById('cb-amount').value = 0; document.getElementById('cb-reason').value = ''; renderData(); }
         function deleteCashflow(id) { if(activeStaffId !== 'ADMIN') return; let idx = cashflow.findIndex(c => c.id === id); if(idx > -1 && confirm('Xóa khoản thu/chi này?')) { cashflow.splice(idx, 1); syncToCloud(); renderData(); } }
         function renderCashbook() { let todayStr = new Date().toISOString().split('T')[0], sumSales = 0, sumPay = 0, sumExtraIn = 0, sumOut = 0; transactions.filter(t => t.date === todayStr).forEach(t => { if(t.type === 'cash') sumSales += t.amount; else if(t.type === 'pay') sumPay += t.amount; }); let todayCF = cashflow.filter(c => c.date === todayStr); todayCF.forEach(c => { if(c.type === 'thu') sumExtraIn += c.amount; else sumOut += c.amount; }); document.getElementById('cb-sum-sales').innerText = formatMoney(sumSales) + ' đ'; document.getElementById('cb-sum-pay').innerText = formatMoney(sumPay) + ' đ'; document.getElementById('cb-sum-extra-in').innerText = formatMoney(sumExtraIn) + ' đ'; document.getElementById('cb-sum-out').innerText = formatMoney(sumOut) + ' đ'; document.getElementById('cb-net-total').innerText = formatMoney(sumSales + sumPay + sumExtraIn - sumOut) + ' đ'; document.getElementById('cashbook-table').innerHTML = todayCF.slice().reverse().map(c => { let stf = staffs.find(s=>s.id===c.staffId) || {name:'-'}; let clr = c.type==='thu' ? 'var(--success)' : 'var(--danger)', txt = c.type==='thu' ? '+ Thu Khác' : '- Chi Tiền'; return `<tr><td>${formatFullDate(c.date)}<br><small>${c.time}</small></td><td style="color:${clr}; font-weight:bold;">${txt}</td><td style="color:${clr}; font-weight:bold;">${formatMoney(c.amount)} đ</td><td>${c.reason}</td><td>${stf.name}</td><td>${activeStaffId==='ADMIN'?`<button class="danger-btn" onclick="deleteCashflow('${c.id}')">Xóa</button>`:'-'}</td></tr>`; }).join(''); }
@@ -589,21 +584,116 @@
         function changeDeviceStatus(id, newStatus) { let order = serviceOrders.find(o => o.id === id); if(order) { order.status = newStatus; syncToCloud(); renderData(); } }
         function deleteServiceOrder(id) { if(activeStaffId !== 'ADMIN') return; let idx = serviceOrders.findIndex(o => o.id === id); if(idx > -1 && confirm(`XÓA phiếu nhận máy [${id}]?`)) { serviceOrders.splice(idx, 1); syncToCloud(); renderData(); } }
         function updateStaffField(id, field, val) { if(activeStaffId==='ADMIN') { let s = staffs.find(x=>x.id===id); if(s) { s[field] = val.trim(); syncToCloud(); } } }
-        function openPayDebtModal(id, name) { let debtInfo = getCustomerDebtInfo(id); if(debtInfo.totalDebt <= 0) return alert('Khách này không có nợ!'); document.getElementById('payDebtModal').style.display = 'block'; document.getElementById('pay-cus-id').value = id; document.getElementById('pay-cus-name').innerText = name; document.getElementById('pay-cus-current-debt').innerText = formatMoney(debtInfo.totalDebt); document.getElementById('pay-amount').value = debtInfo.totalDebt; }
-        function submitPayDebt() { let id = document.getElementById('pay-cus-id').value, amount = parseFloat(document.getElementById('pay-amount').value) || 0, debtInfo = getCustomerDebtInfo(id); if(amount <= 0 || amount > debtInfo.totalDebt) return alert('Số tiền không hợp lệ!'); transactions.push({ id: 'TX_' + Date.now().toString().slice(-5), customerId: id, date: new Date().toISOString().split('T')[0], type: 'pay', amount: amount, details: 'Khách trả nợ', staffId: activeStaffId, itemsRaw: [], note: '' }); syncToCloud(); alert('Đã thu nợ!'); document.getElementById('payDebtModal').style.display = 'none'; renderData(); }
-        function openReportModal(customerId, customerName) { document.getElementById('debtModal').style.display = 'block'; document.getElementById('report-customer-name').innerText = "Đối chiếu: " + customerName; document.getElementById('report-customer-id').value = customerId; generateReport(); }
         
-        function generateReport() {
-            let cusId = document.getElementById('report-customer-id').value, fromDate = document.getElementById('filter-from').value, toDate = document.getElementById('filter-to').value, allCusTx = transactions.filter(t => t.customerId === cusId), oldDebt = 0;
-            if(fromDate) { allCusTx.forEach(t => { if(t.date < fromDate) { if(t.type === 'debt') oldDebt += t.amount; if(t.type === 'pay') oldDebt -= t.amount; } }); }
-            let displayTx = fromDate ? allCusTx.filter(t => t.date >= fromDate) : allCusTx; if(toDate) displayTx = displayTx.filter(t => t.date <= toDate); displayTx.sort((a,b) => new Date(a.date) - new Date(b.date));
-            let html = `<table style="width:100%; border-collapse:collapse; min-width:400px;"><thead><tr><th>Ngày</th><th>Giao Dịch</th><th>Nợ (+)</th><th>Đã Trả (-)</th></tr></thead><tbody><tr style="background:#fffbeb; font-weight:bold; color:var(--warning);"><td>Trước</td><td>NỢ GỐI ĐẦU</td><td colspan="2">${oldDebt > 0 ? formatMoney(oldDebt)+' đ' : '0 đ'}</td></tr>`;
-            let totalInPeriodDebt = 0, totalInPeriodPay = 0;
-            displayTx.forEach(t => { let dStr = '-', pStr = '-'; if(t.type === 'debt') { dStr = `<span style="color:var(--danger);">+${formatMoney(t.amount)} đ</span>`; totalInPeriodDebt += t.amount; } if(t.type === 'pay') { pStr = `<span style="color:var(--success);">-${formatMoney(t.amount)} đ</span>`; totalInPeriodPay += t.amount; } html += `<tr><td><b>${formatFullDate(t.date)}</b></td><td>${t.details}</td><td>${dStr}</td><td>${pStr}</td></tr>`; });
-            let finalDebt = oldDebt + totalInPeriodDebt - totalInPeriodPay; html += `</tbody></table><div style="margin-top:15px; text-align:right;"><h3 style="color:var(--danger); margin:5px 0;">CÒN NỢ: ${finalDebt < 0 ? 0 : formatMoney(finalDebt)} đ</h3></div>`;
-            document.getElementById('report-result').innerHTML = html;
+        function openPayDebtModal(id, name) { 
+            let debtInfo = getCustomerDebtInfo(id); 
+            if(debtInfo.totalDebt <= 0) return alert('Khách này không có nợ!'); 
+            document.getElementById('payDebtModal').style.display = 'block'; 
+            document.getElementById('pay-cus-id').value = id; 
+            document.getElementById('pay-cus-name').innerText = name; 
+            document.getElementById('pay-cus-current-debt').innerText = formatMoney(debtInfo.totalDebt); 
+            document.getElementById('pay-amount').value = debtInfo.totalDebt; 
+        }
+        
+        function submitPayDebt() { 
+            let id = document.getElementById('pay-cus-id').value, amount = parseFloat(document.getElementById('pay-amount').value) || 0, debtInfo = getCustomerDebtInfo(id); 
+            if(amount <= 0 || amount > debtInfo.totalDebt) return alert('Số tiền không hợp lệ!'); 
+            transactions.push({ id: 'TX_' + Date.now().toString().slice(-5), customerId: id, date: new Date().toISOString().split('T')[0], type: 'pay', amount: amount, details: 'Khách thanh toán nợ', staffId: activeStaffId, itemsRaw: [], note: '' }); 
+            syncToCloud(); 
+            alert('Đã thu nợ thành công!'); 
+            document.getElementById('payDebtModal').style.display = 'none'; 
+            renderData(); 
         }
 
+        // ==========================================
+        // CƠ CHẾ BÁO CÁO CÔNG NỢ CHI TIẾT
+        // ==========================================
+        function openReportModal(customerId, customerName) { 
+            document.getElementById('debtModal').style.display = 'block'; 
+            document.getElementById('report-customer-name').innerText = "Hồ Sơ Nợ: " + customerName; 
+            document.getElementById('report-customer-id').value = customerId; 
+            
+            // Tự động set filter từ đầu tháng này đến cuối tháng này
+            let now = new Date();
+            let firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+            let lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+            document.getElementById('filter-from').value = firstDay;
+            document.getElementById('filter-to').value = lastDay;
+            
+            generateReport(); 
+        }
+
+        function openPayDebtFromReport() {
+            let cid = document.getElementById('report-customer-id').value;
+            let cnm = document.getElementById('report-customer-name').innerText.replace('Hồ Sơ Nợ: ', '');
+            document.getElementById('debtModal').style.display = 'none';
+            openPayDebtModal(cid, cnm);
+        }
+        
+        function generateReport() {
+            let cusId = document.getElementById('report-customer-id').value;
+            let fromDate = document.getElementById('filter-from').value;
+            let toDate = document.getElementById('filter-to').value;
+            
+            let allCusTx = transactions.filter(t => t.customerId === cusId);
+            
+            // Tính số dư đầu kỳ (Nợ gối đầu - Trước khoảng thời gian tìm kiếm)
+            let oldDebt = 0;
+            if(fromDate) { 
+                allCusTx.forEach(t => { 
+                    if(t.date < fromDate) { 
+                        if(t.type === 'debt') oldDebt += t.amount; 
+                        if(t.type === 'pay') oldDebt -= t.amount; 
+                    } 
+                }); 
+            }
+            if(oldDebt < 0) oldDebt = 0; // Chống lỗi âm tiền
+            
+            let displayTx = fromDate ? allCusTx.filter(t => t.date >= fromDate) : allCusTx; 
+            if(toDate) displayTx = displayTx.filter(t => t.date <= toDate); 
+            displayTx.sort((a,b) => new Date(a.date) - new Date(b.date));
+            
+            // Dựng bảng
+            let html = `<table style="width:100%; border-collapse:collapse; min-width:500px; text-align:left;">
+                <thead><tr style="background:#f1f5f9;">
+                    <th style="padding:8px; border:1px solid #cbd5e1;">Ngày</th>
+                    <th style="padding:8px; border:1px solid #cbd5e1;">Giao Dịch / Ghi Chú</th>
+                    <th style="padding:8px; border:1px solid #cbd5e1; text-align:right; color:#991b1b;">MUA NỢ (+)</th>
+                    <th style="padding:8px; border:1px solid #cbd5e1; text-align:right; color:#065f46;">ĐÃ TRẢ (-)</th>
+                </tr></thead><tbody>
+                <tr style="background:#fffbeb; font-weight:bold; color:#b45309;">
+                    <td style="padding:8px; border:1px solid #cbd5e1;">Kỳ trước</td>
+                    <td style="padding:8px; border:1px solid #cbd5e1;">NỢ GỐI ĐẦU (Kỳ trước chuyển sang)</td>
+                    <td colspan="2" style="padding:8px; border:1px solid #cbd5e1; text-align:right; color:#dc2626;">${oldDebt > 0 ? formatMoney(oldDebt)+' đ' : '0 đ'}</td>
+                </tr>`;
+            
+            let totalInPeriodDebt = 0, totalInPeriodPay = 0;
+            displayTx.forEach(t => { 
+                let dStr = '-', pStr = '-'; 
+                if(t.type === 'debt') { dStr = `<span style="color:#dc2626; font-weight:bold;">+${formatMoney(t.amount)} đ</span>`; totalInPeriodDebt += t.amount; } 
+                if(t.type === 'pay') { pStr = `<span style="color:#10b981; font-weight:bold;">-${formatMoney(t.amount)} đ</span>`; totalInPeriodPay += t.amount; } 
+                html += `<tr>
+                    <td style="padding:8px; border:1px solid #cbd5e1;"><b>${formatFullDate(t.date)}</b></td>
+                    <td style="padding:8px; border:1px solid #cbd5e1;">${t.details} ${t.note ? `<br><small><i>(${t.note})</i></small>`:''}</td>
+                    <td style="padding:8px; border:1px solid #cbd5e1; text-align:right;">${dStr}</td>
+                    <td style="padding:8px; border:1px solid #cbd5e1; text-align:right;">${pStr}</td>
+                </tr>`; 
+            });
+            
+            let finalDebt = oldDebt + totalInPeriodDebt - totalInPeriodPay; 
+            if(finalDebt < 0) finalDebt = 0;
+
+            html += `</tbody></table>
+            
+            <div style="margin-top:15px; text-align:right; background:#f8fafc; padding:15px; border-radius:6px; border:1px solid #e2e8f0; line-height: 1.6;">
+                <div style="font-size:0.95rem; color:#475569;">Nợ gối đầu kỳ trước: <b style="color:#000;">${formatMoney(oldDebt)} đ</b></div>
+                <div style="font-size:0.95rem; color:#475569;">Phát sinh mua thêm trong kỳ: <b style="color:#dc2626;">+ ${formatMoney(totalInPeriodDebt)} đ</b></div>
+                <div style="font-size:0.95rem; color:#475569; border-bottom:1px dashed #cbd5e1; padding-bottom:5px; margin-bottom:5px;">Khách đã thanh toán trong kỳ: <b style="color:#10b981;">- ${formatMoney(totalInPeriodPay)} đ</b></div>
+                <h3 style="color:#dc2626; margin:5px 0 0 0; font-size:1.3rem;">TỔNG DƯ NỢ HIỆN TẠI: ${formatMoney(finalDebt)} đ</h3>
+            </div>`;
+            
+            document.getElementById('report-result').innerHTML = html;
+        }
 
         // ==========================================
         // KHU VỰC ĐIỀU HƯỚNG MẪU IN (POS vs A4/A5)
@@ -625,7 +715,6 @@
                 let cus = customers.find(c => c.id === tx.customerId) || { name: 'Khách lẻ', phone: '-' }, staff = staffs.find(s => s.id === tx.staffId) || { name: '-' };
                 
                 if(paperType === 'k80') {
-                    // MẪU MÁY POS K80 (CHỮ TO, RÕ, KHÔNG VIỀN)
                     let itemsHtml = '';
                     if(tx.itemsRaw && tx.itemsRaw.length > 0) {
                         tx.itemsRaw.forEach(item => { itemsHtml += `<tr><td colspan="2" style="font-weight:bold; padding-top:4px;">${item.name}</td></tr><tr style="border-bottom:1px dotted #ccc;"><td>${item.qty} x ${formatMoney(item.price)}</td><td style="text-align:right;">${formatMoney(item.price * item.qty)}</td></tr>`; });
@@ -652,7 +741,6 @@
                     </div>`;
                 } 
                 else if(paperType === 'a4') {
-                    // MẪU A4/A5 CHO MÁY BÀN (BẢNG CÓ VIỀN, TIÊU ĐỀ LỚN)
                     let itemsHtml = '';
                     if(tx.itemsRaw && tx.itemsRaw.length > 0) {
                         tx.itemsRaw.forEach((item, i) => { itemsHtml += `<tr><td style="border:1px solid #000; padding:8px; text-align:center;">${i+1}</td><td style="border:1px solid #000; padding:8px;">${item.name}</td><td style="border:1px solid #000; padding:8px; text-align:center;">${item.qty}</td><td style="border:1px solid #000; padding:8px; text-align:right;">${formatMoney(item.price)}</td><td style="border:1px solid #000; padding:8px; text-align:right;">${formatMoney(item.price * item.qty)}</td></tr>`; });
@@ -712,7 +800,7 @@
                         <div style="display:flex; justify-content:space-between; text-align:center; font-size:13px; margin-top:20px; border-top:1px dashed #000; padding-top:15px;">
                             <div style="width:50%;">Khách Ký<br><br><br></div><div style="width:50%;">KTV Ký<br><br><br></div>
                         </div>
-                        <div style="text-align:center; margin-top:10px; font-size:12px; font-style:italic;">Quý khách vui lòng mang theo biên nhận này khi nhận máy.</div>
+                        <div style="text-align:center; margin-top:10px; font-size:12px; font-style:italic;">Quý khách mang theo biên nhận khi nhận máy.</div>
                     </div>`;
                 }
                 else if(paperType === 'a4') {
@@ -728,30 +816,36 @@
                                 <td style="border:none; text-align:right;">Số phiếu: <b>${order.id}</b><br>Ngày nhận: ${formatFullDate(order.receiveDate)}</td>
                             </tr>
                         </table>
-                        <h2 style="text-align:center; margin:20px 0; font-size:24px;">BIÊN NHẬN SỬA CHỮA MÁY</h2>
+                        <h2 style="text-align:center; margin:20px 0; font-size:24px;">BIÊN NHẬN SỬA CHỮA MÁY TÍNH</h2>
                         <table style="width:100%; border-collapse:collapse; margin-bottom:20px;">
                             <tr><td style="border:1px solid #000; padding:10px; width:30%; font-weight:bold;">Khách hàng / SĐT:</td><td style="border:1px solid #000; padding:10px;">${cus.name} - ${cus.phone}</td></tr>
                             <tr><td style="border:1px solid #000; padding:10px; font-weight:bold;">Loại Máy / Model:</td><td style="border:1px solid #000; padding:10px;">${order.model}</td></tr>
                             <tr><td style="border:1px solid #000; padding:10px; font-weight:bold;">Phụ kiện kèm theo:</td><td style="border:1px solid #000; padding:10px;">${order.accessories || 'Không có'}</td></tr>
-                            <tr><td style="border:1px solid #000; padding:10px; font-weight:bold;">Tình trạng báo lỗi:</td><td style="border:1px solid #000; padding:10px; color:#991b1b;">${order.condition}</td></tr>
+                            <tr><td style="border:1px solid #000; padding:10px; font-weight:bold;">Tình trạng báo lỗi:</td><td style="border:1px solid #000; padding:10px;">${order.condition}</td></tr>
                             <tr><td style="border:1px solid #000; padding:10px; font-weight:bold;">Báo giá ước tính:</td><td style="border:1px solid #000; padding:10px; font-weight:bold;">${formatMoney(order.quote)} VNĐ</td></tr>
                             <tr><td style="border:1px solid #000; padding:10px; font-weight:bold;">Hẹn trả dự kiến:</td><td style="border:1px solid #000; padding:10px;">${formatFullDate(order.dueDate)}</td></tr>
                         </table>
                         <div style="font-style:italic; margin-bottom: 20px;">Lưu ý: Quý khách vui lòng kiểm tra kỹ thông tin và mang theo biên nhận này khi đến nhận lại máy.</div>
                         <table style="width:100%; border:none; text-align:center;">
-                            <tr><td style="border:none; width:50%;"><b>Khách Hàng</b><br><br><br><br></td><td style="border:none; width:50%;"><b>Đại Diện Tiếp Nhận</b><br><br><br><br>${staff.name.split(' (')[0]}</td></tr>
+                            <tr><td style="border:none; width:50%;"><b>Khách Hàng Ký Gửi</b><br><br><br><br></td><td style="border:none; width:50%;"><b>Đại Diện Tiếp Nhận</b><br><br><br><br>${staff.name.split(' (')[0]}</td></tr>
                         </table>
                     </div>`;
                 }
             }
 
-            // ================= IN BẢNG KÊ NỢ (BÁO CÁO) =================
+            // ================= IN BẢNG KÊ NỢ (BÁO CÁO CÔNG NỢ) =================
             else if(currentPrintConfig.type === 'report') {
                 let cusId = document.getElementById('report-customer-id').value;
                 let cus = customers.find(c => c.id === cusId) || { name: 'Khách', phone: '-' };
                 
-                // Lấy y chang bảng dữ liệu đang hiển thị trong modal Nợ
+                // Lấy nội dung báo cáo đang render
                 let tableContent = document.getElementById('report-result').innerHTML;
+                
+                // Loại bỏ thuộc tính style dư thừa khi in đen trắng
+                tableContent = tableContent.replace(/color:#dc2626;/g, 'color:#000;');
+                tableContent = tableContent.replace(/color:#10b981;/g, 'color:#000;');
+                tableContent = tableContent.replace(/color:#b45309;/g, 'color:#000;');
+                tableContent = tableContent.replace(/color:#475569;/g, 'color:#000;');
 
                 if(paperType === 'k80') {
                     htmlTemplate = `
@@ -761,8 +855,8 @@
                             <p style="margin-top:5px; font-weight:bold; font-size:15px;">BẢNG KÊ CÔNG NỢ</p>
                         </div>
                         <div style="margin-bottom:8px;"><b>Khách:</b> ${cus.name} (${cus.phone})<br><b>Ngày in:</b> ${formatFullDate(new Date().toISOString())}</div>
-                        ${tableContent.replace(/border:1px solid #ccc;/g, 'border-bottom:1px dotted #999; padding:2px;')}
-                        <div style="text-align:center; margin-top:15px;">Cảm ơn quý khách!</div>
+                        ${tableContent.replace(/border:1px solid #cbd5e1;/g, 'border-bottom:1px dotted #999; padding:2px;')}
+                        <div style="text-align:center; margin-top:15px; border-top:1px dashed #000; padding-top:10px;">Cảm ơn quý khách!</div>
                     </div>`;
                 }
                 else if (paperType === 'a4') {
@@ -775,8 +869,10 @@
                             </tr>
                         </table>
                         <h2 style="text-align:center; margin:20px 0; font-size:24px;">BẢNG KÊ CHI TIẾT CÔNG NỢ</h2>
-                        <div style="margin-bottom:15px;">Khách hàng: <b>${cus.name}</b><br>Số điện thoại: <b>${cus.phone}</b><br>Thời điểm in: ${formatFullDate(new Date().toISOString())}</div>
-                        ${tableContent.replace(/border:1px solid #ccc;/g, 'border:1px solid #000; padding:8px;').replace(/<table/g, '<table style="width:100%; border-collapse:collapse; text-align:left;"')}
+                        <div style="margin-bottom:15px;">Tên khách hàng: <b>${cus.name}</b><br>Số điện thoại: <b>${cus.phone}</b><br>Thời điểm đối chiếu: <b>${formatFullDate(new Date().toISOString())}</b></div>
+                        
+                        ${tableContent.replace(/border:1px solid #cbd5e1;/g, 'border:1px solid #000; padding:8px;').replace(/<table/g, '<table style="width:100%; border-collapse:collapse; text-align:left;"')}
+                        
                         <table style="width:100%; border:none; margin-top:40px; text-align:center;"><tr><td style="border:none; width:50%;"><b>Xác Nhận Của Khách Hàng</b><br><br><br><br></td><td style="border:none; width:50%;"><b>Đại Diện Cửa Hàng</b><br><br><br><br></td></tr></table>
                     </div>`;
                 }
