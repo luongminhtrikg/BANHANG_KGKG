@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Laptop Lương Gia KG - Hệ Thống V12.10 (Bản Hoàn Thiện In POS)</title>
+    <title>Laptop Lương Gia KG - Hệ Thống V12.11 (Liên Kết Sửa Máy & Doanh Thu)</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -99,7 +99,6 @@
             body * { display: none !important; }
             #print-section { display: block !important; background: #fff; color: #000; box-sizing: border-box; width: 100%; }
             #print-section * { display: revert !important; }
-            
             :root { --danger: #000; --success: #000; --warning: #000; --primary: #000; }
         }
     </style>
@@ -133,7 +132,7 @@
         <div class="logo-container" style="text-align: center; margin-bottom: 5px;">
             <img id="sidebar-logo" src="" style="width: 60px; border-radius: 8px; display: none; margin: 0 auto;">
         </div>
-        <h2>LƯƠNG GIA KG<br><small style="font-size: 0.8rem; color: #94a3b8;">V12.10 Pro</small></h2>
+        <h2>LƯƠNG GIA KG<br><small style="font-size: 0.8rem; color: #94a3b8;">V12.11 Pro</small></h2>
         <button class="nav-btn active" onclick="switchTab('pos')">🛒 Bán Hàng</button>
         <button class="nav-btn" onclick="switchTab('service-desk')">🛠️ Nhận Máy</button>
         <button class="nav-btn" onclick="switchTab('sales-history')">📜 Lịch Sử</button>
@@ -473,7 +472,6 @@
             document.getElementById('pos-customer').innerHTML = customerOptions || '<option value="">(Trống)</option>'; 
             document.getElementById('srv-customer').innerHTML = customerOptions || '<option value="">(Trống)</option>';
             
-            // XỬ LÝ FIX GIÁ BÁN HÀNG AUTO FILL KHI LOAD DROPDOWN
             let posProductEl = document.getElementById('pos-product');
             let currentSelectedProduct = posProductEl.value; 
             posProductEl.innerHTML = inventory.map(item => `<option value="${item.id}">${item.name} (${formatMoney(item.price)}đ)</option>`).join('') || '<option value="">(Trống)</option>';
@@ -481,7 +479,6 @@
             if (currentSelectedProduct && inventory.find(i => i.id === currentSelectedProduct)) {
                 posProductEl.value = currentSelectedProduct; 
             } else if (posProductEl.options.length > 0) {
-                // Tự động kéo giá của món đầu tiên vào ô nhập
                 let p = inventory.find(i => i.id === posProductEl.value);
                 if (p && document.getElementById('pos-price-input').value === "0") {
                     document.getElementById('pos-price-input').value = p.price;
@@ -504,9 +501,21 @@
 
             document.getElementById('service-table').innerHTML = serviceOrders.slice().reverse().map(order => {
                 let cus = customers.find(c => c.id === order.customerId) || { name: 'Khách ẩn' }, staff = staffs.find(s => s.id === order.staffId) || { name: '-' };
-                let rDate = new Date(order.receiveDate), dDate = order.dueDate ? new Date(order.dueDate) : null, diffDays = Math.floor((todayObj - rDate) / 86400000), isCompleted = (order.status === 'Đã trả khách'), rowClass = '', statusLabel = order.status;
-                if (!isCompleted) { if (dDate && todayObj > dDate) { rowClass = 'row-overdue-red'; statusLabel = `❌ Trễ hẹn`; } else if (diffDays > 7) { rowClass = 'row-overweek-orange'; statusLabel = `⚠️ Găm lâu`; } }
-                let actionHtml = !isCompleted ? `<select style="padding:4px; font-size:0.85rem; border-radius:4px;" onchange="changeDeviceStatus('${order.id}', this.value)"><option value="" disabled selected>Đổi</option><option value="Đang sửa">Đang sửa</option><option value="Chờ linh kiện">Chờ linh</option><option value="Đã xong - Chờ khách">Chờ khách</option><option value="Đã trả khách">Đã trả (Xong)</option></select>` : `<span style="color:var(--success); font-weight:bold;">✓ Xong</span>`;
+                let rDate = new Date(order.receiveDate), dDate = order.dueDate ? new Date(order.dueDate) : null, diffDays = Math.floor((todayObj - rDate) / 86400000);
+                
+                let isCompleted = (order.status === 'Đã trả khách' || order.status === 'Không sửa được');
+                let rowClass = '', statusLabel = order.status;
+                
+                if (!isCompleted) { 
+                    if (dDate && todayObj > dDate) { rowClass = 'row-overdue-red'; statusLabel = `❌ Trễ hẹn`; } 
+                    else if (diffDays > 7) { rowClass = 'row-overweek-orange'; statusLabel = `⚠️ Găm lâu`; } 
+                } else {
+                    if (order.status === 'Không sửa được') statusLabel = `❌ Bó tay`;
+                    else statusLabel = `✅ Đã thu tiền`;
+                }
+
+                let actionHtml = !isCompleted ? `<select style="padding:4px; font-size:0.85rem; border-radius:4px;" onchange="changeDeviceStatus('${order.id}', this.value)"><option value="" disabled selected>Đổi TT</option><option value="Đang sửa">Đang sửa</option><option value="Chờ linh kiện">Chờ linh kiện</option><option value="Đã xong - Chờ khách">Chờ khách</option><option value="Đã trả khách">Đã trả (Thu tiền)</option><option value="Không sửa được">Không sửa được (Trả)</option></select>` : `<span style="color:${order.status==='Không sửa được'?'var(--danger)':'var(--success)'}; font-weight:bold;">${order.status==='Không sửa được'?'Đã trả lại':'Hoàn tất'}</span>`;
+                
                 return `<tr class="${rowClass}"><td><b>${order.id}</b><br><button class="small-btn" style="background:#6366f1; padding:3px 6px; margin-top:5px; font-size:0.75rem;" onclick="triggerPrintService('${order.id}')">🖨️ In</button>${isAdmin ? `<br><button class="small-btn" style="background:var(--danger); padding:3px 6px; margin-top:5px; font-size:0.75rem;" onclick="deleteServiceOrder('${order.id}')">Xóa</button>` : ''}</td><td><b>${cus.name}</b><br><b style="color:var(--primary);">${order.model}</b></td><td>${order.condition}<br><b style="color:var(--danger);">${formatMoney(order.quote)}đ</b></td><td>${formatFullDate(order.dueDate)}</td><td><span style="font-weight:bold;">[${statusLabel}]</span><br><small>Nhận: ${staff.name}</small><br>${actionHtml}</td></tr>`;
             }).join('');
 
@@ -565,7 +574,6 @@
 
         function calculateLiveSubtotal() { document.getElementById('live-total-text').innerText = formatMoney((parseInt(document.getElementById('pos-qty').value)||0)*(parseFloat(document.getElementById('pos-price-input').value)||0)); }
         
-        // HÀM CẬP NHẬT GIÁ KHI CHỌN MÓN MỚI TRONG MENU
         function onProductSelectChange() { 
             let p = inventory.find(i => i.id === document.getElementById('pos-product').value); 
             if(p) { 
@@ -610,14 +618,64 @@
             document.getElementById('quickAddModal').style.display='none'; 
             document.getElementById('pos-product').value=id; 
             renderData(); 
-            // Gọi ép kéo giá sau khi lưu nhanh
             onProductSelectChange();
         }
         
         function addInventory() { let id=document.getElementById('new-inv-id').value.trim(), name=document.getElementById('new-inv-name').value.trim(), price=parseFloat(document.getElementById('new-inv-price').value)||0, stock=parseInt(document.getElementById('new-inv-stock').value)||0; if(!id) id = 'SP_'+Date.now().toString().slice(-4); if(name) { inventory.push({ id, name, price, stock }); syncToCloud(); document.getElementById('new-inv-name').value=''; renderData(); } }
         function addCustomer() { let id='KH_'+Date.now().toString().slice(-4), name=document.getElementById('new-cus-name').value.trim(), phone=document.getElementById('new-cus-phone').value.trim(); if(name) { customers.push({ id, name, phone }); syncToCloud(); document.getElementById('new-cus-name').value=''; document.getElementById('new-cus-phone').value=''; renderData(); } }
         function receiveDeviceSubmit() { let customerId = document.getElementById('srv-customer').value, model = document.getElementById('srv-model').value.trim(), accessories = document.getElementById('srv-accessories').value.trim(), condition = document.getElementById('srv-condition').value.trim(), quote = parseFloat(document.getElementById('srv-quote').value) || 0, dueDate = document.getElementById('srv-due-date').value; if(!model || !condition) return alert('Vui lòng điền đủ Model và Tình trạng lỗi!'); let newId = 'NM_' + Date.now().toString().slice(-4); serviceOrders.push({ id: newId, customerId, model, accessories, condition, quote, receiveDate: new Date().toISOString().split('T')[0], dueDate, status: 'Đang sửa', staffId: activeStaffId }); syncToCloud(); document.getElementById('srv-model').value = ''; document.getElementById('srv-accessories').value = ''; document.getElementById('srv-condition').value = ''; document.getElementById('srv-quote').value = 0; document.getElementById('srv-due-date').value = ''; renderData(); triggerPrintService(newId); }
-        function changeDeviceStatus(id, newStatus) { let order = serviceOrders.find(o => o.id === id); if(order) { order.status = newStatus; syncToCloud(); renderData(); } }
+        
+        // ==============================================================
+        // TÍNH NĂNG MỚI: XỬ LÝ TRẢ MÁY TỰ ĐỘNG CỘNG TIỀN VÀO SỔ DOANH THU
+        // ==============================================================
+        function changeDeviceStatus(id, newStatus) { 
+            let order = serviceOrders.find(o => o.id === id); 
+            if(!order) return;
+            
+            // TRƯỜNG HỢP 1: TRẢ MÁY LẤY TIỀN
+            if(newStatus === 'Đã trả khách') {
+                let fee = prompt(`BÀN GIAO MÁY CHO KHÁCH:\nNhập số tiền thu khách (đ) cho máy [${order.model}]:`, order.quote);
+                if(fee === null) { renderData(); return; } // Nếu bấm Cancel thì ko đổi trạng thái nữa
+                fee = parseFloat(fee) || 0;
+                
+                // Hỏi khách thanh toán bằng gì?
+                let isCash = confirm(`Xác nhận thu khách: ${formatMoney(fee)} đ ?\n\n- Bấm [OK]: Khách trả Tiền mặt / Chuyển khoản\n- Bấm [CANCEL]: Ghi Nợ Sổ cho khách`);
+                let payType = isCash ? 'cash' : 'debt';
+                
+                // TỰ ĐỘNG BẮN VÀO HÓA ĐƠN DOANH THU
+                if (fee > 0 || isCash) {
+                    transactions.push({ 
+                        id: 'TX_' + Date.now().toString().slice(-5), 
+                        customerId: order.customerId, 
+                        date: new Date().toISOString().split('T')[0], 
+                        type: payType, 
+                        amount: fee, 
+                        details: 'Phí sửa chữa: ' + order.model, 
+                        staffId: activeStaffId, 
+                        itemsRaw: [], 
+                        note: 'Thu từ Phiếu Nhận Máy: ' + order.id 
+                    });
+                }
+                
+                order.status = newStatus;
+                alert('Hoàn tất! Hệ thống đã ghi nhận doanh thu vào Sổ Quỹ / Công nợ.');
+            } 
+            // TRƯỜNG HỢP 2: BÓ TAY, KHÔNG LẤY TIỀN ĐƯỢC
+            else if(newStatus === 'Không sửa được') {
+                if(!confirm(`Xác nhận TRẢ LẠI MÁY (Không sửa được) và KHÔNG THU TIỀN?`)) { 
+                    renderData(); return; 
+                }
+                order.status = newStatus;
+            } 
+            // TRƯỜNG HỢP 3: CHỈ ĐỔI TRẠNG THÁI BÌNH THƯỜNG
+            else {
+                order.status = newStatus; 
+            }
+            
+            syncToCloud(); 
+            renderData(); 
+        }
+
         function deleteServiceOrder(id) { if(activeStaffId !== 'ADMIN') return; let idx = serviceOrders.findIndex(o => o.id === id); if(idx > -1 && confirm(`XÓA phiếu nhận máy [${id}]?`)) { serviceOrders.splice(idx, 1); syncToCloud(); renderData(); } }
         function updateStaffField(id, field, val) { if(activeStaffId==='ADMIN') { let s = staffs.find(x=>x.id===id); if(s) { s[field] = val.trim(); syncToCloud(); } } }
         
