@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Laptop Lương Gia KG - Hệ Thống V12.11 (Liên Kết Sửa Máy & Doanh Thu)</title>
+    <title>Laptop Lương Gia KG - Hệ Thống V12.12 (Sửa Nhận Máy & Khóa Trục Gắn Mới)</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -132,7 +132,7 @@
         <div class="logo-container" style="text-align: center; margin-bottom: 5px;">
             <img id="sidebar-logo" src="" style="width: 60px; border-radius: 8px; display: none; margin: 0 auto;">
         </div>
-        <h2>LƯƠNG GIA KG<br><small style="font-size: 0.8rem; color: #94a3b8;">V12.11 Pro</small></h2>
+        <h2>LƯƠNG GIA KG<br><small style="font-size: 0.8rem; color: #94a3b8;">V12.12 Pro</small></h2>
         <button class="nav-btn active" onclick="switchTab('pos')">🛒 Bán Hàng</button>
         <button class="nav-btn" onclick="switchTab('service-desk')">🛠️ Nhận Máy</button>
         <button class="nav-btn" onclick="switchTab('sales-history')">📜 Lịch Sử</button>
@@ -185,7 +185,7 @@
         </div>
 
         <div id="service-desk" class="tab-content">
-            <h2 style="margin-top: 0; color: var(--primary); border-bottom: 2px solid var(--primary); padding-bottom: 8px;">Tiếp Nhận Sửa Máy</h2>
+            <h2 id="srv-title" style="margin-top: 0; color: var(--primary); border-bottom: 2px solid var(--primary); padding-bottom: 8px;">Tiếp Nhận Sửa Máy</h2>
             <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
                 <div class="form-group"><label>Khách Gửi Máy:</label>
                     <div style="display:flex; gap:10px;">
@@ -202,7 +202,7 @@
                     <div class="form-group"><label>Báo Giá (đ):</label><input type="number" id="srv-quote" value="0"></div>
                     <div class="form-group"><label>Hẹn Trả (Dự kiến):</label><input type="date" id="srv-due-date"></div>
                 </div>
-                <button class="action-btn" style="background: var(--success); padding: 15px;" onclick="receiveDeviceSubmit()">NHẬN MÁY & CHỌN IN</button>
+                <button id="srv-submit-btn" class="action-btn" style="background: var(--success); padding: 15px;" onclick="receiveDeviceSubmit()">NHẬN MÁY & CHỌN IN</button>
             </div>
 
             <h3 style="margin-bottom: 5px; font-size:1rem;">Máy Đang Nằm Viện</h3>
@@ -337,7 +337,7 @@
                 <input type="hidden" id="report-customer-id">
                 <div class="form-group" style="margin-bottom:0;"><label>Báo cáo Từ ngày:</label><input type="date" id="filter-from"></div>
                 <div class="form-group" style="margin-bottom:0;"><label>Đến ngày:</label><input type="date" id="filter-to"></div>
-                <button class="action-btn small-btn" onclick="generateReport()" style="width: auto; height: 42px; background:var(--primary); font-size:1rem;">🔎 Xem Dữ Liệu</button>
+                <button class="action-btn small-btn" onclick="generateReport()" style="width: auto; height: 42px; background:var(--primary); font-size:1rem;">🔎 Xem Dữ Luệu</button>
             </div>
             
             <div id="report-result" style="overflow-x: auto; max-height: 50vh; margin-bottom:15px; font-size:0.95rem;"></div> 
@@ -380,7 +380,13 @@
 
         let staffs=[], inventory=[], customers=[], transactions=[], serviceOrders=[], cart=[], cashflow=[];
         let activeStaffId = null;
+        
         let editingTxId = null; 
+        let editingSrvId = null; // CỜ CHỈ ĐỊNH ĐANG SỬA PHIẾU NHẬN MÁY
+        
+        // BIẾN LƯU TẠM ĐỂ CHỌN NGAY KHÁCH/SẢN PHẨM MỚI VỪA TẠO
+        let pendingPosCustomer = null;
+        let pendingPosProduct = null;
 
         // ==========================================
         // LẮNG NGHE DỮ LIỆU ĐÁM MÂY
@@ -447,8 +453,11 @@
             document.getElementById(tabId).classList.add('active');
             document.querySelectorAll('.nav-btn').forEach(btn => { if(btn.getAttribute('onclick').includes(tabId)) btn.classList.add('active'); });
             
-            if(tabId === 'pos' && editingTxId) { document.getElementById('pos-title').innerHTML = `Đang Sửa Hóa Đơn: <span style="color:var(--danger)">${editingTxId}</span> <button class="small-btn" onclick="cancelEditTx()">Hủy Sửa</button>`; } 
-            else { document.getElementById('pos-title').innerHTML = 'Tạo Phiếu Xuất Hàng'; }
+            if(tabId === 'pos' && editingTxId) { 
+                document.getElementById('pos-title').innerHTML = `Đang Sửa Hóa Đơn: <span style="color:var(--danger)">${editingTxId}</span> <button class="small-btn" onclick="cancelEditTx()">Hủy Sửa</button>`; 
+            } else { 
+                document.getElementById('pos-title').innerHTML = 'Tạo Phiếu Xuất Hàng'; 
+            }
 
             renderData();
         }
@@ -468,22 +477,34 @@
             if(!activeStaffId) return;
             let isAdmin = (activeStaffId === 'ADMIN'), todayStr = new Date().toISOString().split('T')[0], todayObj = new Date(todayStr);
 
+            // XỬ LÝ KHÁCH HÀNG - Ưu tiên chọn khách vừa tạo
+            let currentCus = pendingPosCustomer || document.getElementById('pos-customer').value;
+            let currentSrvCus = pendingPosCustomer || document.getElementById('srv-customer').value;
+
             let customerOptions = customers.map(cus => `<option value="${cus.id}">${cus.name} (${cus.phone})</option>`).join('');
             document.getElementById('pos-customer').innerHTML = customerOptions || '<option value="">(Trống)</option>'; 
             document.getElementById('srv-customer').innerHTML = customerOptions || '<option value="">(Trống)</option>';
             
+            if(currentCus && customers.find(c => c.id === currentCus)) document.getElementById('pos-customer').value = currentCus;
+            if(currentSrvCus && customers.find(c => c.id === currentSrvCus)) document.getElementById('srv-customer').value = currentSrvCus;
+            pendingPosCustomer = null; 
+
+            // XỬ LÝ SẢN PHẨM - Ưu tiên chọn món vừa tạo
             let posProductEl = document.getElementById('pos-product');
-            let currentSelectedProduct = posProductEl.value; 
+            let currentSelectedProduct = pendingPosProduct || posProductEl.value; 
+            
             posProductEl.innerHTML = inventory.map(item => `<option value="${item.id}">${item.name} (${formatMoney(item.price)}đ)</option>`).join('') || '<option value="">(Trống)</option>';
             
             if (currentSelectedProduct && inventory.find(i => i.id === currentSelectedProduct)) {
                 posProductEl.value = currentSelectedProduct; 
+                if (pendingPosProduct) onProductSelectChange(); // Kéo lại giá cho món vừa thêm
             } else if (posProductEl.options.length > 0) {
                 let p = inventory.find(i => i.id === posProductEl.value);
                 if (p && document.getElementById('pos-price-input').value === "0") {
                     document.getElementById('pos-price-input').value = p.price;
                 }
             }
+            pendingPosProduct = null;
             calculateLiveSubtotal();
 
             document.getElementById('inv-lock-status').innerText = isAdmin ? "🔓 (Quyền sửa/xóa)" : "🔒 (Chỉ xem)";
@@ -515,8 +536,9 @@
                 }
 
                 let actionHtml = !isCompleted ? `<select style="padding:4px; font-size:0.85rem; border-radius:4px;" onchange="changeDeviceStatus('${order.id}', this.value)"><option value="" disabled selected>Đổi TT</option><option value="Đang sửa">Đang sửa</option><option value="Chờ linh kiện">Chờ linh kiện</option><option value="Đã xong - Chờ khách">Chờ khách</option><option value="Đã trả khách">Đã trả (Thu tiền)</option><option value="Không sửa được">Không sửa được (Trả)</option></select>` : `<span style="color:${order.status==='Không sửa được'?'var(--danger)':'var(--success)'}; font-weight:bold;">${order.status==='Không sửa được'?'Đã trả lại':'Hoàn tất'}</span>`;
-                
-                return `<tr class="${rowClass}"><td><b>${order.id}</b><br><button class="small-btn" style="background:#6366f1; padding:3px 6px; margin-top:5px; font-size:0.75rem;" onclick="triggerPrintService('${order.id}')">🖨️ In</button>${isAdmin ? `<br><button class="small-btn" style="background:var(--danger); padding:3px 6px; margin-top:5px; font-size:0.75rem;" onclick="deleteServiceOrder('${order.id}')">Xóa</button>` : ''}</td><td><b>${cus.name}</b><br><b style="color:var(--primary);">${order.model}</b></td><td>${order.condition}<br><b style="color:var(--danger);">${formatMoney(order.quote)}đ</b></td><td>${formatFullDate(order.dueDate)}</td><td><span style="font-weight:bold;">[${statusLabel}]</span><br><small>Nhận: ${staff.name}</small><br>${actionHtml}</td></tr>`;
+                let editBtn = isAdmin ? `<br><button class="small-btn" style="background:var(--warning); color:#000; padding:3px 6px; margin-top:5px; font-size:0.75rem;" onclick="editServiceOrder('${order.id}')">✏️ Sửa</button>` : '';
+
+                return `<tr class="${rowClass}"><td><b>${order.id}</b><br><button class="small-btn" style="background:#6366f1; padding:3px 6px; margin-top:5px; font-size:0.75rem;" onclick="triggerPrintService('${order.id}')">🖨️ In</button>${editBtn}${isAdmin ? `<br><button class="small-btn" style="background:var(--danger); padding:3px 6px; margin-top:5px; font-size:0.75rem;" onclick="deleteServiceOrder('${order.id}')">Xóa</button>` : ''}</td><td><b>${cus.name}</b><br><b style="color:var(--primary);">${order.model}</b></td><td>${order.condition}<br><b style="color:var(--danger);">${formatMoney(order.quote)}đ</b></td><td>${formatFullDate(order.dueDate)}</td><td><span style="font-weight:bold;">[${statusLabel}]</span><br><small>Nhận: ${staff.name}</small><br>${actionHtml}</td></tr>`;
             }).join('');
 
             document.getElementById('sales-history-table').innerHTML = transactions.filter(t => t.type === 'cash' || t.type === 'debt').slice().reverse().map(t => {
@@ -606,43 +628,126 @@
         function addCashflow() { let amount = parseFloat(document.getElementById('cb-amount').value)||0, type = document.getElementById('cb-type').value, reason = document.getElementById('cb-reason').value.trim(); if(amount <= 0 || !reason) return alert('Nhập đủ số tiền và lý do!'); let now = new Date(); cashflow.push({ id: 'CF_'+Date.now(), date: now.toISOString().split('T')[0], time: formatTime(now), type, amount, reason, staffId: activeStaffId }); syncToCloud(); document.getElementById('cb-amount').value = 0; document.getElementById('cb-reason').value = ''; renderData(); }
         function deleteCashflow(id) { if(activeStaffId !== 'ADMIN') return; let idx = cashflow.findIndex(c => c.id === id); if(idx > -1 && confirm('Xóa khoản thu/chi này?')) { cashflow.splice(idx, 1); syncToCloud(); renderData(); } }
         function renderCashbook() { let todayStr = new Date().toISOString().split('T')[0], sumSales = 0, sumPay = 0, sumExtraIn = 0, sumOut = 0; transactions.filter(t => t.date === todayStr).forEach(t => { if(t.type === 'cash') sumSales += t.amount; else if(t.type === 'pay') sumPay += t.amount; }); let todayCF = cashflow.filter(c => c.date === todayStr); todayCF.forEach(c => { if(c.type === 'thu') sumExtraIn += c.amount; else sumOut += c.amount; }); document.getElementById('cb-sum-sales').innerText = formatMoney(sumSales) + ' đ'; document.getElementById('cb-sum-pay').innerText = formatMoney(sumPay) + ' đ'; document.getElementById('cb-sum-extra-in').innerText = formatMoney(sumExtraIn) + ' đ'; document.getElementById('cb-sum-out').innerText = formatMoney(sumOut) + ' đ'; document.getElementById('cb-net-total').innerText = formatMoney(sumSales + sumPay + sumExtraIn - sumOut) + ' đ'; document.getElementById('cashbook-table').innerHTML = todayCF.slice().reverse().map(c => { let stf = staffs.find(s=>s.id===c.staffId) || {name:'-'}; let clr = c.type==='thu' ? 'var(--success)' : 'var(--danger)', txt = c.type==='thu' ? '+ Thu Khác' : '- Chi Tiền'; return `<tr><td>${formatFullDate(c.date)}<br><small>${c.time}</small></td><td style="color:${clr}; font-weight:bold;">${txt}</td><td style="color:${clr}; font-weight:bold;">${formatMoney(c.amount)} đ</td><td>${c.reason}</td><td>${stf.name}</td><td>${activeStaffId==='ADMIN'?`<button class="danger-btn" onclick="deleteCashflow('${c.id}')">Xóa</button>`:'-'}</td></tr>`; }).join(''); }
+        
         function openQuickAddCusModal() { document.getElementById('quickAddCusModal').style.display='block'; document.getElementById('qcus-id').value='KH_'+Date.now().toString().slice(-4); }
-        function quickSaveCustomer() { let id=document.getElementById('qcus-id').value.trim(), name=document.getElementById('qcus-name').value.trim(), phone=document.getElementById('qcus-phone').value.trim(); if(!name) return alert('Nhập tên khách!'); customers.push({ id, name, phone }); syncToCloud(); document.getElementById('quickAddCusModal').style.display='none'; document.getElementById('pos-customer').value=id; renderData(); }
+        function quickSaveCustomer() { 
+            let id=document.getElementById('qcus-id').value.trim(), name=document.getElementById('qcus-name').value.trim(), phone=document.getElementById('qcus-phone').value.trim(); 
+            if(!name) return alert('Nhập tên khách!'); 
+            customers.push({ id, name, phone }); 
+            pendingPosCustomer = id; // Đánh dấu khóa mục tiêu
+            syncToCloud(); 
+            document.getElementById('quickAddCusModal').style.display='none'; 
+            renderData(); // Cập nhật và tự động trỏ đúng khách
+        }
         
         function openQuickAddModal() { document.getElementById('quickAddModal').style.display='block'; document.getElementById('qa-id').value='SP_'+Date.now().toString().slice(-4); }
         function quickSaveProduct() { 
             let id=document.getElementById('qa-id').value.trim(), name=document.getElementById('qa-name').value.trim(), price=parseFloat(document.getElementById('qa-price').value)||0, stock=parseInt(document.getElementById('qa-stock').value)||1; 
             if(!name) return alert('Nhập tên hàng!'); 
             inventory.push({ id, name, price, stock }); 
+            pendingPosProduct = id; // Đánh dấu khóa mục tiêu
             syncToCloud(); 
             document.getElementById('quickAddModal').style.display='none'; 
-            document.getElementById('pos-product').value=id; 
-            renderData(); 
-            onProductSelectChange();
+            renderData(); // Cập nhật, trỏ đúng hàng và tự nhảy giá
         }
         
         function addInventory() { let id=document.getElementById('new-inv-id').value.trim(), name=document.getElementById('new-inv-name').value.trim(), price=parseFloat(document.getElementById('new-inv-price').value)||0, stock=parseInt(document.getElementById('new-inv-stock').value)||0; if(!id) id = 'SP_'+Date.now().toString().slice(-4); if(name) { inventory.push({ id, name, price, stock }); syncToCloud(); document.getElementById('new-inv-name').value=''; renderData(); } }
         function addCustomer() { let id='KH_'+Date.now().toString().slice(-4), name=document.getElementById('new-cus-name').value.trim(), phone=document.getElementById('new-cus-phone').value.trim(); if(name) { customers.push({ id, name, phone }); syncToCloud(); document.getElementById('new-cus-name').value=''; document.getElementById('new-cus-phone').value=''; renderData(); } }
-        function receiveDeviceSubmit() { let customerId = document.getElementById('srv-customer').value, model = document.getElementById('srv-model').value.trim(), accessories = document.getElementById('srv-accessories').value.trim(), condition = document.getElementById('srv-condition').value.trim(), quote = parseFloat(document.getElementById('srv-quote').value) || 0, dueDate = document.getElementById('srv-due-date').value; if(!model || !condition) return alert('Vui lòng điền đủ Model và Tình trạng lỗi!'); let newId = 'NM_' + Date.now().toString().slice(-4); serviceOrders.push({ id: newId, customerId, model, accessories, condition, quote, receiveDate: new Date().toISOString().split('T')[0], dueDate, status: 'Đang sửa', staffId: activeStaffId }); syncToCloud(); document.getElementById('srv-model').value = ''; document.getElementById('srv-accessories').value = ''; document.getElementById('srv-condition').value = ''; document.getElementById('srv-quote').value = 0; document.getElementById('srv-due-date').value = ''; renderData(); triggerPrintService(newId); }
         
         // ==============================================================
-        // TÍNH NĂNG MỚI: XỬ LÝ TRẢ MÁY TỰ ĐỘNG CỘNG TIỀN VÀO SỔ DOANH THU
+        // HÀM CHỈNH SỬA PHIẾU NHẬN MÁY
+        // ==============================================================
+        function editServiceOrder(id) {
+            let order = serviceOrders.find(o => o.id === id);
+            if(!order) return;
+            editingSrvId = id;
+            document.getElementById('srv-title').innerHTML = `Đang Sửa Phiếu: <span style="color:var(--danger)">${id}</span> <button class="small-btn" onclick="cancelEditSrv()">Hủy Sửa</button>`;
+            document.getElementById('srv-customer').value = order.customerId;
+            document.getElementById('srv-model').value = order.model;
+            document.getElementById('srv-accessories').value = order.accessories || '';
+            document.getElementById('srv-condition').value = order.condition;
+            document.getElementById('srv-quote').value = order.quote || 0;
+            document.getElementById('srv-due-date').value = order.dueDate || '';
+            
+            let btn = document.getElementById('srv-submit-btn');
+            btn.innerHTML = 'LƯU THAY ĐỔI (KHÔNG IN LẠI)';
+            btn.style.background = 'var(--warning)';
+            btn.style.color = '#000';
+            
+            switchTab('service-desk');
+            window.scrollTo(0, 0); // Kéo mượt lên đỉnh để sửa
+        }
+
+        function cancelEditSrv() {
+            editingSrvId = null;
+            document.getElementById('srv-title').innerHTML = 'Tiếp Nhận Sửa Máy';
+            document.getElementById('srv-model').value = '';
+            document.getElementById('srv-accessories').value = '';
+            document.getElementById('srv-condition').value = '';
+            document.getElementById('srv-quote').value = 0;
+            document.getElementById('srv-due-date').value = '';
+            
+            let btn = document.getElementById('srv-submit-btn');
+            btn.innerHTML = 'NHẬN MÁY & CHỌN IN';
+            btn.style.background = 'var(--success)';
+            btn.style.color = '#fff';
+        }
+
+        function receiveDeviceSubmit() { 
+            let customerId = document.getElementById('srv-customer').value, 
+                model = document.getElementById('srv-model').value.trim(), 
+                accessories = document.getElementById('srv-accessories').value.trim(), 
+                condition = document.getElementById('srv-condition').value.trim(), 
+                quote = parseFloat(document.getElementById('srv-quote').value) || 0, 
+                dueDate = document.getElementById('srv-due-date').value; 
+                
+            if(!model || !condition) return alert('Vui lòng điền đủ Model và Tình trạng lỗi!'); 
+            
+            if (editingSrvId) {
+                // CHẾ ĐỘ CẬP NHẬT PHIẾU CŨ
+                let order = serviceOrders.find(o => o.id === editingSrvId);
+                if(order) {
+                    order.customerId = customerId;
+                    order.model = model;
+                    order.accessories = accessories;
+                    order.condition = condition;
+                    order.quote = quote;
+                    order.dueDate = dueDate;
+                    syncToCloud();
+                    alert('Đã cập nhật thông tin thành công!');
+                }
+                cancelEditSrv();
+                renderData();
+            } else {
+                // CHẾ ĐỘ TẠO PHIẾU MỚI
+                let newId = 'NM_' + Date.now().toString().slice(-4); 
+                serviceOrders.push({ id: newId, customerId, model, accessories, condition, quote, receiveDate: new Date().toISOString().split('T')[0], dueDate, status: 'Đang sửa', staffId: activeStaffId }); 
+                syncToCloud(); 
+                document.getElementById('srv-model').value = ''; 
+                document.getElementById('srv-accessories').value = ''; 
+                document.getElementById('srv-condition').value = ''; 
+                document.getElementById('srv-quote').value = 0; 
+                document.getElementById('srv-due-date').value = ''; 
+                renderData(); 
+                triggerPrintService(newId); 
+            }
+        }
+        
+        // ==============================================================
+        // ĐỔI TRẠNG THÁI VÀ THU TIỀN
         // ==============================================================
         function changeDeviceStatus(id, newStatus) { 
             let order = serviceOrders.find(o => o.id === id); 
             if(!order) return;
             
-            // TRƯỜNG HỢP 1: TRẢ MÁY LẤY TIỀN
             if(newStatus === 'Đã trả khách') {
                 let fee = prompt(`BÀN GIAO MÁY CHO KHÁCH:\nNhập số tiền thu khách (đ) cho máy [${order.model}]:`, order.quote);
-                if(fee === null) { renderData(); return; } // Nếu bấm Cancel thì ko đổi trạng thái nữa
+                if(fee === null) { renderData(); return; } 
                 fee = parseFloat(fee) || 0;
                 
-                // Hỏi khách thanh toán bằng gì?
                 let isCash = confirm(`Xác nhận thu khách: ${formatMoney(fee)} đ ?\n\n- Bấm [OK]: Khách trả Tiền mặt / Chuyển khoản\n- Bấm [CANCEL]: Ghi Nợ Sổ cho khách`);
                 let payType = isCash ? 'cash' : 'debt';
                 
-                // TỰ ĐỘNG BẮN VÀO HÓA ĐƠN DOANH THU
                 if (fee > 0 || isCash) {
                     transactions.push({ 
                         id: 'TX_' + Date.now().toString().slice(-5), 
@@ -660,14 +765,12 @@
                 order.status = newStatus;
                 alert('Hoàn tất! Hệ thống đã ghi nhận doanh thu vào Sổ Quỹ / Công nợ.');
             } 
-            // TRƯỜNG HỢP 2: BÓ TAY, KHÔNG LẤY TIỀN ĐƯỢC
             else if(newStatus === 'Không sửa được') {
                 if(!confirm(`Xác nhận TRẢ LẠI MÁY (Không sửa được) và KHÔNG THU TIỀN?`)) { 
                     renderData(); return; 
                 }
                 order.status = newStatus;
             } 
-            // TRƯỜNG HỢP 3: CHỈ ĐỔI TRẠNG THÁI BÌNH THƯỜNG
             else {
                 order.status = newStatus; 
             }
@@ -806,7 +909,6 @@
                 let cus = customers.find(c => c.id === tx.customerId) || { name: 'Khách lẻ', phone: '-' }, staff = staffs.find(s => s.id === tx.staffId) || { name: '-' };
                 
                 if(paperType === 'k80') {
-                    // Dùng font Arial cho POS K80, size chữ to, nét liền (solid) để chống đứt nét
                     let itemsHtml = '';
                     if(tx.itemsRaw && tx.itemsRaw.length > 0) {
                         tx.itemsRaw.forEach(item => { itemsHtml += `<tr><td colspan="2" style="font-weight:bold; padding-top:6px;">${item.name}</td></tr><tr style="border-bottom:1px solid #000;"><td>${item.qty} x ${formatMoney(item.price)}</td><td style="text-align:right; font-weight:bold;">${formatMoney(item.price * item.qty)}</td></tr>`; });
