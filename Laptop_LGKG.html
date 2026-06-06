@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Laptop Lương Gia KG - Hệ Thống V12.13 (Tiền Tự Chấm & Chuẩn Giờ VN)</title>
+    <title>Laptop Lương Gia KG - Hệ Thống V12.14 (Sửa Sổ Quỹ & Gõ Tiền Chống Lỗi)</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -132,7 +132,7 @@
         <div class="logo-container" style="text-align: center; margin-bottom: 5px;">
             <img id="sidebar-logo" src="" style="width: 60px; border-radius: 8px; display: none; margin: 0 auto;">
         </div>
-        <h2>LƯƠNG GIA KG<br><small style="font-size: 0.8rem; color: #94a3b8;">V12.13 Pro</small></h2>
+        <h2>LƯƠNG GIA KG<br><small style="font-size: 0.8rem; color: #94a3b8;">V12.14 Pro</small></h2>
         <button class="nav-btn active" onclick="switchTab('pos')">🛒 Bán Hàng</button>
         <button class="nav-btn" onclick="switchTab('service-desk')">🛠️ Nhận Máy</button>
         <button class="nav-btn" onclick="switchTab('sales-history')">📜 Lịch Sử</button>
@@ -235,7 +235,7 @@
                     <div class="form-group"><label>Số tiền (đ):</label><input type="text" inputmode="numeric" id="cb-amount" value="0" oninput="formatNumberInput(event)" style="font-weight:bold;"></div>
                 </div>
                 <div class="form-group"><label>Lý do / Diễn giải:</label><input type="text" id="cb-reason" placeholder="VD: Mua cơm trưa..."></div>
-                <button class="action-btn" style="background: #334155;" onclick="addCashflow()">GHI VÀO SỔ QUỸ</button>
+                <button id="cb-submit-btn" class="action-btn" style="background: #334155;" onclick="addCashflow()">GHI VÀO SỔ QUỸ</button>
             </div>
             
             <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 15px; border-radius: 8px; text-align:center; line-height: 1.6;">
@@ -251,7 +251,7 @@
             <h4 style="margin-bottom:5px;">Chi Tiết Dòng Tiền</h4>
             <div class="table-responsive">
                 <table>
-                    <thead><tr><th>Thời gian</th><th>Loại</th><th>Số Tiền</th><th>Lý do</th><th>Người Lập</th><th>Xóa</th></tr></thead>
+                    <thead><tr><th>Thời gian</th><th>Loại</th><th>Số Tiền</th><th>Lý do</th><th>Người Lập</th><th>Thao Tác</th></tr></thead>
                     <tbody id="cashbook-table"></tbody>
                 </table>
             </div>
@@ -380,27 +380,57 @@
         // HÀM HỖ TRỢ ĐỊNH DẠNG & THỜI GIAN
         // ==========================================
         function getLocalDateStr(dateObj = new Date()) {
-            // Ép chuẩn giờ địa phương (Việt Nam UTC+7)
             let tzOffset = dateObj.getTimezoneOffset() * 60000;
             let localISOTime = (new Date(dateObj.getTime() - tzOffset)).toISOString().slice(0, -1);
             return localISOTime.split('T')[0];
         }
 
-        function formatMoney(amount) { return Number(amount).toLocaleString('vi-VN'); }
-        
+        // ĐỊNH DẠNG SỐ KHI NHẬP (Chống lỗi Bàn phím Điện thoại)
         function formatNumberInput(e) {
-            let val = e.target.value.replace(/\\D/g, ''); // Bỏ các ký tự không phải số
-            if (val === '') { e.target.value = ''; return; }
-            e.target.value = parseInt(val, 10).toLocaleString('vi-VN');
+            let el = e.target;
+            let originalValue = el.value;
+            
+            // Xóa toàn bộ ký tự không phải số
+            let rawValue = originalValue.replace(/\D/g, ''); 
+            
+            if (rawValue === '') { 
+                if(originalValue !== '') el.value = ''; 
+                return; 
+            }
+            
+            // Ép kiểu để bỏ các số 0 vô nghĩa ở đầu (vd: 00100 -> 100)
+            rawValue = parseInt(rawValue, 10).toString(); 
+            
+            // Chấm phân cách ngàn (Dùng regex chuẩn thay cho toLocaleString)
+            let formatted = rawValue.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+            
+            // Chỉ gán lại value nếu thực sự có thay đổi để không làm nhảy con trỏ chuột
+            if (originalValue !== formatted) {
+                let cursor = el.selectionStart;
+                let offset = formatted.length - originalValue.length;
+                el.value = formatted;
+                
+                try {
+                    if(cursor !== null) {
+                        let newCursor = Math.max(0, cursor + offset);
+                        el.setSelectionRange(newCursor, newCursor);
+                    }
+                } catch(err) {}
+            }
         }
 
+        // Hàm trích xuất giá trị số thật từ ô input (Bỏ dấu chấm đi để cộng trừ)
         function getNumberFromInput(id) {
             let el = document.getElementById(id);
             if(!el) return 0;
-            let valStr = el.value.toString().replace(/\\D/g, '');
+            let valStr = el.value.toString().replace(/\D/g, '');
             return valStr === '' ? 0 : parseInt(valStr, 10);
         }
 
+        function formatMoney(amount) { 
+            return Number(amount).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        }
+        
         function formatFullDate(dateStr) { if(!dateStr) return '-'; let d = new Date(dateStr); if(isNaN(d.getTime())) return dateStr; return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`; }
         function formatTime(d) { return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`; }
 
@@ -421,6 +451,7 @@
         
         let editingTxId = null; 
         let editingSrvId = null; 
+        let editingCbId = null; // CỜ ĐANG SỬA SỔ QUỸ
         
         let pendingPosCustomer = null;
         let pendingPosProduct = null;
@@ -600,7 +631,7 @@
                 let i = inventory.find(x=>x.id===id); 
                 if(i) { 
                     if(field==='price'||field==='stock') {
-                        val = val.toString().replace(/\\D/g, '');
+                        val = val.toString().replace(/\D/g, '');
                         val = val === '' ? 0 : parseInt(val, 10);
                     }
                     i[field] = val; 
@@ -698,20 +729,64 @@
             renderCart(); switchTab('pos'); triggerPrintSales(newTx.id);
         }
 
+        // ==============================================================
+        // HÀM CHỈNH SỬA SỔ QUỸ (THU/CHI)
+        // ==============================================================
+        function editCashflow(id) {
+            let cb = cashflow.find(c => c.id === id);
+            if(!cb) return;
+            editingCbId = id;
+            document.getElementById('cb-type').value = cb.type;
+            document.getElementById('cb-amount').value = formatMoney(cb.amount);
+            document.getElementById('cb-reason').value = cb.reason;
+            
+            let btn = document.getElementById('cb-submit-btn');
+            btn.innerHTML = 'LƯU SỬA ĐỔI <button onclick="cancelEditCb(event)" style="background:red;border:none;color:white;padding:3px 8px;margin-left:8px;border-radius:4px;cursor:pointer;">Hủy</button>';
+            btn.style.background = 'var(--warning)';
+            btn.style.color = '#000';
+            
+            window.scrollTo(0,0);
+        }
+
+        function cancelEditCb(e) {
+            if(e) e.stopPropagation();
+            editingCbId = null;
+            document.getElementById('cb-type').value = 'chi';
+            document.getElementById('cb-amount').value = '0';
+            document.getElementById('cb-reason').value = '';
+            
+            let btn = document.getElementById('cb-submit-btn');
+            btn.innerHTML = 'GHI VÀO SỔ QUỸ';
+            btn.style.background = '#334155';
+            btn.style.color = '#fff';
+        }
+
         function addCashflow() { 
             let amount = getNumberFromInput('cb-amount');
             let type = document.getElementById('cb-type').value;
             let reason = document.getElementById('cb-reason').value.trim(); 
             if(amount <= 0 || !reason) return alert('Nhập đủ số tiền và lý do!'); 
             
-            let now = new Date(); 
-            cashflow.push({ id: 'CF_'+Date.now(), date: getLocalDateStr(), time: formatTime(now), type, amount, reason, staffId: activeStaffId }); 
-            syncToCloud(); 
-            document.getElementById('cb-amount').value = 0; 
-            document.getElementById('cb-reason').value = ''; 
-            
-            // Ép sổ quỹ xem lại ngày hôm nay
-            document.getElementById('cb-filter-date').value = getLocalDateStr();
+            if(editingCbId) {
+                // CHẾ ĐỘ SỬA
+                let cb = cashflow.find(c => c.id === editingCbId);
+                if(cb) {
+                    cb.amount = amount;
+                    cb.type = type;
+                    cb.reason = reason;
+                    syncToCloud();
+                    alert('Đã cập nhật Phiếu!');
+                }
+                cancelEditCb();
+            } else {
+                // CHẾ ĐỘ TẠO MỚI
+                let now = new Date(); 
+                cashflow.push({ id: 'CF_'+Date.now(), date: getLocalDateStr(), time: formatTime(now), type, amount, reason, staffId: activeStaffId }); 
+                syncToCloud(); 
+                document.getElementById('cb-amount').value = '0'; 
+                document.getElementById('cb-reason').value = ''; 
+                document.getElementById('cb-filter-date').value = getLocalDateStr();
+            }
             renderData(); 
         }
         
@@ -742,7 +817,15 @@
             document.getElementById('cashbook-table').innerHTML = targetCF.slice().reverse().map(c => { 
                 let stf = staffs.find(s=>s.id===c.staffId) || {name:'-'}; 
                 let clr = c.type==='thu' ? 'var(--success)' : 'var(--danger)', txt = c.type==='thu' ? '+ Thu Khác' : '- Chi Tiền'; 
-                return `<tr><td>${formatFullDate(c.date)}<br><small>${c.time}</small></td><td style="color:${clr}; font-weight:bold;">${txt}</td><td style="color:${clr}; font-weight:bold;">${formatMoney(c.amount)} đ</td><td>${c.reason}</td><td>${stf.name}</td><td>${activeStaffId==='ADMIN'?`<button class="danger-btn" onclick="deleteCashflow('${c.id}')">Xóa</button>`:'-'}</td></tr>`; 
+                
+                // NÚT SỬA CHO ADMIN
+                let actionBtns = '-';
+                if(activeStaffId === 'ADMIN') {
+                    actionBtns = `<button class="small-btn" style="background:var(--warning); color:#000; margin-bottom:5px; width:100%;" onclick="editCashflow('${c.id}')">✏️ Sửa</button><br>
+                                  <button class="danger-btn" style="width:100%;" onclick="deleteCashflow('${c.id}')">🗑️ Xóa</button>`;
+                }
+
+                return `<tr><td>${formatFullDate(c.date)}<br><small>${c.time}</small></td><td style="color:${clr}; font-weight:bold;">${txt}</td><td style="color:${clr}; font-weight:bold;">${formatMoney(c.amount)} đ</td><td>${c.reason}</td><td>${stf.name}</td><td>${actionBtns}</td></tr>`; 
             }).join(''); 
         }
         
@@ -873,10 +956,11 @@
             if(!order) return;
             
             if(newStatus === 'Đã trả khách') {
-                let fee = prompt(`BÀN GIAO MÁY CHO KHÁCH:\nNhập số tiền thu khách (đ) cho máy [${order.model}]:`, order.quote);
-                if(fee === null) { renderData(); return; } 
-                // Xử lý nếu user gõ cả dấu chấm vào ô prompt
-                fee = parseFloat(fee.replace(/\\D/g, '')) || 0;
+                let feeStr = prompt(`BÀN GIAO MÁY CHO KHÁCH:\nNhập số tiền thu khách (đ) cho máy [${order.model}]:`, order.quote);
+                if(feeStr === null) { renderData(); return; } 
+                
+                // Giải quyết triệt để trường hợp gõ cả dấu chấm vào ô Prompt
+                let fee = parseFloat(feeStr.toString().replace(/\D/g, '')) || 0;
                 
                 let isCash = confirm(`Xác nhận thu khách: ${formatMoney(fee)} đ ?\n\n- Bấm [OK]: Khách trả Tiền mặt / Chuyển khoản\n- Bấm [CANCEL]: Ghi Nợ Sổ cho khách`);
                 let payType = isCash ? 'cash' : 'debt';
@@ -1039,7 +1123,6 @@
             let htmlTemplate = '';
             let logoHtml = SHOP_INFO.logo ? `<img src="${SHOP_INFO.logo}" style="max-width: 60px; height: auto; margin-bottom: 5px; filter: grayscale(100%);">` : '';
 
-            // ================= IN HÓA ĐƠN BÁN HÀNG =================
             if(currentPrintConfig.type === 'sales') {
                 let tx = transactions.find(t => t.id === currentPrintConfig.id);
                 if(!tx) return;
@@ -1106,7 +1189,6 @@
                 }
             }
 
-            // ================= IN BIÊN NHẬN SỬA CHỮA =================
             else if(currentPrintConfig.type === 'service') {
                 let order = serviceOrders.find(o => o.id === currentPrintConfig.id);
                 if(!order) return;
@@ -1164,7 +1246,6 @@
                 }
             }
 
-            // ================= IN BẢNG KÊ NỢ (BÁO CÁO CÔNG NỢ) =================
             else if(currentPrintConfig.type === 'report') {
                 let cusId = document.getElementById('report-customer-id').value;
                 let cus = customers.find(c => c.id === cusId) || { name: 'Khách', phone: '-' };
