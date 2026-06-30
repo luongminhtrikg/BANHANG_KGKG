@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Laptop Lương Gia KG - V13.0 (App UI & Dashboard)</title>
+    <title>Laptop Lương Gia KG - V13.1 (Tối Ưu Phân Quyền & UI)</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -137,8 +137,15 @@
             .form-group input, .form-group select { padding: 14px; font-size: 1rem; }
             .modal-content { margin: 15% auto; padding: 20px; width: 95%; }
 
-            /* Tổng cộng đơn hàng form bán hàng mobile */
-            .pos-summary { position: sticky; bottom: 0; z-index: 10; margin: 0 -15px -15px -15px; border-radius: 16px 16px 0 0; border: none; box-shadow: 0 -10px 30px rgba(0,0,0,0.1); }
+            /* ÉP NHỎ POS SUMMARY CHO MOBILE */
+            .pos-summary { 
+                position: sticky; bottom: 0; z-index: 10; 
+                margin: 0 -15px -15px -15px; 
+                border-radius: 16px 16px 0 0; 
+                border: none; border-top: 1px solid #fcd34d;
+                box-shadow: 0 -10px 20px rgba(0,0,0,0.08); 
+                padding: 12px 15px !important;
+            }
         }
 
         #print-section { display: none; }
@@ -176,9 +183,10 @@
     <div class="sidebar">
         <div class="sidebar-header">
             <img id="sidebar-logo" src="">
-            <h2>V13.0 PRO</h2>
+            <h2>V13.1 PRO</h2>
         </div>
-        <button class="nav-btn active" onclick="switchTab('dashboard')"><span class="icon">📊</span><span class="text">Tổng Quan</span></button>
+        <!-- Thêm ID cho nút Tổng Quan để ẩn đi nếu là nhân viên -->
+        <button class="nav-btn" onclick="switchTab('dashboard')" id="menu-dashboard"><span class="icon">📊</span><span class="text">Tổng Quan</span></button>
         <button class="nav-btn" onclick="switchTab('pos')"><span class="icon">🛒</span><span class="text">Bán Hàng</span></button>
         <button class="nav-btn" onclick="switchTab('service-desk')"><span class="icon">🛠️</span><span class="text">Nhận Máy</span></button>
         <button class="nav-btn" onclick="switchTab('customers')"><span class="icon">👥</span><span class="text">Khách & Nợ</span></button>
@@ -191,7 +199,7 @@
     <div class="main-content">
         
         <!-- TAB TỔNG QUAN DASHBOARD MỚI -->
-        <div id="dashboard" class="tab-content active">
+        <div id="dashboard" class="tab-content">
             <h2 class="section-title">✨ Tóm tắt hoạt động hôm nay</h2>
             
             <div class="dash-grid">
@@ -264,21 +272,21 @@
                 <div class="form-row"><div class="form-group"><label>Phương thức thanh toán:</label><select id="pos-payment"><option value="cash">Tiền Mặt / Chuyển Khoản</option><option value="debt">Ghi Nợ (Sổ Công Nợ)</option></select></div><div class="form-group"><label>Ghi chú đơn hàng:</label><input type="text" id="pos-note" placeholder="VD: Bảo hành 3 tháng..."></div></div>
             </div>
 
-            <!-- Tóm tắt POS - Ghim dưới mobile -->
-            <div class="card pos-summary" style="background: #fffbeb; border: 1px solid #fcd34d;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
-                    <span style="font-weight:600; color:#b45309;">Tổng Tiền Hàng:</span>
-                    <span id="cart-total" style="color: #000; font-weight:700; font-size: 1.1rem;">0 đ</span>
+            <!-- Tóm tắt POS đã được THU GỌN ÉP NHỎ -->
+            <div class="card pos-summary" style="background: #fffbeb; border: 1px solid #fcd34d; padding: 12px 20px; margin-bottom:0;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 5px;">
+                    <span style="font-weight:600; color:#b45309; font-size:0.9rem;">Tổng Hàng:</span>
+                    <span id="cart-total" style="color: #000; font-weight:700; font-size: 1rem;">0 đ</span>
                 </div>
-                <div style="display:flex; justify-content:space-between; align-items:center; gap: 10px; margin-bottom:15px;">
-                    <span style="font-weight:600; color:var(--danger); white-space:nowrap;">Chiết khấu/Giảm (đ):</span>
-                    <input type="text" inputmode="numeric" id="pos-discount" value="0" oninput="formatNumberInput(event); updateFinalTotal()" style="text-align:right; color:var(--danger); font-weight:bold; font-size:1.1rem; border-color:#fcd34d; background:#fff; padding:8px; width:120px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap: 10px; margin-bottom: 8px;">
+                    <span style="font-weight:600; color:var(--danger); font-size:0.9rem; white-space:nowrap;">Chiết khấu (đ):</span>
+                    <input type="text" inputmode="numeric" id="pos-discount" value="0" oninput="formatNumberInput(event); updateFinalTotal()" style="text-align:right; color:var(--danger); font-weight:bold; font-size:1rem; border:1px solid #fcd34d; background:#fff; padding:6px 8px; width:100px; border-radius:6px; outline:none;">
                 </div>
-                <div style="display:flex; justify-content:space-between; align-items:center; border-top: 1px dashed #f59e0b; padding-top: 15px; margin-bottom:15px;">
-                    <span style="font-weight:800; font-size: 1.2rem; color:var(--primary);">KHÁCH PHẢI TRẢ:</span>
-                    <span id="cart-final-total" style="color: var(--primary); font-weight:900; font-size: 1.6rem;">0 đ</span>
+                <div style="display:flex; justify-content:space-between; align-items:center; border-top: 1px dashed #f59e0b; padding-top: 8px; margin-bottom:10px;">
+                    <span style="font-weight:800; font-size: 1.05rem; color:var(--primary);">KHÁCH TRẢ:</span>
+                    <span id="cart-final-total" style="color: var(--primary); font-weight:900; font-size: 1.3rem;">0 đ</span>
                 </div>
-                <button class="action-btn" style="background: var(--success); padding: 16px; font-size:1.1rem; width:100%; box-shadow: 0 4px 15px rgba(16,185,129,0.3);" onclick="checkout()">🚀 LẬP PHIẾU BÁN HÀNG</button>
+                <button class="action-btn" style="background: var(--success); padding: 12px; font-size:1rem; width:100%; box-shadow: 0 4px 10px rgba(16,185,129,0.2);" onclick="checkout()">🚀 LẬP PHIẾU BÁN HÀNG</button>
             </div>
         </div>
 
@@ -298,8 +306,7 @@
             </div>
         </div>
 
-        <!-- CÁC TAB CÒN LẠI GIỮ NGUYÊN CSS NHƯNG ĐƯỢC BỌC TRONG DIV.CARD -->
-        <!-- TAB SỔ QUỸ -->
+        <!-- CÁC TAB CÒN LẠI -->
         <div id="cashbook" class="tab-content">
             <h2 class="section-title">💰 Sổ Quỹ Tiền Mặt</h2>
             <div id="admin-monthly-report" class="card" style="display:none; background:#eff6ff; border-color:#bfdbfe;">
@@ -415,6 +422,23 @@
         document.getElementById('cb-filter-date').value = getLocalDateStr();
         let currMonth = new Date().getMonth() + 1; document.getElementById('rep-month').value = currMonth < 10 ? '0' + currMonth : currMonth.toString(); document.getElementById('rep-year').value = new Date().getFullYear();
 
+        // Xử lý Giao diện hiển thị theo Quyền
+        function applyRoleUI() {
+            let isAdmin = (activeStaffId === 'ADMIN');
+            document.getElementById('menu-admin').style.display = isAdmin ? 'flex' : 'none';
+            document.getElementById('menu-dashboard').style.display = isAdmin ? 'flex' : 'none'; // Ẩn tab Tổng Quan với KTV
+            
+            // Chuyển tab mặc định khi login
+            if (isAdmin) {
+                switchTab('dashboard');
+            } else {
+                switchTab('pos'); // KTV nhảy thẳng vào Bán Hàng
+            }
+            
+            let currentStaff = staffs.find(s => s.id === activeStaffId);
+            document.getElementById('top-user-name').innerText = currentStaff ? currentStaff.name : '...';
+        }
+
         db.ref().on('value', (snapshot) => {
             let l = document.getElementById('loading-overlay'); if(l) l.style.display = 'none';
             const data = snapshot.val() || {};
@@ -422,18 +446,27 @@
             if (!data.staffs) { let initData = { staffs: [ {id:'ADMIN', name:'Lương Minh Trí', password:'123'} ], inventory: [], customers: [], transactions: [], serviceOrders: [], cashflow: [], recycleBin: [] }; db.ref().set(initData); return; }
             staffs = toArr(data.staffs); inventory = toArr(data.inventory); customers = toArr(data.customers); transactions = toArr(data.transactions); serviceOrders = toArr(data.serviceOrders); cashflow = toArr(data.cashflow); recycleBin = toArr(data.recycleBin);
             let loginSel = document.getElementById('login-user'); if(loginSel.options.length === 0) { loginSel.innerHTML = staffs.map(s => `<option value="${s.id}">${s.name}</option>`).join(''); }
+            
             let savedUser = localStorage.getItem('luonggia_saved_user');
-            if(savedUser && !activeStaffId) { let checkStaff = staffs.find(s => s.id === savedUser); if(checkStaff) { activeStaffId = checkStaff.id; document.getElementById('login-overlay').style.display = 'none'; document.getElementById('top-user-name').innerText = checkStaff.name; document.getElementById('menu-admin').style.display = (activeStaffId === 'ADMIN') ? 'flex' : 'none'; } }
+            if(savedUser && !activeStaffId) { 
+                let checkStaff = staffs.find(s => s.id === savedUser); 
+                if(checkStaff) { 
+                    activeStaffId = checkStaff.id; 
+                    document.getElementById('login-overlay').style.display = 'none'; 
+                    applyRoleUI();
+                } 
+            }
             if(activeStaffId) renderData();
         });
 
         function syncToCloud() { db.ref().update({ staffs, inventory, customers, transactions, serviceOrders, cashflow, recycleBin }); }
 
-        function doLogin() { let u = document.getElementById('login-user').value; let p = document.getElementById('login-pass').value; let target = staffs.find(s => s.id === u); if(target && target.password === p) { activeStaffId = u; localStorage.setItem('luonggia_saved_user', u); document.getElementById('login-overlay').style.display = 'none'; document.getElementById('top-user-name').innerText = target.name; document.getElementById('menu-admin').style.display = (activeStaffId === 'ADMIN') ? 'flex' : 'none'; renderData(); } else { uiAlert('Mã bí mật không đúng!'); } }
+        function doLogin() { let u = document.getElementById('login-user').value; let p = document.getElementById('login-pass').value; let target = staffs.find(s => s.id === u); if(target && target.password === p) { activeStaffId = u; localStorage.setItem('luonggia_saved_user', u); document.getElementById('login-overlay').style.display = 'none'; applyRoleUI(); renderData(); } else { uiAlert('Mã bí mật không đúng!'); } }
         function logout() { uiConfirm("Bro muốn thoát hệ thống?", () => { activeStaffId = null; localStorage.removeItem('luonggia_saved_user'); document.getElementById('login-overlay').style.display = 'flex'; }); }
 
         function switchTab(tabId) { 
             if(tabId === 'system-admin' && activeStaffId !== 'ADMIN') return uiAlert('Chỉ ADMIN mới vào được!'); 
+            if(tabId === 'dashboard' && activeStaffId !== 'ADMIN') return uiAlert('Bạn không có quyền xem Tổng Quan!');
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active')); 
             document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active')); 
             document.getElementById(tabId).classList.add('active'); 
@@ -479,7 +512,7 @@
         function renderData() {
             if(!activeStaffId) return; let isAdmin = (activeStaffId === 'ADMIN'); let todayObj = new Date(getLocalDateStr());
             
-            renderDashboard();
+            if(isAdmin) renderDashboard();
 
             document.getElementById('admin-monthly-report').style.display = isAdmin ? 'block' : 'none'; document.getElementById('admin-daily-summary').style.display = isAdmin ? 'block' : 'none';
             if(pendingPosCustomer) { setCustomerInput('pos', pendingPosCustomer); setCustomerInput('srv', pendingPosCustomer); pendingPosCustomer = null; }
