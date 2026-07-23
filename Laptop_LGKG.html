@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Laptop Lương Gia KG - V14.7 Final</title>
+    <title>Laptop Lương Gia KG - V14.8 Pro</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -144,7 +144,7 @@
     </div>
 
     <div class="top-bar">
-        <div class="logo-text">🚀 LƯƠNG GIA KG <span style="font-size: 0.65rem; background: #1e293b; color: #fff; padding: 2px 6px; border-radius: 4px; margin-left: 6px;">v14.7 Final</span></div>
+        <div class="logo-text">🚀 LƯƠNG GIA KG <span style="font-size: 0.65rem; background: #1e293b; color: #fff; padding: 2px 6px; border-radius: 4px; margin-left: 6px;">v14.8 Pro</span></div>
         <div class="top-btn-group" style="font-size:0.85rem; font-weight:600; display:flex; align-items:center; gap:8px;">
             👤 <span id="top-user-name">...</span> 
             <button onclick="showMyShift()" style="background:#dcfce7; color:#166534; border:1px solid #bbf7d0; padding:4px 10px; border-radius:6px; cursor:pointer; font-weight:bold;">💰 Tiền Ca Làm</button>
@@ -153,7 +153,7 @@
     </div>
 
     <div class="sidebar">
-        <div class="sidebar-header"><img id="sidebar-logo" src=""><h2>V14.7 PRO</h2></div>
+        <div class="sidebar-header"><img id="sidebar-logo" src=""><h2>V14.8 PRO</h2></div>
         <button class="nav-btn admin-only" onclick="switchTab('dashboard')" id="menu-dashboard"><span class="icon">📊</span><span class="text">Tổng Quan</span></button>
         <button class="nav-btn admin-only" onclick="switchTab('unified-report')" id="menu-report"><span class="icon">📈</span><span class="text">Báo Cáo</span></button>
         <button class="nav-btn" onclick="switchTab('pos')" id="menu-pos"><span class="icon">🛒</span><span class="text">Bán Hàng</span></button>
@@ -192,6 +192,7 @@
                     <button class="action-btn" style="width:auto; height: 44px; background:var(--text-muted);" onclick="triggerPrintUnifiedReport()">🖨️ In Khổ A4</button>
                 </div>
             </div>
+            
             <div id="ur-summary-cards" class="dash-grid"></div>
             
             <div class="card" id="ur-staff-report-container" style="display:none; border-color: var(--primary); box-shadow: 0 4px 15px rgba(37,99,235,0.1);">
@@ -199,7 +200,8 @@
                 <div class="table-responsive"><table style="width:100%; font-size: 0.95rem;"><thead><tr><th>Nhân Viên</th><th style="text-align:right;">Bán / Sửa (Tiền mặt) + Thu Khác</th><th style="text-align:right;">Cho Khách Nợ</th><th style="text-align:right;">Thu Nợ Khách</th><th style="text-align:right; color:var(--danger);">Đã Chi Ra (-)</th></tr></thead><tbody id="ur-staff-table"></tbody></table></div>
             </div>
 
-            <div class="card"><h3 style="margin-top:0;">Lịch Sử Giao Dịch Tháng</h3><div class="table-responsive">
+            <div class="card"><h3 style="margin-top:0;">Lịch Sử Giao Dịch Tháng</h3><div class="table-responsive"><table style="width:100%;"><thead><tr><th>Ngày</th><th>Phân Loại</th><th>Đối Tượng</th><th>Nội Dung Chi Tiết</th><th style="text-align:right;">Ghi Nhận (+)</th><th style="text-align:right;">Chi Phí (-)</th></tr></thead><tbody id="ur-table"></tbody></table></div></div>
+        </div>
 
         <!-- POS BÁN HÀNG -->
         <div id="pos" class="tab-content">
@@ -420,7 +422,6 @@
             const data = snapshot.val() || {};
             function toArr(obj) { if(!obj) return []; if(Array.isArray(obj)) return obj.filter(x => x !== null); return Object.values(obj).filter(x => x !== null); }
             if (!data.staffs) { 
-                // CƠ CHẾ PHAO CỨU SINH TỰ ĐỘNG BƠM TÀI KHOẢN
                 let initData = { staffs: [ {id:'ADMIN', name:'Lương Minh Trí', password:'123'} ], inventory: [], customers: [], transactions: [], serviceOrders: [], cashflow: [], recycleBin: [], activityLogs: [] }; 
                 db.ref().set(initData); return; 
             }
@@ -463,35 +464,11 @@
         function getCustomerDebtInfo(customerId) { let totalDebt = 0, maxOverdueDays = 0, today = new Date(); today.setHours(0,0,0,0); transactions.filter(t => t.customerId === customerId).forEach(t => { if(t.type === 'debt') { totalDebt += t.amount + (t.partsRevenue||0); let txDate = new Date(t.date); txDate.setHours(0,0,0,0); let diffDays = Math.floor((today - txDate) / 86400000); if(diffDays > maxOverdueDays) maxOverdueDays = diffDays; } else if(t.type === 'pay') { totalDebt -= t.amount; } }); return { totalDebt: totalDebt < 0 ? 0 : totalDebt, maxOverdueDays }; }
         function setCustomerInput(tab, cusId) { let cus = customers.find(c => c.id === cusId); if(cus) { document.getElementById(tab+'-customer-input').value = `${cus.name} - ${cus.phone}`; document.getElementById(tab+'-customer-hidden').value = cus.id; if(tab === 'pos') { let callBtn = document.getElementById('pos-call-btn'); callBtn.style.display = 'inline-flex'; callBtn.href = 'tel:' + cus.phone.replace(/[^0-9]/g, ''); } } }
 
-        
-        function showUrDetail(type) {
-            let d = window.currentUrData; if(!d) return;
-            let title = '', items = [];
-            if(type === 'doanhthu') { title = `Chi tiết Doanh Thu Hàng Bán (${d.m}/${d.y})`; items = d.reportData.filter(r => r.type === 'Bán Hàng' || r.type === 'Bán Nợ' || (r.type === 'Sửa Máy' && r.in > 0 && r.cost >= 0 && (r.in - (r.cost || 0)) > 0)); } 
-            else if (type === 'von') { title = `Chi tiết Vốn Hàng Bán (${d.m}/${d.y})`; items = d.reportData.filter(r => r.cost > 0); } 
-            else if (type === 'lai') { title = `Chi tiết Lãi Bán Hàng (${d.m}/${d.y})`; items = d.reportData.filter(r => (r.type === 'Bán Hàng' || r.type === 'Bán Nợ') && r.in > 0); } 
-            else if (type === 'sua') { title = `Chi tiết Tiền Công Sửa Chữa (${d.m}/${d.y})`; items = d.reportData.filter(r => r.type === 'Sửa Máy'); } 
-            else if (type === 'thukhac') { title = `Chi tiết Thu Nhập Khác (${d.m}/${d.y})`; items = d.reportData.filter(r => r.type === 'Thu Khác'); } 
-            else if (type === 'chi') { title = `Chi tiết Chi Phí (${d.m}/${d.y})`; items = d.reportData.filter(r => r.type === 'Chi Phí'); }
-
-            let html = '<thead><tr><th>Ngày</th><th>Phân loại</th><th>Chi tiết</th><th style="text-align:right;">Số Tiền / Vốn</th></tr></thead><tbody>';
-            items.forEach(r => {
-                let amtHtml = '';
-                if(type === 'chi') amtHtml = `<span style="color:var(--danger)">-${formatMoney(r.out)}</span>`;
-                else if(type === 'von') amtHtml = `<span style="color:#b45309">${formatMoney(r.cost)}</span>`;
-                else if(type === 'lai') amtHtml = `<span style="color:var(--success)">Lãi: ${formatMoney(r.in - r.cost)}</span> <br><small>(${formatMoney(r.in)} - ${formatMoney(r.cost)})</small>`;
-                else amtHtml = `<span style="color:var(--success)">+${formatMoney(r.in)}</span>`;
-                html += `<tr><td>${formatFullDate(r.date)}</td><td><b>${r.type}</b></td><td><b>${r.obj}</b><br>${r.desc}</td><td style="text-align:right; font-weight:bold;">${amtHtml}</td></tr>`;
-            });
-            if(items.length===0) html += '<tr><td colspan="4" style="text-align:center; padding: 20px;">Không có khoản nào.</td></tr>'; html += '</tbody>';
-            document.getElementById('dash-detail-table').innerHTML = html; document.getElementById('dash-detail-title').innerText = title; document.getElementById('dashDetailModal').style.display = 'flex';
-        }
-function generateUnifiedReport() {
+        function generateUnifiedReport() {
             let m = document.getElementById('ur-month').value.padStart(2, '0'); let y = document.getElementById('ur-year').value; let prefix = `${y}-${m}-`;
             let revenueSales = 0, costSales = 0; let revenueRepairs = 0; let revenueExtra = 0, expenses = 0;
             let reportData = [];
             
-            // Khởi tạo bộ đếm cho từng nhân viên
             let staffStats = {}; 
             staffs.forEach(s => { staffStats[s.id] = { name: s.name, thuTienMat: 0, banNo: 0, thuNo: 0, chiPhi: 0, thuKhac: 0 }; }); 
             
@@ -548,7 +525,6 @@ function generateUnifiedReport() {
                 <div class="dash-card" style="grid-column: 1 / -1; background:#dcfce7; border-color:#86efac; cursor:default; box-shadow: 0 10px 20px rgba(22,101,52,0.1);"><div class="dash-info" style="text-align:center; width:100%;"><h4 style="color:#166534; font-size:1.1rem;">LỢI NHUẬN THỰC TẾ THÁNG ${m}/${y}</h4><p class="value" style="color:#14532d; font-size:2.5rem;">${formatMoney(profit)} đ</p></div></div>
             `;
 
-            // Xuất HTML Bảng Hiệu Suất Nhân Viên
             let staffHtml = '';
             Object.values(staffStats).forEach(st => {
                 if (st.thuTienMat > 0 || st.banNo > 0 || st.thuNo > 0 || st.chiPhi > 0 || st.thuKhac > 0) {
@@ -578,6 +554,30 @@ function generateUnifiedReport() {
             document.getElementById('ur-table').innerHTML = html;
             window.currentUrData = { m, y, revenueSales, costSales, revenueRepairs, revenueExtra, expenses, profit, reportData };
         }
+
+        function showUrDetail(type) {
+            let d = window.currentUrData; if(!d) return;
+            let title = '', items = [];
+            if(type === 'doanhthu') { title = `Chi tiết Doanh Thu Hàng Bán (${d.m}/${d.y})`; items = d.reportData.filter(r => r.type === 'Bán Hàng' || r.type === 'Bán Nợ' || (r.type === 'Sửa Máy' && r.in > 0 && r.cost >= 0 && (r.in - (r.cost || 0)) > 0)); } 
+            else if (type === 'von') { title = `Chi tiết Vốn Hàng Bán (${d.m}/${d.y})`; items = d.reportData.filter(r => r.cost > 0); } 
+            else if (type === 'lai') { title = `Chi tiết Lãi Bán Hàng (${d.m}/${d.y})`; items = d.reportData.filter(r => (r.type === 'Bán Hàng' || r.type === 'Bán Nợ') && r.in > 0); } 
+            else if (type === 'sua') { title = `Chi tiết Tiền Công Sửa Chữa (${d.m}/${d.y})`; items = d.reportData.filter(r => r.type === 'Sửa Máy'); } 
+            else if (type === 'thukhac') { title = `Chi tiết Thu Nhập Khác (${d.m}/${d.y})`; items = d.reportData.filter(r => r.type === 'Thu Khác'); } 
+            else if (type === 'chi') { title = `Chi tiết Chi Phí (${d.m}/${d.y})`; items = d.reportData.filter(r => r.type === 'Chi Phí'); }
+
+            let html = '<thead><tr><th>Ngày</th><th>Phân loại</th><th>Chi tiết</th><th style="text-align:right;">Số Tiền / Vốn</th></tr></thead><tbody>';
+            items.forEach(r => {
+                let amtHtml = '';
+                if(type === 'chi') amtHtml = `<span style="color:var(--danger)">-${formatMoney(r.out)}</span>`;
+                else if(type === 'von') amtHtml = `<span style="color:#b45309">${formatMoney(r.cost)}</span>`;
+                else if(type === 'lai') amtHtml = `<span style="color:var(--success)">Lãi: ${formatMoney(r.in - r.cost)}</span> <br><small>(${formatMoney(r.in)} - ${formatMoney(r.cost)})</small>`;
+                else amtHtml = `<span style="color:var(--success)">+${formatMoney(r.in)}</span>`;
+                html += `<tr><td>${formatFullDate(r.date)}</td><td><b>${r.type}</b></td><td><b>${r.obj}</b><br>${r.desc}</td><td style="text-align:right; font-weight:bold;">${amtHtml}</td></tr>`;
+            });
+            if(items.length===0) html += '<tr><td colspan="4" style="text-align:center; padding: 20px;">Không có khoản nào.</td></tr>'; html += '</tbody>';
+            document.getElementById('dash-detail-table').innerHTML = html; document.getElementById('dash-detail-title').innerText = title; document.getElementById('dashDetailModal').style.display = 'flex';
+        }
+
         function renderDashboard() {
             let today = getLocalDateStr(); let sumSales = 0, countOrders = 0;
             transactions.forEach(t => { if(t.date === today && (t.type === 'cash' || t.type === 'pay')) sumSales += (t.amount + (t.partsRevenue || 0)); if(t.date === today && t.type !== 'pay') countOrders++; });
