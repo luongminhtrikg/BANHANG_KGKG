@@ -171,7 +171,7 @@
         <div id="dashboard" class="tab-content">
             <h2 class="section-title">✨ Tóm tắt hoạt động hôm nay</h2>
             <div class="dash-grid">
-                <div class="dash-card" onclick="showDashDetail('sales')"><div class="dash-icon" style="background: #dcfce7; color: #166534;">💰</div><div class="dash-info"><h4>Thu Vào (Hôm Nay)</h4><p class="value" id="dash-today-sales">0 đ</p></div></div>
+                <div class="dash-card" onclick="showDashDetail('sales')"><div class="dash-icon" style="background: #dcfce7; color: #166534;">💰</div><div class="dash-info" style="width:100%;"><h4>Tổng Phát Sinh (Hôm Nay)</h4><p class="value" id="dash-today-sales" style="margin-bottom:4px; font-size:1.35rem;">0 đ</p><div style="font-size:0.8rem; font-weight:600; display:flex; justify-content:space-between;"><span style="color:var(--text-muted);">Mặt: <b id="dash-today-cash" style="color:#166534;">0đ</b></span><span style="color:var(--text-muted);">Nợ: <b id="dash-today-debt" style="color:#991b1b;">0đ</b></span></div></div></div>
                 <div class="dash-card" onclick="showDashDetail('orders')"><div class="dash-icon" style="background: #e0f2fe; color: #075985;">📝</div><div class="dash-info"><h4>Bill Giao Dịch</h4><p class="value" id="dash-today-orders">0</p></div></div>
                 <div class="dash-card" onclick="showDashDetail('repairs')"><div class="dash-icon" style="background: #fef3c7; color: #b45309;">🛠️</div><div class="dash-info"><h4>Máy Nằm Viện</h4><p class="value" id="dash-repair-count">0</p></div></div>
                 <div class="dash-card" onclick="showDashDetail('debt')"><div class="dash-icon" style="background: #fee2e2; color: #991b1b;">⚠️</div><div class="dash-info"><h4>Tổng Nợ Khách</h4><p class="value" id="dash-total-debt">0 đ</p></div></div>
@@ -579,10 +579,21 @@
         }
 
         function renderDashboard() {
-            let today = getLocalDateStr(); let sumSales = 0, countOrders = 0;
-            transactions.forEach(t => { if(t.date === today && (t.type === 'cash' || t.type === 'pay')) sumSales += (t.amount + (t.partsRevenue || 0)); if(t.date === today && t.type !== 'pay') countOrders++; });
-            cashflow.forEach(c => { if(c.date === today && c.type === 'thu') sumSales += c.amount; });
-            document.getElementById('dash-today-sales').innerText = formatMoney(sumSales) + ' đ'; document.getElementById('dash-today-orders').innerText = countOrders;
+            let today = getLocalDateStr(); let sumSales = 0, countOrders = 0, cashToday = 0, debtToday = 0;
+            transactions.forEach(t => { 
+                if(t.date === today) {
+                    let val = t.amount + (t.partsRevenue || 0);
+                    if(t.type === 'cash' || t.type === 'pay') { cashToday += val; sumSales += val; }
+                    if(t.type === 'debt') { debtToday += val; sumSales += val; }
+                    if(t.type !== 'pay') countOrders++; 
+                } 
+            });
+            cashflow.forEach(c => { if(c.date === today && c.type === 'thu') { cashToday += c.amount; sumSales += c.amount; } });
+            
+            document.getElementById('dash-today-sales').innerText = formatMoney(sumSales) + ' đ'; 
+            let cashEl = document.getElementById('dash-today-cash'); if(cashEl) cashEl.innerText = formatMoney(cashToday) + 'đ';
+            let debtEl = document.getElementById('dash-today-debt'); if(debtEl) debtEl.innerText = formatMoney(debtToday) + 'đ';
+            document.getElementById('dash-today-orders').innerText = countOrders;
 
             let totalDebt = 0; let debtList = [];
             customers.forEach(c => { let d = getCustomerDebtInfo(c.id); totalDebt += d.totalDebt; if(d.totalDebt > 0) debtList.push({...c, debt: d.totalDebt, days: d.maxOverdueDays}); });
@@ -599,12 +610,13 @@
         function showDashDetail(type) {
             let today = getLocalDateStr(); let html = '', title = '';
             if(type === 'sales') {
-                title = 'Chi Tiết Thu Vào Hôm Nay'; html += '<thead><tr><th>Loại</th><th>Khách hàng</th><th>Chi tiết</th><th style="text-align:right;">Số tiền</th></tr></thead><tbody>';
+                title = 'Chi Tiết Phát Sinh Hôm Nay'; html += '<thead><tr><th>Loại</th><th>Khách hàng</th><th>Chi tiết</th><th style="text-align:right;">Số tiền</th></tr></thead><tbody>';
                 let items = [];
-                transactions.forEach(t => { if(t.date === today && (t.type === 'cash' || t.type === 'pay')) { let c = customers.find(x=>x.id===t.customerId); let totalIn = t.amount + (t.partsRevenue || 0); items.push({ id: t.id, typeStr: t.type==='cash'?'Bán hàng/Dịch vụ':'Thu nợ', name: c?c.name:'Khách', phone: c?c.phone:'', note: t.details, amount: totalIn }); } });
+                transactions.forEach(t => { if(t.date === today && (t.type === 'cash' || t.type === 'pay' || t.type === 'debt')) { let c = customers.find(x=>x.id===t.customerId); let totalIn = t.amount + (t.partsRevenue || 0); let tStr = t.type==='cash' ? 'Tiền Mặt' : (t.type==='pay' ? 'Thu nợ' : 'Bán Nợ'); items.push({ id: t.id, typeStr: tStr, name: c?c.name:'Khách', phone: c?c.phone:'', note: t.details, amount: totalIn }); } });
                 cashflow.forEach(c => { if(c.date === today && c.type === 'thu') { items.push({ id: c.id, typeStr: 'Thu khác', name: '-', phone: '', note: c.reason, amount: c.amount }); } });
-                items.forEach(i => { let badgeClr = i.typeStr==='Thu khác' ? '#f59e0b' : '#10b981'; html += `<tr><td><span class="status-badge" style="background:${badgeClr}; color:#fff;">${i.typeStr}</span></td><td><b>${i.name}</b><br>${getCallLink(i.phone)}</td><td>${i.note}</td><td style="text-align:right; color:var(--success); font-weight:bold;">+${formatMoney(i.amount)}đ</td></tr>`; });
-                if(items.length===0) html += '<tr><td colspan="4" style="text-align:center; padding: 20px; color:var(--text-muted);">Chưa có khoản thu nào.</td></tr>';
+                items.forEach(i => { let badgeClr = i.typeStr==='Thu khác' ? '#f59e0b' : (i.typeStr==='Bán Nợ' ? '#ef4444' : '#10b981'); let txtClr = i.typeStr==='Bán Nợ' ? 'var(--danger)' : 'var(--success)'; let sign = i.typeStr==='Bán Nợ' ? '' : '+'; html += `<tr><td><span class="status-badge" style="background:${badgeClr}; color:#fff;">${i.typeStr}</span></td><td><b>${i.name}</b><br>${getCallLink(i.phone)}</td><td>${i.note}</td><td style="text-align:right; color:${txtClr}; font-weight:bold;">${sign}${formatMoney(i.amount)}đ</td></tr>`; });
+                if(items.length===0) html += '<tr><td colspan="4" style="text-align:center; padding: 20px; color:var(--text-muted);">Chưa có phát sinh nào.</td></tr>';
+            }
             } else if (type === 'orders') {
                 title = 'Chi Tiết Bill Hôm Nay'; html += '<thead><tr><th>Mã Bill</th><th>Khách hàng</th><th>Chi tiết</th><th style="text-align:right;">Tổng tiền</th></tr></thead><tbody>';
                 let items = transactions.filter(t => t.date === today && t.type !== 'pay');
