@@ -455,7 +455,6 @@
             if(!activityLogs) activityLogs = [];
             activityLogs.push({ id: 'LOG_'+Date.now(), time: getLocalDateStr() + ' ' + formatTime(new Date()), staff: staffName, action: action, detail: detail });
             if(activityLogs.length > 200) activityLogs.shift();
-            syncToCloud();
         }
 
         function doLogin() { let u = document.getElementById('login-user').value; let p = document.getElementById('login-pass').value; let target = staffs.find(s => s.id === u); if(target && target.password === p) { activeStaffId = u; localStorage.setItem('luonggia_saved_user', u); document.getElementById('login-overlay').style.display = 'none'; applyRoleUI(); renderData(); } else { uiAlert('Mã bí mật không đúng!'); } }
