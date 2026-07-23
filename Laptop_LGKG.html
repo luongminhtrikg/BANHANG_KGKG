@@ -447,7 +447,7 @@
             if(activeStaffId) renderData();
         });
 
-        function syncToCloud() { db.ref().update({ staffs, inventory, customers, transactions, serviceOrders, cashflow, recycleBin, activityLogs }); }
+       function syncToCloud() { db.ref().set({ staffs, inventory, customers, transactions, serviceOrders, cashflow, recycleBin, activityLogs }); }
 
         function logAction(action, detail) {
             let staff = staffs.find(s=>s.id===activeStaffId);
