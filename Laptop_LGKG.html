@@ -193,8 +193,13 @@
                 </div>
             </div>
             <div id="ur-summary-cards" class="dash-grid"></div>
-            <div class="card"><h3 style="margin-top:0;">Lịch Sử Giao Dịch Tháng</h3><div class="table-responsive"><table style="width:100%;"><thead><tr><th>Ngày</th><th>Phân Loại</th><th>Đối Tượng</th><th>Nội Dung Chi Tiết</th><th style="text-align:right;">Ghi Nhận (+)</th><th style="text-align:right;">Chi Phí (-)</th></tr></thead><tbody id="ur-table"></tbody></table></div></div>
-        </div>
+            
+            <div class="card" id="ur-staff-report-container" style="display:none; border-color: var(--primary); box-shadow: 0 4px 15px rgba(37,99,235,0.1);">
+                <h3 style="margin-top:0; color:var(--primary);">👨‍🔧 Báo Cáo Hiệu Suất Nhân Viên (Tháng)</h3>
+                <div class="table-responsive"><table style="width:100%; font-size: 0.95rem;"><thead><tr><th>Nhân Viên</th><th style="text-align:right;">Bán / Sửa (Tiền mặt) + Thu Khác</th><th style="text-align:right;">Cho Khách Nợ</th><th style="text-align:right;">Thu Nợ Khách</th><th style="text-align:right; color:var(--danger);">Đã Chi Ra (-)</th></tr></thead><tbody id="ur-staff-table"></tbody></table></div>
+            </div>
+
+            <div class="card"><h3 style="margin-top:0;">Lịch Sử Giao Dịch Tháng</h3><div class="table-responsive">
 
         <!-- POS BÁN HÀNG -->
         <div id="pos" class="tab-content">
@@ -458,48 +463,7 @@
         function getCustomerDebtInfo(customerId) { let totalDebt = 0, maxOverdueDays = 0, today = new Date(); today.setHours(0,0,0,0); transactions.filter(t => t.customerId === customerId).forEach(t => { if(t.type === 'debt') { totalDebt += t.amount + (t.partsRevenue||0); let txDate = new Date(t.date); txDate.setHours(0,0,0,0); let diffDays = Math.floor((today - txDate) / 86400000); if(diffDays > maxOverdueDays) maxOverdueDays = diffDays; } else if(t.type === 'pay') { totalDebt -= t.amount; } }); return { totalDebt: totalDebt < 0 ? 0 : totalDebt, maxOverdueDays }; }
         function setCustomerInput(tab, cusId) { let cus = customers.find(c => c.id === cusId); if(cus) { document.getElementById(tab+'-customer-input').value = `${cus.name} - ${cus.phone}`; document.getElementById(tab+'-customer-hidden').value = cus.id; if(tab === 'pos') { let callBtn = document.getElementById('pos-call-btn'); callBtn.style.display = 'inline-flex'; callBtn.href = 'tel:' + cus.phone.replace(/[^0-9]/g, ''); } } }
 
-        function generateUnifiedReport() {
-            let m = document.getElementById('ur-month').value.padStart(2, '0'); let y = document.getElementById('ur-year').value; let prefix = `${y}-${m}-`;
-            let revenueSales = 0, costSales = 0; let revenueRepairs = 0; let revenueExtra = 0, expenses = 0;
-            let reportData = [];
-            
-            transactions.forEach(t => {
-                if(t.date.startsWith(prefix)) {
-                    let isRepair = t.note && t.note.includes('Từ phiếu Nhận Máy');
-                    let cus = customers.find(c => c.id === t.customerId);
-                    if (isRepair) { revenueRepairs += t.amount; revenueSales += t.partsRevenue || 0; costSales += t.totalCost || 0; reportData.push({ id: t.id, date: t.date, type: 'Sửa Máy', obj: cus ? cus.name : 'Khách', phone: cus ? cus.phone : '', desc: t.details, in: t.amount + (t.partsRevenue || 0), out: 0, cost: t.totalCost || 0 }); } 
-                    else if (t.type === 'cash' || t.type === 'debt') { revenueSales += (t.amount + (t.partsRevenue||0)); let billCost = t.totalCost || 0; costSales += billCost; reportData.push({ id: t.id, date: t.date, type: t.type === 'cash' ? 'Bán Hàng' : 'Bán Nợ', obj: cus ? cus.name : 'Khách', phone: cus ? cus.phone : '', desc: t.details + (t.note ? ' ('+t.note+')' : ''), in: t.amount + (t.partsRevenue||0), out: 0, cost: billCost }); } 
-                    else if (t.type === 'pay') { reportData.push({ id: t.id, date: t.date, type: 'Thu Nợ', obj: cus ? cus.name : 'Khách', phone: cus ? cus.phone : '', desc: t.details, in: t.amount, out: 0, cost: 0, isDebtPay: true }); }
-                }
-            });
-            
-            cashflow.forEach(c => {
-                if(c.date.startsWith(prefix)) {
-                    if(c.type === 'thu') { revenueExtra += c.amount; reportData.push({ id: c.id, date: c.date, type: 'Thu Khác', obj: '-', phone: '', desc: c.reason, in: c.amount, out: 0, cost: 0 }); } 
-                    else { expenses += c.amount; reportData.push({ id: c.id, date: c.date, type: 'Chi Phí', obj: '-', phone: '', desc: c.reason, in: 0, out: c.amount, cost: 0 }); }
-                }
-            });
-            
-            reportData.sort((a,b) => b.date.localeCompare(a.date));
-            let profit = (revenueSales - costSales) + revenueRepairs + revenueExtra - expenses;
-            
-            document.getElementById('ur-summary-cards').innerHTML = `
-                <div class="dash-card" onclick="showUrDetail('doanhthu')" style="border-left:4px solid var(--info);"><div class="dash-info"><h4>Doanh Thu Hàng (Bấm)</h4><p class="value" style="color:var(--text-main)">${formatMoney(revenueSales)}</p></div></div>
-                <div class="dash-card" onclick="showUrDetail('von')" style="border-left:4px solid var(--warning);"><div class="dash-info"><h4>(-) Vốn Hàng Bán</h4><p class="value" style="color:#b45309">${formatMoney(costSales)}</p></div></div>
-                <div class="dash-card" onclick="showUrDetail('lai')" style="border-left:4px solid var(--success);"><div class="dash-info"><h4>(+) Lãi Bán Hàng</h4><p class="value" style="color:var(--success)">${formatMoney(revenueSales - costSales)}</p></div></div>
-                <div class="dash-card" onclick="showUrDetail('sua')" style="border-left:4px solid var(--success);"><div class="dash-info"><h4>(+) Tiền Công Sửa Chữa</h4><p class="value" style="color:var(--success)">${formatMoney(revenueRepairs)}</p></div></div>
-                <div class="dash-card" onclick="showUrDetail('thukhac')" style="border-left:4px solid var(--success);"><div class="dash-info"><h4>(+) Thu Nhập Khác</h4><p class="value" style="color:var(--success)">${formatMoney(revenueExtra)}</p></div></div>
-                <div class="dash-card" onclick="showUrDetail('chi')" style="border-left:4px solid var(--danger);"><div class="dash-info"><h4>(-) Chi Phí Hoạt Động</h4><p class="value" style="color:var(--danger)">${formatMoney(expenses)}</p></div></div>
-                <div class="dash-card" style="grid-column: 1 / -1; background:#dcfce7; border-color:#86efac; cursor:default; box-shadow: 0 10px 20px rgba(22,101,52,0.1);"><div class="dash-info" style="text-align:center; width:100%;"><h4 style="color:#166534; font-size:1.1rem;">LỢI NHUẬN THỰC TẾ THÁNG ${m}/${y}</h4><p class="value" style="color:#14532d; font-size:2.5rem;">${formatMoney(profit)} đ</p></div></div>
-            `;
-            
-            let html = '';
-            if(reportData.length === 0) { html += '<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--text-muted)">Chưa có dữ liệu nào.</td></tr>'; } 
-            else { reportData.forEach(r => { let badgeClr = r.out > 0 ? '#fee2e2' : (r.isDebtPay ? '#e0f2fe' : '#dcfce7'); let txtClr = r.out > 0 ? '#991b1b' : (r.isDebtPay ? '#075985' : '#166534'); let phoneHtml = r.phone ? '<br>' + getCallLink(r.phone) : ''; let inTxt = r.in > 0 ? '+ ' + formatMoney(r.in) + ' đ' : '-'; let costHtml = r.cost > 0 ? `<br><small style="color:var(--warning); font-weight:600;">(Vốn: ${formatMoney(r.cost)} đ)</small>` : ''; html += `<tr style="border-bottom:1px solid var(--border);"><td><b>${formatFullDate(r.date)}</b></td><td><span class="status-badge" style="background:${badgeClr}; color:${txtClr}">${r.type}</span></td><td><b style="color:var(--text-main);">${r.obj}</b>${phoneHtml}</td><td style="font-size:0.95rem;">${r.desc}</td><td style="text-align:right; font-weight:800; font-size:1.05rem; color:var(--success)">${inTxt}${costHtml}</td><td style="text-align:right; font-weight:800; font-size:1.05rem; color:var(--danger)">${r.out > 0 ? '- ' + formatMoney(r.out) + ' đ' : '-'}</td></tr>`; }); }
-            document.getElementById('ur-table').innerHTML = html;
-            window.currentUrData = { m, y, revenueSales, costSales, revenueRepairs, revenueExtra, expenses, profit, reportData };
-        }
-
+        
         function showUrDetail(type) {
             let d = window.currentUrData; if(!d) return;
             let title = '', items = [];
@@ -522,7 +486,98 @@
             if(items.length===0) html += '<tr><td colspan="4" style="text-align:center; padding: 20px;">Không có khoản nào.</td></tr>'; html += '</tbody>';
             document.getElementById('dash-detail-table').innerHTML = html; document.getElementById('dash-detail-title').innerText = title; document.getElementById('dashDetailModal').style.display = 'flex';
         }
+function generateUnifiedReport() {
+            let m = document.getElementById('ur-month').value.padStart(2, '0'); let y = document.getElementById('ur-year').value; let prefix = `${y}-${m}-`;
+            let revenueSales = 0, costSales = 0; let revenueRepairs = 0; let revenueExtra = 0, expenses = 0;
+            let reportData = [];
+            
+            // Khởi tạo bộ đếm cho từng nhân viên
+            let staffStats = {}; 
+            staffs.forEach(s => { staffStats[s.id] = { name: s.name, thuTienMat: 0, banNo: 0, thuNo: 0, chiPhi: 0, thuKhac: 0 }; }); 
+            
+            transactions.forEach(t => {
+                if(t.date.startsWith(prefix)) {
+                    if(!staffStats[t.staffId]) staffStats[t.staffId] = { name: 'KTV Đã Xóa', thuTienMat: 0, banNo: 0, thuNo: 0, chiPhi: 0, thuKhac: 0 };
+                    
+                    let isRepair = t.note && t.note.includes('Từ phiếu Nhận Máy');
+                    let cus = customers.find(c => c.id === t.customerId);
+                    let totalVal = t.amount + (t.partsRevenue || 0);
 
+                    if (isRepair) { 
+                        revenueRepairs += t.amount; revenueSales += t.partsRevenue || 0; costSales += t.totalCost || 0; 
+                        reportData.push({ id: t.id, date: t.date, type: 'Sửa Máy', obj: cus ? cus.name : 'Khách', phone: cus ? cus.phone : '', desc: t.details, in: totalVal, out: 0, cost: t.totalCost || 0 }); 
+                        if(t.type === 'cash') staffStats[t.staffId].thuTienMat += totalVal; else if(t.type === 'debt') staffStats[t.staffId].banNo += totalVal;
+                    } 
+                    else if (t.type === 'cash' || t.type === 'debt') { 
+                        revenueSales += totalVal; let billCost = t.totalCost || 0; costSales += billCost; 
+                        reportData.push({ id: t.id, date: t.date, type: t.type === 'cash' ? 'Bán Hàng' : 'Bán Nợ', obj: cus ? cus.name : 'Khách', phone: cus ? cus.phone : '', desc: t.details + (t.note ? ' ('+t.note+')' : ''), in: totalVal, out: 0, cost: billCost }); 
+                        if(t.type === 'cash') staffStats[t.staffId].thuTienMat += totalVal; else if(t.type === 'debt') staffStats[t.staffId].banNo += totalVal;
+                    } 
+                    else if (t.type === 'pay') { 
+                        reportData.push({ id: t.id, date: t.date, type: 'Thu Nợ', obj: cus ? cus.name : 'Khách', phone: cus ? cus.phone : '', desc: t.details, in: t.amount, out: 0, cost: 0, isDebtPay: true }); 
+                        staffStats[t.staffId].thuNo += t.amount;
+                    }
+                }
+            });
+            
+            cashflow.forEach(c => {
+                if(c.date.startsWith(prefix)) {
+                    if(!staffStats[c.staffId]) staffStats[c.staffId] = { name: 'KTV Đã Xóa', thuTienMat: 0, banNo: 0, thuNo: 0, chiPhi: 0, thuKhac: 0 };
+                    if(c.type === 'thu') { 
+                        revenueExtra += c.amount; 
+                        reportData.push({ id: c.id, date: c.date, type: 'Thu Khác', obj: '-', phone: '', desc: c.reason, in: c.amount, out: 0, cost: 0 }); 
+                        staffStats[c.staffId].thuKhac += c.amount;
+                    } else { 
+                        expenses += c.amount; 
+                        reportData.push({ id: c.id, date: c.date, type: 'Chi Phí', obj: '-', phone: '', desc: c.reason, in: 0, out: c.amount, cost: 0 }); 
+                        staffStats[c.staffId].chiPhi += c.amount;
+                    }
+                }
+            });
+            
+            reportData.sort((a,b) => b.date.localeCompare(a.date));
+            let profit = (revenueSales - costSales) + revenueRepairs + revenueExtra - expenses;
+            
+            document.getElementById('ur-summary-cards').innerHTML = `
+                <div class="dash-card" onclick="showUrDetail('doanhthu')" style="border-left:4px solid var(--info);"><div class="dash-info"><h4>Doanh Thu Hàng (Bấm)</h4><p class="value" style="color:var(--text-main)">${formatMoney(revenueSales)}</p></div></div>
+                <div class="dash-card" onclick="showUrDetail('von')" style="border-left:4px solid var(--warning);"><div class="dash-info"><h4>(-) Vốn Hàng Bán</h4><p class="value" style="color:#b45309">${formatMoney(costSales)}</p></div></div>
+                <div class="dash-card" onclick="showUrDetail('lai')" style="border-left:4px solid var(--success);"><div class="dash-info"><h4>(+) Lãi Bán Hàng</h4><p class="value" style="color:var(--success)">${formatMoney(revenueSales - costSales)}</p></div></div>
+                <div class="dash-card" onclick="showUrDetail('sua')" style="border-left:4px solid var(--success);"><div class="dash-info"><h4>(+) Tiền Công Sửa Chữa</h4><p class="value" style="color:var(--success)">${formatMoney(revenueRepairs)}</p></div></div>
+                <div class="dash-card" onclick="showUrDetail('thukhac')" style="border-left:4px solid var(--success);"><div class="dash-info"><h4>(+) Thu Nhập Khác</h4><p class="value" style="color:var(--success)">${formatMoney(revenueExtra)}</p></div></div>
+                <div class="dash-card" onclick="showUrDetail('chi')" style="border-left:4px solid var(--danger);"><div class="dash-info"><h4>(-) Chi Phí Hoạt Động</h4><p class="value" style="color:var(--danger)">${formatMoney(expenses)}</p></div></div>
+                <div class="dash-card" style="grid-column: 1 / -1; background:#dcfce7; border-color:#86efac; cursor:default; box-shadow: 0 10px 20px rgba(22,101,52,0.1);"><div class="dash-info" style="text-align:center; width:100%;"><h4 style="color:#166534; font-size:1.1rem;">LỢI NHUẬN THỰC TẾ THÁNG ${m}/${y}</h4><p class="value" style="color:#14532d; font-size:2.5rem;">${formatMoney(profit)} đ</p></div></div>
+            `;
+
+            // Xuất HTML Bảng Hiệu Suất Nhân Viên
+            let staffHtml = '';
+            Object.values(staffStats).forEach(st => {
+                if (st.thuTienMat > 0 || st.banNo > 0 || st.thuNo > 0 || st.chiPhi > 0 || st.thuKhac > 0) {
+                    staffHtml += `<tr>
+                        <td><b style="font-size:1.05rem;">${st.name}</b></td>
+                        <td style="text-align:right; font-weight:800; color:var(--success); font-size:1.05rem;">+${formatMoney(st.thuTienMat + st.thuKhac)}đ</td>
+                        <td style="text-align:right; font-weight:bold; color:#b45309;">${formatMoney(st.banNo)}đ</td>
+                        <td style="text-align:right; font-weight:bold; color:var(--info);">+${formatMoney(st.thuNo)}đ</td>
+                        <td style="text-align:right; font-weight:800; color:var(--danger); font-size:1.05rem;">${st.chiPhi > 0 ? '-' + formatMoney(st.chiPhi) + 'đ' : '-'}</td>
+                    </tr>`;
+                }
+            });
+            let staffContainer = document.getElementById('ur-staff-report-container');
+            let staffTable = document.getElementById('ur-staff-table');
+            if(staffContainer && staffTable) {
+                if(staffHtml) {
+                    staffTable.innerHTML = staffHtml;
+                    staffContainer.style.display = 'block';
+                } else {
+                    staffContainer.style.display = 'none';
+                }
+            }
+            
+            let html = '';
+            if(reportData.length === 0) { html += '<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--text-muted)">Chưa có dữ liệu nào.</td></tr>'; } 
+            else { reportData.forEach(r => { let badgeClr = r.out > 0 ? '#fee2e2' : (r.isDebtPay ? '#e0f2fe' : '#dcfce7'); let txtClr = r.out > 0 ? '#991b1b' : (r.isDebtPay ? '#075985' : '#166534'); let phoneHtml = r.phone ? '<br>' + getCallLink(r.phone) : ''; let inTxt = r.in > 0 ? '+ ' + formatMoney(r.in) + ' đ' : '-'; let costHtml = r.cost > 0 ? `<br><small style="color:var(--warning); font-weight:600;">(Vốn: ${formatMoney(r.cost)} đ)</small>` : ''; html += `<tr style="border-bottom:1px solid var(--border);"><td><b>${formatFullDate(r.date)}</b></td><td><span class="status-badge" style="background:${badgeClr}; color:${txtClr}">${r.type}</span></td><td><b style="color:var(--text-main);">${r.obj}</b>${phoneHtml}</td><td style="font-size:0.95rem;">${r.desc}</td><td style="text-align:right; font-weight:800; font-size:1.05rem; color:var(--success)">${inTxt}${costHtml}</td><td style="text-align:right; font-weight:800; font-size:1.05rem; color:var(--danger)">${r.out > 0 ? '- ' + formatMoney(r.out) + ' đ' : '-'}</td></tr>`; }); }
+            document.getElementById('ur-table').innerHTML = html;
+            window.currentUrData = { m, y, revenueSales, costSales, revenueRepairs, revenueExtra, expenses, profit, reportData };
+        }
         function renderDashboard() {
             let today = getLocalDateStr(); let sumSales = 0, countOrders = 0;
             transactions.forEach(t => { if(t.date === today && (t.type === 'cash' || t.type === 'pay')) sumSales += (t.amount + (t.partsRevenue || 0)); if(t.date === today && t.type !== 'pay') countOrders++; });
