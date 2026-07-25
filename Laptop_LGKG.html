@@ -170,10 +170,10 @@
         
         <!-- DASHBOARD -->
         <div id="dashboard" class="tab-content">
-            <h2 class="section-title">✨ Tóm tắt hoạt động hôm nay</h2>
+            <h2 class="section-title" style="justify-content:space-between;"><span>✨ Tóm tắt hoạt động</span> <input type="date" id="dash-date-filter" onchange="renderDashboard()" style="font-size:1rem; padding:6px 10px; border:2px solid var(--primary); border-radius:8px; outline:none; font-weight:bold; color:var(--primary);"></h2>
             <div class="dash-grid">
-                <div class="dash-card" onclick="showDashDetail('sales')"><div class="dash-icon" style="background: #dcfce7; color: #166534;">💰</div><div class="dash-info" style="width:100%;"><h4>Tổng Phát Sinh (Hôm Nay)</h4><p class="value" id="dash-today-sales" style="margin-bottom:4px; font-size:1.35rem;">0 đ</p><div style="font-size:0.8rem; font-weight:600; display:flex; justify-content:space-between;"><span style="color:var(--text-muted);">Mặt: <b id="dash-today-cash" style="color:#166534;">0đ</b></span><span style="color:var(--text-muted);">Nợ: <b id="dash-today-debt" style="color:#991b1b;">0đ</b></span></div></div></div>
-                <div class="dash-card" onclick="showDashDetail('orders')"><div class="dash-icon" style="background: #e0f2fe; color: #075985;">📝</div><div class="dash-info"><h4>Bill Giao Dịch</h4><p class="value" id="dash-today-orders">0</p></div></div>
+                <div class="dash-card" onclick="showDashDetail('sales')"><div class="dash-icon" style="background: #dcfce7; color: #166534;">💰</div><div class="dash-info" style="width:100%;"><h4>Tổng Phát Sinh <span style="font-size:0.7rem; color:var(--primary);">(Ngày lọc)</span></h4><p class="value" id="dash-today-sales" style="margin-bottom:4px; font-size:1.35rem;">0 đ</p><div style="font-size:0.8rem; font-weight:600; display:flex; justify-content:space-between;"><span style="color:var(--text-muted);">Mặt: <b id="dash-today-cash" style="color:#166534;">0đ</b></span><span style="color:var(--text-muted);">Nợ: <b id="dash-today-debt" style="color:#991b1b;">0đ</b></span></div></div></div>
+                <div class="dash-card" onclick="showDashDetail('orders')"><div class="dash-icon" style="background: #e0f2fe; color: #075985;">📝</div><div class="dash-info"><h4>Bill Giao Dịch <span style="font-size:0.7rem; color:var(--primary);">(Ngày lọc)</span></h4><p class="value" id="dash-today-orders">0</p></div></div>
                 <div class="dash-card" onclick="showDashDetail('repairs')"><div class="dash-icon" style="background: #fef3c7; color: #b45309;">🛠️</div><div class="dash-info"><h4>Máy Nằm Viện</h4><p class="value" id="dash-repair-count">0</p></div></div>
                 <div class="dash-card" onclick="showDashDetail('debt')"><div class="dash-icon" style="background: #fee2e2; color: #991b1b;">⚠️</div><div class="dash-info"><h4>Tổng Nợ Khách</h4><p class="value" id="dash-total-debt">0 đ</p></div></div>
             </div>
@@ -305,7 +305,7 @@
         
         <!-- ADMIN -->
         <div id="system-admin" class="tab-content">
-            <h2 class="section-title">⚙️ Quản Trị Hệ Thống</h2>
+            <h2 class="section-title">⚙️ Quản Trị Hệ Hệ Thống</h2>
             <div class="card" style="background: #fff8e1; border-color:#fcd34d;"><p style="margin:0; color: #b45309; font-weight:bold;">📌 Khu vực nhạy cảm, chỉ dành cho Admin.</p></div>
             <div class="card" style="text-align: center;">
                 <h3 style="margin-top:0; color:var(--success);">📦 SAO LƯU & PHỤC HỒI</h3>
@@ -447,7 +447,7 @@
             if(activeStaffId) renderData();
         });
 
-       function syncToCloud() { db.ref().set({ staffs, inventory, customers, transactions, serviceOrders, cashflow, recycleBin, activityLogs }); }
+        function syncToCloud() { db.ref().set({ staffs, inventory, customers, transactions, serviceOrders, cashflow, recycleBin, activityLogs }); }
 
         function logAction(action, detail) {
             let staff = staffs.find(s=>s.id===activeStaffId);
@@ -630,7 +630,8 @@
         }
 
         function renderDashboard() {
-            let today = getLocalDateStr(); let sumSales = 0, countOrders = 0, cashToday = 0, debtToday = 0;
+            let dateEl = document.getElementById('dash-date-filter'); if(!dateEl.value) dateEl.value = getLocalDateStr();
+            let today = dateEl.value; let sumSales = 0, countOrders = 0, cashToday = 0, debtToday = 0;
             transactions.forEach(t => { 
                 if(t.date === today) {
                     let val = t.amount + (t.partsRevenue || 0);
@@ -659,7 +660,8 @@
         }
 
         function showDashDetail(type) {
-            let today = getLocalDateStr(); let html = '', title = '';
+            let dateEl = document.getElementById('dash-date-filter');
+            let today = dateEl ? dateEl.value : getLocalDateStr(); let html = '', title = '';
             if(type === 'sales') {
                 title = 'Chi Tiết Phát Sinh Hôm Nay'; html += '<thead><tr><th>Thời gian</th><th>Loại</th><th>Khách hàng</th><th>Chi tiết</th><th style="text-align:right;">Số tiền</th></tr></thead><tbody>';
                 let items = [];
@@ -802,6 +804,7 @@
         
         function receiveDeviceSubmit() { 
             let customerId = document.getElementById('srv-customer-hidden').value, model = document.getElementById('srv-model').value.trim(), accessories = document.getElementById('srv-accessories').value.trim(), condition = document.getElementById('srv-condition').value.trim(), quote = getNumberFromInput('srv-quote'), dueDate = document.getElementById('srv-due-date').value; 
+            if(!dueDate) { let d = new Date(); d.setDate(d.getDate() + 3); dueDate = getLocalDateStr(d); }
             if(!customerId) return uiAlert('Chọn khách hàng!'); 
             if(!model || !condition) return uiAlert('Điền Model và Tình trạng!'); 
             uiConfirm("Lưu thông tin Nhận Máy?", () => { 
