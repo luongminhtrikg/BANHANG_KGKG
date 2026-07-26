@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Laptop Lương Gia KG - V15.0 Pro Max</title>
+    <title>Laptop Lương Gia KG - V15.5 Pro Max</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -145,7 +145,7 @@
     </div>
 
     <div class="top-bar">
-        <div class="logo-text">🚀 LƯƠNG GIA KG <span style="font-size: 0.65rem; background: #1e293b; color: #fff; padding: 2px 6px; border-radius: 4px; margin-left: 6px;">v15.0 Max</span></div>
+        <div class="logo-text">🚀 LƯƠNG GIA KG <span style="font-size: 0.65rem; background: #1e293b; color: #fff; padding: 2px 6px; border-radius: 4px; margin-left: 6px;">v15.5 Max</span></div>
         <div class="top-btn-group" style="font-size:0.85rem; font-weight:600; display:flex; align-items:center; gap:8px;">
             👤 <span id="top-user-name">...</span> 
             <button onclick="showMyShift()" style="background:#dcfce7; color:#166534; border:1px solid #bbf7d0; padding:4px 10px; border-radius:6px; cursor:pointer; font-weight:bold;">💰 Tiền Ca Làm</button>
@@ -154,7 +154,7 @@
     </div>
 
     <div class="sidebar">
-        <div class="sidebar-header"><img id="sidebar-logo" src=""><h2>V15.0 MAX</h2></div>
+        <div class="sidebar-header"><img id="sidebar-logo" src=""><h2>V15.5 MAX</h2></div>
         <button class="nav-btn admin-only" onclick="switchTab('dashboard')" id="menu-dashboard"><span class="icon">📊</span><span class="text">Tổng Quan</span></button>
         <button class="nav-btn admin-only" onclick="switchTab('unified-report')" id="menu-report"><span class="icon">📈</span><span class="text">Báo Cáo</span></button>
         <button class="nav-btn" onclick="switchTab('pos')" id="menu-pos"><span class="icon">🛒</span><span class="text">Bán Hàng</span></button>
@@ -227,12 +227,19 @@
                 </div>
                 <label style="font-weight: 700; font-size: 0.95rem; display:block; border-bottom:2px solid var(--border); padding-bottom:8px; margin-bottom:10px;">📦 Hàng trong bill:</label>
                 <ul id="cart-items" class="cart-list" style="margin-bottom: 15px;"></ul>
-                <div class="form-row"><div class="form-group"><label>Thanh toán:</label><select id="pos-payment"><option value="cash">Tiền Mặt / CK</option><option value="debt">Ghi Nợ Sổ</option></select></div><div class="form-group"><label>Ghi chú:</label><input type="text" id="pos-note" placeholder="VD: Bảo hành 3 tháng..."></div></div>
+                
+                <div class="form-row" style="background:#fffbeb; padding:12px; border-radius:8px; border:1px solid #fde68a;">
+                    <div class="form-group" style="margin-bottom:0;"><label>Khách trả đợt này (đ):</label><input type="text" inputmode="numeric" id="pos-paid-amount" oninput="this.dataset.manual='true'; formatNumberInput(event); updatePosChange()" style="font-size:1.2rem; font-weight:bold; color:var(--success);"></div>
+                    <div class="form-group" style="margin-bottom:0;"><label>Hẹn trả nợ (Nếu thiếu):</label><input type="date" id="pos-debt-date"></div>
+                </div>
+                <div id="pos-change-text" style="font-size:0.95rem; font-weight:bold; text-align:center; margin:10px 0;"></div>
+
+                <div class="form-group"><label>Ghi chú bill:</label><input type="text" id="pos-note" placeholder="VD: Bảo hành 3 tháng..."></div>
             </div>
             <!-- POS Tóm tắt -->
-            <div class="card pos-summary" style="background: #fffbeb; border: 1px solid #fcd34d; padding: 10px 15px; margin-bottom:0; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px;">
+            <div class="card pos-summary" style="background: #fff; padding: 10px 15px; margin-bottom:0; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; border-top: 2px solid var(--primary);">
                 <div style="display:flex; align-items:center; gap: 10px; flex: 1; min-width: 180px;"><div style="font-size:0.85rem; color:#b45309; white-space:nowrap;">Tổng: <b id="cart-total" style="color:#000; font-size:1rem;">0 đ</b></div><div style="display:flex; align-items:center; gap:5px;"><span style="font-size:0.85rem; color:var(--danger); font-weight:600;">Giảm(đ):</span><input type="text" inputmode="numeric" id="pos-discount" value="0" oninput="formatNumberInput(event); updateFinalTotal()" style="width:75px; padding:6px; font-weight:bold; color:var(--danger); border:1px solid #fcd34d; border-radius:6px; text-align:right; outline:none; font-size: 0.95rem;"></div></div>
-                <div style="display:flex; align-items:center; gap: 12px; justify-content: flex-end;"><div style="text-align:right;"><div style="font-size:0.75rem; font-weight:800; color:var(--primary);">KHÁCH TRẢ</div><div id="cart-final-total" style="color:var(--primary); font-weight:900; font-size:1.3rem; line-height:1.1;">0 đ</div></div><button class="action-btn" style="background: var(--success); padding: 10px 15px; width:auto; white-space:nowrap;" onclick="checkout()">🚀 LẬP PHIẾU</button></div>
+                <div style="display:flex; align-items:center; gap: 12px; justify-content: flex-end;"><div style="text-align:right;"><div style="font-size:0.75rem; font-weight:800; color:var(--primary);">CẦN THANH TOÁN</div><div id="cart-final-total" style="color:var(--primary); font-weight:900; font-size:1.3rem; line-height:1.1;">0 đ</div></div><button class="action-btn" style="background: var(--primary); padding: 10px 15px; width:auto; white-space:nowrap; font-size:1.05rem;" onclick="checkout()">🚀 CHỐT ĐƠN</button></div>
             </div>
         </div>
 
@@ -316,7 +323,7 @@
             <div class="card">
                 <h3 style="margin-top:0; color:var(--text-main);">🕵️ NHẬT KÝ HOẠT ĐỘNG (LOG)</h3>
                 <p style="font-size:0.85rem; color:var(--text-muted); margin-top:0;">Ghi lại lịch sử chỉnh sửa, xóa dữ liệu của nhân viên để đối chứng.</p>
-                <div class="table-responsive"><table style="font-size:0.85rem; background:transparent;"><thead><tr><th>Thời Gian</th><th>Nhân Viên</th><th>Thao Tác</th><th>Chi Tiết Dữ Liệu</th></tr></thead><tbody id="activity-log-table"></tbody></table></div>
+                <div class="table-responsive"><table style="font-size:0.85rem; background:transparent;"><thead><tr><th>Thời Gian</th><th>Nhân Viên</th><th>Thao Tác</th><th>Chi Tiết Dữ Luệu</th></tr></thead><tbody id="activity-log-table"></tbody></table></div>
             </div>
             <div class="card" style="background: #fef2f2; border-color:#fca5a5;">
                 <h3 style="margin-top:0; color:var(--danger);">🗑️ THÙNG RÁC</h3>
@@ -355,7 +362,13 @@
     
     <div id="cusHistoryModal" class="modal"><div class="modal-content" style="max-width: 750px;"><span class="close-btn" onclick="document.getElementById('cusHistoryModal').style.display='none'">×</span><h3 id="hist-cus-name" style="margin-top:0; color:var(--primary); border-bottom:1px solid var(--border); padding-bottom:15px;">Lịch Sử: </h3><div id="hist-cus-content" style="max-height: 60vh; overflow-y: auto;"></div></div></div>
     
-    <div id="servicePayModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="closeServicePayModal()">×</span><h3 style="margin-top:0; color:var(--primary); text-align:center;">BÀN GIAO & THU TIỀN</h3><input type="hidden" id="spay-order-id"><div style="background:#f8fafc; padding:10px; border-radius:8px; margin-bottom:15px; border:1px solid var(--border); font-size:0.95rem;"><p style="margin:2px 0;">Khách: <b id="spay-cus-name"></b></p><p style="margin:2px 0;">Máy: <b id="spay-model" style="color:var(--primary);"></b></p></div><div class="form-group" style="margin-bottom: 15px;"><label>1. Tiền công sửa (VNĐ):</label><input type="text" inputmode="numeric" id="spay-labor-amount" value="0" oninput="formatNumberInput(event); updateSpayTotal()" style="font-size:1.4rem; font-weight:800; color:var(--primary); border: 2px solid var(--primary); padding: 12px; border-radius: 8px;"></div><div class="form-group" style="margin-bottom: 15px; border-top: 1px dashed var(--border); padding-top: 15px;"><label>2. Thêm Linh Kiện (Nếu có):</label><div class="autocomplete-container"><input type="text" id="spay-product-input" placeholder="🔍 Gõ tìm linh kiện..." oninput="handleSpayProductAutocomplete(this.value)" autocomplete="off"><div id="spay-prod-autocomplete-list" class="autocomplete-items"></div></div></div><ul id="spay-cart-items" class="cart-list" style="margin-bottom: 15px; border-color:var(--info);"></ul><div style="background:#fef2f2; padding:15px; border-radius:12px; border: 2px dashed #fca5a5; text-align:center; margin-bottom:15px;"><div style="font-size: 0.95rem; font-weight:700; color:#b91c1c; margin-bottom:5px;">TỔNG PHẢI THU</div><div id="spay-total-text" style="font-size: 2rem; font-weight: 900; color: var(--danger); line-height: 1;">0 đ</div></div><div style="display:flex; gap:10px;"><button class="action-btn" style="background:var(--success); padding: 15px; font-size: 1rem;" onclick="confirmServicePay('cash')">💵 ĐƯA TIỀN MẶT</button><button class="action-btn" style="background:var(--warning); color:#000; padding: 15px; font-size: 1rem;" onclick="confirmServicePay('debt')">📝 GHI NỢ SỔ</button></div></div></div>
+    <div id="servicePayModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="closeServicePayModal()">×</span><h3 style="margin-top:0; color:var(--primary); text-align:center;">BÀN GIAO & THU TIỀN</h3><input type="hidden" id="spay-order-id"><div style="background:#f8fafc; padding:10px; border-radius:8px; margin-bottom:15px; border:1px solid var(--border); font-size:0.95rem;"><p style="margin:2px 0;">Khách: <b id="spay-cus-name"></b></p><p style="margin:2px 0;">Máy: <b id="spay-model" style="color:var(--primary);"></b></p></div><div class="form-group" style="margin-bottom: 15px;"><label>1. Tiền công sửa (VNĐ):</label><input type="text" inputmode="numeric" id="spay-labor-amount" value="0" oninput="formatNumberInput(event); updateSpayTotal()" style="font-size:1.4rem; font-weight:800; color:var(--primary); border: 2px solid var(--primary); padding: 12px; border-radius: 8px;"></div><div class="form-group" style="margin-bottom: 15px; border-top: 1px dashed var(--border); padding-top: 15px;"><label>2. Thêm Linh Kiện (Nếu có):</label><div class="autocomplete-container"><input type="text" id="spay-product-input" placeholder="🔍 Gõ tìm linh kiện..." oninput="handleSpayProductAutocomplete(this.value)" autocomplete="off"><div id="spay-prod-autocomplete-list" class="autocomplete-items"></div></div></div><ul id="spay-cart-items" class="cart-list" style="margin-bottom: 15px; border-color:var(--info);"></ul><div style="background:#fef2f2; padding:15px; border-radius:12px; border: 2px dashed #fca5a5; text-align:center; margin-bottom:15px;"><div style="font-size: 0.95rem; font-weight:700; color:#b91c1c; margin-bottom:5px;">TỔNG PHẢI THU</div><div id="spay-total-text" style="font-size: 2rem; font-weight: 900; color: var(--danger); line-height: 1;">0 đ</div></div>
+    <div class="form-row" style="background:#fffbeb; padding:12px; border-radius:8px; border:1px solid #fde68a; margin-bottom:10px;">
+        <div class="form-group" style="margin-bottom:0;"><label>Khách trả đợt này (đ):</label><input type="text" inputmode="numeric" id="spay-paid-amount" oninput="this.dataset.manual='true'; formatNumberInput(event); updateSpayChange()" style="font-size:1.2rem; font-weight:bold; color:var(--success);"></div>
+        <div class="form-group" style="margin-bottom:0;"><label>Hẹn trả nợ (Nếu thiếu):</label><input type="date" id="spay-debt-date"></div>
+    </div>
+    <div id="spay-change-text" style="font-size:0.95rem; font-weight:bold; text-align:center; margin-bottom:15px;"></div>
+    <button class="action-btn" style="background:var(--success); padding: 15px; font-size: 1.1rem; width:100%;" onclick="confirmServicePay()">🚀 XÁC NHẬN BÀN GIAO</button></div></div>
     
     <div id="payDebtModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="document.getElementById('payDebtModal').style.display='none'">×</span><h3 style="margin-top:0; color:var(--success);">Thu Tiền Nợ</h3><input type="hidden" id="pay-cus-id"><p>Khách: <b id="pay-cus-name"></b></p><p>Đang nợ: <b id="pay-cus-current-debt" style="color:var(--danger);">0</b> đ</p><div class="form-group"><label>Số tiền trả đợt này (đ):</label><input type="text" inputmode="numeric" id="pay-amount" value="0" oninput="formatNumberInput(event)" style="font-size:1.2rem; font-weight:bold; color:var(--success);"></div><button class="action-btn" style="background: var(--success);" onclick="submitPayDebt()">LƯU VÀO SỔ</button></div></div>
     
@@ -384,7 +397,25 @@
         function removeSpayCart(idx) { spayCart.splice(idx, 1); renderSpayCart(); }
         function updateSpayCartPrice(idx, valStr) { let val = parseInt(valStr.replace(/[^0-9]/g, '')) || 0; spayCart[idx].price = val; updateSpayTotal(); }
         function renderSpayCart() { let html = ''; spayCart.forEach((item, idx) => { html += `<li class="cart-item" style="padding: 8px 12px; background:#f8fafc; flex-wrap:wrap; gap:10px;"><div style="flex:1; min-width:150px;"><b style="color:var(--text-main); font-size:0.9rem;">${item.name}</b><br><small style="color:var(--text-muted); font-weight:600;">SL: ${item.qty}</small></div><div style="display:flex; align-items:center; gap:8px;"><input type="text" inputmode="numeric" value="${formatMoney(item.price)}" oninput="formatNumberInput(event); updateSpayCartPrice(${idx}, this.value)" style="width:90px; padding:6px; border:1px solid var(--border); border-radius:6px; font-weight:bold; color:var(--primary); text-align:right; font-size:0.95rem;"><button class="small-btn" style="background:#fee2e2; color:#991b1b; padding: 6px 10px;" onclick="removeSpayCart(${idx})">✕</button></div></li>`; }); document.getElementById('spay-cart-items').innerHTML = html || '<li class="cart-item" style="color:var(--text-muted); justify-content:center; padding:10px; font-size:0.85rem;">Chưa kèm linh kiện ngoài</li>'; updateSpayTotal(); }
-        function updateSpayTotal() { let labor = getNumberFromInput('spay-labor-amount') || 0; let partsTotal = spayCart.reduce((sum, i) => sum + (i.price * i.qty), 0); let finalTotal = labor + partsTotal; document.getElementById('spay-total-text').innerText = formatMoney(finalTotal) + ' đ'; }
+        function updateSpayTotal() { 
+            let labor = getNumberFromInput('spay-labor-amount') || 0; 
+            let partsTotal = spayCart.reduce((sum, i) => sum + (i.price * i.qty), 0); 
+            let finalTotal = labor + partsTotal; 
+            document.getElementById('spay-total-text').innerText = formatMoney(finalTotal) + ' đ'; 
+            
+            let paidInput = document.getElementById('spay-paid-amount');
+            if (paidInput.dataset.manual !== 'true') { paidInput.value = formatMoney(finalTotal); }
+            updateSpayChange();
+        }
+        function updateSpayChange() {
+            let labor = getNumberFromInput('spay-labor-amount') || 0; 
+            let partsTotal = spayCart.reduce((sum, i) => sum + (i.price * i.qty), 0); 
+            let finalAmtVal = labor + partsTotal;
+            let paid = getNumberFromInput('spay-paid-amount');
+            let changeEl = document.getElementById('spay-change-text');
+            if(paid >= finalAmtVal) { changeEl.innerHTML = `<span style="color:var(--success)">Tiền thừa trả khách: ${formatMoney(paid - finalAmtVal)} đ</span>`; } 
+            else { changeEl.innerHTML = `<span style="color:var(--danger)">Khách còn nợ lại: ${formatMoney(finalAmtVal - paid)} đ</span>`; }
+        }
         
         function filterTable(tableId, inputId) { let filter = document.getElementById(inputId).value.toLowerCase(); let trs = document.getElementById(tableId).getElementsByTagName('tr'); for (let i = 0; i < trs.length; i++) { let rowText = trs[i].textContent || trs[i].innerText; trs[i].style.display = rowText.toLowerCase().indexOf(filter) > -1 ? '' : 'none'; } }
 
@@ -760,27 +791,67 @@
         function deleteServiceOrder(id) { deleteItemToBin(id, 'Phiếu Nhận Máy', serviceOrders, o => `Mã: ${o.id} - Model: ${o.model}`); }
         function deleteCashflow(id) { deleteItemToBin(id, 'Sổ Quỹ', cashflow, c => `Mã: ${c.id} - Tiền: ${formatMoney(c.amount)} đ`); }
         
-        function editFullTransaction(txId) { if(activeStaffId !== 'ADMIN') return; let tx = transactions.find(t => t.id === txId); if(tx) { uiConfirm(`Bốc hóa đơn ra Giỏ Hàng để sửa lại?\n\n- Sửa xong bấm LẬP PHIẾU nó sẽ lưu đè đúng số phiếu này.`, () => { if(tx.itemsRaw) { tx.itemsRaw.forEach(item => { let p = inventory.find(i => i.id === item.id); if(p) p.stock += item.qty; }); } cart = JSON.parse(JSON.stringify(tx.itemsRaw || [])); setCustomerInput('pos', tx.customerId); document.getElementById('pos-payment').value = tx.type; document.getElementById('pos-note').value = tx.note || ''; transactions = transactions.filter(t => t.id !== txId); editingTxId = txId; logAction('Chỉnh sửa Hóa Đơn (Mở Bill)', `Mã ${txId}`); syncToCloud(); renderCart(); switchTab('pos'); }); } }
+        function editFullTransaction(txId) { if(activeStaffId !== 'ADMIN') return; let tx = transactions.find(t => t.id === txId); if(tx) { uiConfirm(`Bốc hóa đơn ra Giỏ Hàng để sửa lại?\n\n- Sửa xong bấm LẬP PHIẾU nó sẽ lưu đè đúng số phiếu này.`, () => { if(tx.itemsRaw) { tx.itemsRaw.forEach(item => { let p = inventory.find(i => i.id === item.id); if(p) p.stock += item.qty; }); } cart = JSON.parse(JSON.stringify(tx.itemsRaw || [])); setCustomerInput('pos', tx.customerId); document.getElementById('pos-note').value = tx.note || ''; transactions = transactions.filter(t => t.id !== txId); editingTxId = txId; logAction('Chỉnh sửa Hóa Đơn (Mở Bill)', `Mã ${txId}`); syncToCloud(); renderCart(); switchTab('pos'); }); } }
         function calculateLiveSubtotal() { let q = getNumberFromInput('pos-qty') || 0; let p = getNumberFromInput('pos-price-input') || 0; document.getElementById('live-total-text').innerText = formatMoney(q * p); }
         function addToCart() { let posId = document.getElementById('pos-product-hidden').value; if(!posId) return uiAlert('Chọn sản phẩm từ danh sách gợi ý!'); let p = inventory.find(i => i.id === posId); let qty = getNumberFromInput('pos-qty') || 1; let price = getNumberFromInput('pos-price-input') || 0; if(p) { cart.push({ id: p.id, name: p.name, price: price, cost: p.cost || 0, qty: qty }); clearProductInput(); renderCart(); } }
         function removeCartItem(idx) { cart.splice(idx, 1); renderCart(); }
-        function updateFinalTotal() { let totalCart = cart.reduce((sum, i) => sum + (i.price * i.qty), 0); let discount = getNumberFromInput('pos-discount'); let finalAmt = totalCart - discount; document.getElementById('cart-final-total').innerText = formatMoney(finalAmt < 0 ? 0 : finalAmt) + ' đ'; }
+        
+        function updateFinalTotal() { 
+            let totalCart = cart.reduce((sum, i) => sum + (i.price * i.qty), 0); 
+            let discount = getNumberFromInput('pos-discount'); 
+            let finalAmt = totalCart - discount; if(finalAmt < 0) finalAmt = 0; 
+            document.getElementById('cart-final-total').innerText = formatMoney(finalAmt) + ' đ'; 
+            
+            let paidInput = document.getElementById('pos-paid-amount');
+            if (paidInput.dataset.manual !== 'true') { paidInput.value = formatMoney(finalAmt); }
+            updatePosChange();
+        }
+        function updatePosChange() {
+            let totalCart = cart.reduce((sum, i) => sum + (i.price * i.qty), 0); 
+            let discount = getNumberFromInput('pos-discount'); 
+            let finalAmtVal = totalCart - discount; if(finalAmtVal<0) finalAmtVal = 0;
+            
+            let paid = getNumberFromInput('pos-paid-amount');
+            let changeEl = document.getElementById('pos-change-text');
+            if(paid >= finalAmtVal) { changeEl.innerHTML = `<span style="color:var(--success)">Tiền thừa trả khách: ${formatMoney(paid - finalAmtVal)} đ</span>`; } 
+            else { changeEl.innerHTML = `<span style="color:var(--danger)">Khách còn nợ lại: ${formatMoney(finalAmtVal - paid)} đ</span>`; }
+        }
+
         function renderCart() { let html = '', total = 0; cart.forEach((item, idx) => { total += item.price * item.qty; html += `<li class="cart-item"><div><b style="color:var(--text-main);">${item.name}</b><br><small style="color:var(--text-muted); font-weight:600;">SL: ${item.qty} x ${formatMoney(item.price)}đ</small></div><button class="small-btn" style="background:#fee2e2; color:#991b1b;" onclick="removeCartItem(${idx})">✕ Xóa</button></li>`; }); document.getElementById('cart-items').innerHTML = html || '<li class="cart-item" style="color:var(--text-muted); justify-content:center; padding:20px;">Giỏ hàng trống</li>'; document.getElementById('cart-total').innerText = formatMoney(total) + ' đ'; updateFinalTotal(); }
         
         function checkout() { 
             if(cart.length === 0) return uiAlert('Chưa có mặt hàng nào trong bill!'); 
             let cusId = document.getElementById('pos-customer-hidden').value; if(!cusId) return uiAlert('Vui lòng chọn khách hàng!'); 
-            uiConfirm("Xác nhận chốt đơn?", () => { 
-                let payment = document.getElementById('pos-payment').value; let note = document.getElementById('pos-note').value.trim(); 
-                let totalCart = cart.reduce((sum, i) => sum + (i.price * i.qty), 0); let totalCost = cart.reduce((sum, i) => sum + ((i.cost || 0) * i.qty), 0); 
-                let discount = getNumberFromInput('pos-discount'); let finalTotal = totalCart - discount; if(finalTotal < 0) finalTotal = 0; 
-                cart.forEach(c => { let p = inventory.find(i => i.id === c.id); if(p) p.stock -= c.qty; }); 
+            
+            let totalCart = cart.reduce((sum, i) => sum + (i.price * i.qty), 0); let totalCost = cart.reduce((sum, i) => sum + ((i.cost || 0) * i.qty), 0); 
+            let discount = getNumberFromInput('pos-discount'); let finalTotal = totalCart - discount; if(finalTotal < 0) finalTotal = 0; 
+            
+            let paidAmount = getNumberFromInput('pos-paid-amount');
+            let debtDate = document.getElementById('pos-debt-date').value;
+
+            uiConfirm(`Chốt đơn?\n\n- Tổng bill: ${formatMoney(finalTotal)}đ\n- Khách đưa: ${formatMoney(paidAmount)}đ`, () => { 
+                let note = document.getElementById('pos-note').value.trim(); 
+                if (paidAmount < finalTotal && debtDate) { note += ` (Hẹn trả nợ: ${formatFullDate(debtDate)})`; }
+                
                 let isEditing = !!editingTxId; let finalTxId = isEditing ? editingTxId : 'TX_' + Date.now().toString().slice(-5); 
                 let discountText = discount > 0 ? ` (Gốc: ${formatMoney(totalCart)}đ, Bớt: ${formatMoney(discount)}đ)` : ''; 
-                let newTx = { id: finalTxId, customerId: cusId, date: getLocalDateStr(), time: formatTime(new Date()), type: payment, amount: finalTotal, totalCost: totalCost, details: cart.map(c => `${c.name} (x${c.qty})`).join(', ') + discountText, itemsRaw: JSON.parse(JSON.stringify(cart)), staffId: activeStaffId, note: note }; 
+                
+                let mainType = paidAmount >= finalTotal ? 'cash' : 'debt';
+
+                let newTx = { id: finalTxId, customerId: cusId, date: getLocalDateStr(), time: formatTime(new Date()), type: mainType, amount: finalTotal, totalCost: totalCost, details: cart.map(c => `${c.name} (x${c.qty})`).join(', ') + discountText, itemsRaw: JSON.parse(JSON.stringify(cart)), staffId: activeStaffId, note: note }; 
                 transactions.push(newTx); 
+
+                if (paidAmount > 0 && paidAmount < finalTotal) {
+                     transactions.push({ id: 'TX_' + (Date.now() + 1).toString().slice(-5), customerId: cusId, date: getLocalDateStr(), time: formatTime(new Date()), type: 'pay', amount: paidAmount, details: `Khách trả một phần trước cho bill ${finalTxId}`, staffId: activeStaffId, itemsRaw: [], note: '' });
+                }
+
+                cart.forEach(c => { let p = inventory.find(i => i.id === c.id); if(p) p.stock -= c.qty; }); 
                 if(isEditing) logAction('Lưu sửa Hóa Đơn', `Ghi đè mã ${finalTxId}`);
-                syncToCloud(); cart = []; clearCustomerInput(); clearProductInput(); document.getElementById('pos-note').value = ''; document.getElementById('pos-discount').value = '0'; editingTxId = null; renderCart(); switchTab('pos'); triggerPrintSales(newTx.id); setTimeout(() => uiAlert('✅ Chốt đơn thành công!'), 500); 
+                
+                syncToCloud(); cart = []; clearCustomerInput(); clearProductInput(); 
+                document.getElementById('pos-note').value = ''; document.getElementById('pos-discount').value = '0'; document.getElementById('pos-debt-date').value = ''; 
+                document.getElementById('pos-paid-amount').value = '0'; document.getElementById('pos-paid-amount').dataset.manual = '';
+                editingTxId = null; renderCart(); switchTab('pos'); triggerPrintSales(newTx.id); setTimeout(() => uiAlert('✅ Chốt đơn thành công!'), 500); 
             }); 
         }
         
@@ -854,7 +925,39 @@
         function changeDeviceStatus(id, newStatus, selectEl) { let order = serviceOrders.find(o => o.id === id); if(!order) return; if(newStatus === 'Đã trả khách') { activeStatusSelect = selectEl; let cus = customers.find(c => c.id === order.customerId) || { name: 'Khách', phone: '' }; spayCart = []; renderSpayCart(); document.getElementById('spay-order-id').value = id; document.getElementById('spay-cus-name').innerText = cus.name + (cus.phone ? ' - ' + cus.phone : ''); document.getElementById('spay-model').innerText = order.model; document.getElementById('spay-labor-amount').value = formatMoney(order.quote); updateSpayTotal(); document.getElementById('servicePayModal').style.display = 'flex'; setTimeout(() => document.getElementById('spay-labor-amount').focus(), 100); } else if(newStatus === 'Không sửa được') { uiConfirm("Xác nhận TRẢ MÁY (Không thu tiền)?", () => { order.status = newStatus; syncToCloud(); renderData(); }, () => { selectEl.value = order.status; }); } else { order.status = newStatus; syncToCloud(); renderData(); } }
         function closeServicePayModal() { document.getElementById('servicePayModal').style.display = 'none'; if(activeStatusSelect) { let id = document.getElementById('spay-order-id').value; let order = serviceOrders.find(o => o.id === id); if(order) activeStatusSelect.value = order.status; } }
         
-        function confirmServicePay(payType) { let id = document.getElementById('spay-order-id').value; let order = serviceOrders.find(o => o.id === id); if(!order) return; let laborAmount = getNumberFromInput('spay-labor-amount'); let partsAmount = spayCart.reduce((sum, i) => sum + (i.price * i.qty), 0); let partsCost = spayCart.reduce((sum, i) => sum + ((i.cost || 0) * i.qty), 0); let totalAmount = laborAmount + partsAmount; let payStr = payType === 'cash' ? 'TIỀN MẶT' : 'GHI NỢ'; uiConfirm(`Xác nhận Thu ${payStr}:\n- Phí dịch vụ: ${formatMoney(laborAmount)}đ\n- Linh kiện: ${formatMoney(partsAmount)}đ\n=> TỔNG CỘNG: ${formatMoney(totalAmount)}đ`, () => { if (totalAmount > 0 || payType === 'cash') { spayCart.forEach(c => { let p = inventory.find(i => i.id === c.id); if(p) p.stock -= c.qty; }); let detailsStr = 'Sửa chữa: ' + order.model; if(spayCart.length > 0) detailsStr += ` (Kèm: ${spayCart.map(c => `${c.name} x${c.qty}`).join(', ')})`; transactions.push({ id: 'TX_' + Date.now().toString().slice(-5), customerId: order.customerId, date: getLocalDateStr(), time: formatTime(new Date()), type: payType, amount: laborAmount, partsRevenue: partsAmount, totalCost: partsCost, details: detailsStr, staffId: activeStaffId, itemsRaw: JSON.parse(JSON.stringify(spayCart)), note: 'Từ phiếu Nhận Máy: ' + order.id }); } order.quote = totalAmount; order.status = 'Đã trả khách'; syncToCloud(); renderData(); document.getElementById('servicePayModal').style.display = 'none'; uiAlert('✅ Đã bàn giao và lưu doanh thu.'); }); }
+        function confirmServicePay() { 
+            let id = document.getElementById('spay-order-id').value; 
+            let order = serviceOrders.find(o => o.id === id); if(!order) return; 
+            
+            let laborAmount = getNumberFromInput('spay-labor-amount'); 
+            let partsAmount = spayCart.reduce((sum, i) => sum + (i.price * i.qty), 0); 
+            let partsCost = spayCart.reduce((sum, i) => sum + ((i.cost || 0) * i.qty), 0); 
+            let totalAmount = laborAmount + partsAmount; 
+            
+            let paidAmount = getNumberFromInput('spay-paid-amount');
+            let debtDate = document.getElementById('spay-debt-date').value;
+
+            uiConfirm(`Xác nhận Bàn Giao:\n\n- Tổng hóa đơn: ${formatMoney(totalAmount)}đ\n- Khách thanh toán: ${formatMoney(paidAmount)}đ`, () => { 
+                if (totalAmount > 0) { 
+                    spayCart.forEach(c => { let p = inventory.find(i => i.id === c.id); if(p) p.stock -= c.qty; }); 
+                    let detailsStr = 'Sửa chữa: ' + order.model; if(spayCart.length > 0) detailsStr += ` (Kèm: ${spayCart.map(c => `${c.name} x${c.qty}`).join(', ')})`; 
+                    
+                    let mainType = paidAmount >= totalAmount ? 'cash' : 'debt';
+                    let txId = 'TX_' + Date.now().toString().slice(-5);
+                    let noteExtra = (paidAmount < totalAmount && debtDate) ? ` (Hẹn trả nợ: ${formatFullDate(debtDate)})` : '';
+                    
+                    transactions.push({ id: txId, customerId: order.customerId, date: getLocalDateStr(), time: formatTime(new Date()), type: mainType, amount: laborAmount, partsRevenue: partsAmount, totalCost: partsCost, details: detailsStr, staffId: activeStaffId, itemsRaw: JSON.parse(JSON.stringify(spayCart)), note: 'Từ phiếu Nhận Máy: ' + order.id + noteExtra }); 
+
+                    if (paidAmount > 0 && paidAmount < totalAmount) {
+                         transactions.push({ id: 'TX_' + (Date.now() + 1).toString().slice(-5), customerId: order.customerId, date: getLocalDateStr(), time: formatTime(new Date()), type: 'pay', amount: paidAmount, details: `Trả một phần trước cho phiếu sửa ${order.id}`, staffId: activeStaffId, itemsRaw: [], note: '' });
+                    }
+                } 
+                order.quote = totalAmount; order.status = 'Đã trả khách'; syncToCloud(); renderData(); 
+                document.getElementById('servicePayModal').style.display = 'none'; 
+                document.getElementById('spay-debt-date').value = ''; document.getElementById('spay-paid-amount').dataset.manual = '';
+                uiAlert('✅ Đã bàn giao và lưu doanh thu.'); 
+            }); 
+        }
         
         function openPayDebtModal(id, name) { let debtInfo = getCustomerDebtInfo(id); if(debtInfo.totalDebt <= 0) return uiAlert('Khách này không nợ!'); document.getElementById('payDebtModal').style.display = 'flex'; document.getElementById('pay-cus-id').value = id; document.getElementById('pay-cus-name').innerText = name; document.getElementById('pay-cus-current-debt').innerText = formatMoney(debtInfo.totalDebt); document.getElementById('pay-amount').value = formatMoney(debtInfo.totalDebt); }
         function submitPayDebt() { let id = document.getElementById('pay-cus-id').value, amount = getNumberFromInput('pay-amount'), debtInfo = getCustomerDebtInfo(id); if(amount <= 0 || amount > debtInfo.totalDebt) return uiAlert('Số tiền không hợp lệ!'); uiConfirm(`Xác nhận THU NỢ: ${formatMoney(amount)}đ ?`, () => { transactions.push({ id: 'TX_' + Date.now().toString().slice(-5), customerId: id, date: getLocalDateStr(), time: formatTime(new Date()), type: 'pay', amount: amount, details: 'Khách trả nợ chung', staffId: activeStaffId, itemsRaw: [], note: '' }); syncToCloud(); uiAlert('✅ Thu nợ thành công!'); document.getElementById('payDebtModal').style.display = 'none'; renderData(); }); }
