@@ -668,13 +668,20 @@
         function renderDashboard() {
             let dateEl = document.getElementById('dash-date-filter'); if(!dateEl.value) dateEl.value = getLocalDateStr();
             let today = dateEl.value; let sumSales = 0, countOrders = 0, cashToday = 0, debtToday = 0;
-            transactions.forEach(t => { 
+            transactions.forEach(t => {
                 if(t.date === today) {
                     let val = t.amount + (t.partsRevenue || 0);
-                    if(t.type === 'cash' || t.type === 'pay') { cashToday += val; sumSales += val; }
-                    if(t.type === 'debt') { debtToday += val; sumSales += val; }
-                    if(t.type !== 'pay') countOrders++; 
-                } 
+                    if(t.type === 'cash') { cashToday += val; sumSales += val; }
+                    else if(t.type === 'debt') { debtToday += val; sumSales += val; }
+                    else if(t.type === 'pay') {
+                        cashToday += val;
+                        // Nếu là khoản trả trước cho bill hôm nay thì trừ trực tiếp vào nợ phát sinh
+                        if (t.details && t.details.toLowerCase().includes('một phần trước')) {
+                            debtToday -= val;
+                        }
+                    }
+                    if(t.type !== 'pay') countOrders++;
+                }
             });
             cashflow.forEach(c => { if(c.date === today && c.type === 'thu') { cashToday += c.amount; sumSales += c.amount; } });
             
@@ -730,7 +737,20 @@
             let viewStaffId = targetStaffId || activeStaffId;
             let today = getLocalDateStr(); let myCashIn = 0, myDebtOut = 0, myCashOut = 0;
             
-            transactions.forEach(t => { if(t.date === today && t.staffId === viewStaffId) { if(t.type === 'cash') myCashIn += (t.amount + (t.partsRevenue || 0)); else if(t.type === 'pay') myCashIn += t.amount; else if(t.type === 'debt') myDebtOut += (t.amount + (t.partsRevenue || 0)); } });
+            transactions.forEach(t => { 
+                if(t.date === today && t.staffId === viewStaffId) { 
+                    let val = t.amount + (t.partsRevenue || 0);
+                    if(t.type === 'cash') myCashIn += val;
+                    else if(t.type === 'debt') myDebtOut += val;
+                    else if(t.type === 'pay') {
+                        myCashIn += val;
+                        // Khách trả trước đợt 1 thì gọt bớt tổng nợ đã ghi
+                        if (t.details && t.details.toLowerCase().includes('một phần trước')) {
+                            myDebtOut -= val;
+                        }
+                    }
+                } 
+            });
             cashflow.forEach(c => { if(c.date === today && c.staffId === viewStaffId) { if(c.type === 'thu') myCashIn += c.amount; if(c.type === 'chi') myCashOut += c.amount; } });
             
             document.getElementById('shift-cash-in').innerText = '+' + formatMoney(myCashIn) + ' đ';
@@ -751,7 +771,6 @@
             
             document.getElementById('shiftModal').style.display = 'flex';
         }
-
         function renderData() {
             if(!activeStaffId) return; let isAdmin = (activeStaffId === 'ADMIN'); let todayObj = new Date(getLocalDateStr());
             if(isAdmin) renderDashboard();
