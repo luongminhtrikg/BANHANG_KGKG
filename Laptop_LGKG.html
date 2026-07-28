@@ -1435,19 +1435,21 @@
         
 let staffHtml = ''; 
         Object.values(staffStats).forEach(st => { 
-            // 1. Tính tổng giá vốn hàng hóa/linh kiện mà NV này đã xuất bán
+            // 1. DÒNG TIỀN MẶT CẦM TRONG TAY (Để đối chiếu nộp két):
+            // (Bán hàng tiền mặt + Sửa máy tiền mặt + Thu nợ khách + Thu khác)
+            let totalIn = st.thuTienMat + st.thuNo + st.thuKhac;
+            let totalOut = st.chiPhi; // Tiền xuất ra từ két (chi tiêu chung)
+
+            // 2. TÍNH TỔNG GIÁ VỐN HÀNG HÓA mà NV này đã xuất
             let stCost = 0;
             reportData.forEach(r => { 
                 if (r.staffId === st.id) stCost += (r.cost || 0); 
             });
 
-            // 2. DÒNG TIỀN: Thu vào và Chi ra (Để bàn giao két)
-            let totalIn = st.thuTienMat + st.thuNo + st.thuKhac;
-            let totalOut = st.chiPhi;
-
-            // 3. LỢI NHUẬN THỰC TẾ: (Tổng Doanh Thu Hàng & Công Sửa - Tổng Vốn) + Thu Khác - Chi Phí
-            let totalRevenue = st.thuTienMat + st.banNo; 
-            let profit = (totalRevenue - stCost) + st.thuKhac - st.chiPhi;
+            // 3. HIỆU SUẤT LỢI NHUẬN CÁ NHÂN (Tuyệt đối KHÔNG trừ phần Chi Phí chung của quán)
+            // Lợi nhuận = (Tổng doanh thu bán hàng + Tiền công sửa) - Giá vốn
+            let totalRevenue = st.thuTienMat + st.banNo; // Tổng doanh thu (kể cả bán nợ), đã bao gồm tiền công sửa
+            let profit = totalRevenue - stCost;
 
             if (totalIn > 0 || totalOut > 0 || st.banNo > 0 || st.tienCong > 0) { 
                 staffHtml += `<tr class="clickable-row" onclick="showStaffDetail('${st.id}', '${st.name}')">
