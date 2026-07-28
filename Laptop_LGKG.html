@@ -1433,11 +1433,22 @@
             <div class="dash-card" style="grid-column: 1 / -1; background:#dcfce7; border-color:#86efac; cursor:default;"><div class="dash-info" style="text-align:center; width:100%;"><h4 style="color:#166534; font-size:1.1rem;">LỢI NHUẬN KỲ LỌC</h4><p class="value" style="color:#14532d; font-size:2.5rem;">${genPrivacyMask(formatMoney(profit) + ' đ')}</p></div></div>
         `;
         
- let staffHtml = ''; 
+let staffHtml = ''; 
         Object.values(staffStats).forEach(st => { 
-            let totalIn = st.thuTienMat + st.thuKhac + st.thuNo;
+            // 1. Tính tổng giá vốn hàng hóa/linh kiện mà NV này đã xuất bán
+            let stCost = 0;
+            reportData.forEach(r => { 
+                if (r.staffId === st.id) stCost += (r.cost || 0); 
+            });
+
+            // 2. DÒNG TIỀN: Thu vào và Chi ra (Để bàn giao két)
+            let totalIn = st.thuTienMat + st.thuNo + st.thuKhac;
             let totalOut = st.chiPhi;
-            let profit = totalIn - totalOut;
+
+            // 3. LỢI NHUẬN THỰC TẾ: (Tổng Doanh Thu Hàng & Công Sửa - Tổng Vốn) + Thu Khác - Chi Phí
+            let totalRevenue = st.thuTienMat + st.banNo; 
+            let profit = (totalRevenue - stCost) + st.thuKhac - st.chiPhi;
+
             if (totalIn > 0 || totalOut > 0 || st.banNo > 0 || st.tienCong > 0) { 
                 staffHtml += `<tr class="clickable-row" onclick="showStaffDetail('${st.id}', '${st.name}')">
                     <td><b style="font-size:1.05rem; color:var(--primary); text-decoration:underline;">${st.name}</b></td>
