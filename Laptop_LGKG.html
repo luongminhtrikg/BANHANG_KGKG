@@ -286,7 +286,7 @@
                 <p style="font-size:0.85rem; color:var(--text-muted); margin-top:-5px;">💡 Bấm vào từng nhân viên để xem chi tiết các công việc họ đã làm.</p>
                 <div class="table-responsive">
                     <table style="width:100%; font-size:0.95rem;">
-                       <thead>
+                        <thead>
                             <tr>
                                 <th>Nhân Viên</th>
                                 <th style="text-align:right; color:var(--success);">Tổng Thu Vào (+)</th>
@@ -1433,7 +1433,7 @@
             <div class="dash-card" style="grid-column: 1 / -1; background:#dcfce7; border-color:#86efac; cursor:default;"><div class="dash-info" style="text-align:center; width:100%;"><h4 style="color:#166534; font-size:1.1rem;">LỢI NHUẬN KỲ LỌC</h4><p class="value" style="color:#14532d; font-size:2.5rem;">${genPrivacyMask(formatMoney(profit) + ' đ')}</p></div></div>
         `;
         
-let staffHtml = ''; 
+        let staffHtml = ''; 
         Object.values(staffStats).forEach(st => { 
             // 1. DÒNG TIỀN MẶT CẦM TRONG TAY (Để đối chiếu nộp két):
             // (Bán hàng tiền mặt + Sửa máy tiền mặt + Thu nợ khách + Thu khác)
@@ -2433,7 +2433,7 @@ let staffHtml = '';
         let blob = new Blob(['\uFEFF' + excelHTML], { type: 'application/vnd.ms-excel' }); let url = URL.createObjectURL(blob); let a = document.createElement('a'); a.href = url; a.download = `Cong_No_${cus.name.replace(/\s+/g, '_')}_${getLocalDateStr()}.xls`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); uiAlert('✅ Tải file Excel báo cáo thành công!'); 
     }
 
-   // IN ẤN
+    // IN ẤN
     let currentPrintConfig = null; 
     function triggerPrintSales(txId) { currentPrintConfig = { type: 'sales', id: txId }; document.getElementById('printSelectModal').style.display = 'flex'; }
     function triggerPrintService(orderId) { currentPrintConfig = { type: 'service', id: orderId }; document.getElementById('printSelectModal').style.display = 'flex'; }
