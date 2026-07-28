@@ -286,12 +286,12 @@
                 <p style="font-size:0.85rem; color:var(--text-muted); margin-top:-5px;">💡 Bấm vào từng nhân viên để xem chi tiết các công việc họ đã làm.</p>
                 <div class="table-responsive">
                     <table style="width:100%; font-size:0.95rem;">
-                        <thead>
+                       <thead>
                             <tr>
                                 <th>Nhân Viên</th>
-                                <th style="text-align:right; color:var(--success);">Tổng Thu Vào (+)</th>
-                                <th style="text-align:right; color:var(--danger);">Tổng Chi Ra (-)</th>
-                                <th style="text-align:right; color:var(--primary);">Lợi Nhuận (Thu - Chi)</th>
+                                <th style="text-align:right; color:var(--success);">Tổng Doanh Thu (+)<br><small style="font-weight:normal; color:var(--text-muted);">Bán hàng + Tiền công</small></th>
+                                <th style="text-align:right; color:var(--danger);">Giá Vốn & Chi Phí (-)<br><small style="font-weight:normal; color:var(--text-muted);">Vốn linh kiện + Phiếu chi</small></th>
+                                <th style="text-align:right; color:var(--primary);">Lợi Nhuận Thực<br><small style="font-weight:normal; color:var(--text-muted);">Doanh thu - Vốn - Chi</small></th>
                             </tr>
                         </thead>
                         <tbody id="ur-staff-table"></tbody>
@@ -1434,28 +1434,35 @@
         `;
         
         let staffHtml = ''; 
-        Object.values(staffStats).forEach(st => { 
-            // 1. DÒNG TIỀN MẶT CẦM TRONG TAY (Để đối chiếu nộp két):
-            // (Bán hàng tiền mặt + Sửa máy tiền mặt + Thu nợ khách + Thu khác)
-            let totalIn = st.thuTienMat + st.thuNo + st.thuKhac;
-            let totalOut = st.chiPhi; // Tiền xuất ra từ két (chi tiêu chung)
+        Object.keys(staffStats).forEach(stId => { 
+            let stName = staffStats[stId].name;
+            let totalRevenue = 0; // Doanh thu bán, sửa, thu khác
+            let totalCost = 0;    // Giá vốn hàng/linh kiện bán ra
+            let totalExpense = 0; // Tiền chi ra (phiếu chi)
 
-            // 2. TÍNH TỔNG GIÁ VỐN HÀNG HÓA mà NV này đã xuất
-            let stCost = 0;
+            // Quét TẤT CẢ các phiếu do NV này làm để bóc tách Giá bán & Giá vốn
             reportData.forEach(r => { 
-                if (r.staffId === st.id) stCost += (r.cost || 0); 
+                if (r.staffId === stId) {
+                    if (r.type === 'Bán Hàng' || r.type === 'Bán Nợ' || r.type === 'Sửa Máy') {
+                        totalRevenue += (r.in || 0); // Tiền bán được hoặc tiền công báo khách
+                        totalCost += (r.cost || 0);  // Trừ đi giá vốn linh kiện nhập vào
+                    } else if (r.type === 'Thu Khác') {
+                        totalRevenue += (r.in || 0);
+                    } else if (r.type === 'Chi Phí') {
+                        totalExpense += (r.out || 0);
+                    }
+                    // Lưu ý: Phiếu "Thu Nợ" không cộng vào đây, vì Lợi nhuận đã được tính lúc lập hóa đơn "Bán Nợ" rồi.
+                } 
             });
 
-            // 3. HIỆU SUẤT LỢI NHUẬN CÁ NHÂN (Tuyệt đối KHÔNG trừ phần Chi Phí chung của quán)
-            // Lợi nhuận = (Tổng doanh thu bán hàng + Tiền công sửa) - Giá vốn
-            let totalRevenue = st.thuTienMat + st.banNo; // Tổng doanh thu (kể cả bán nợ), đã bao gồm tiền công sửa
-            let profit = totalRevenue - stCost;
+            let totalOut = totalCost + totalExpense;
+            let profit = totalRevenue - totalOut;
 
-            if (totalIn > 0 || totalOut > 0 || st.banNo > 0 || st.tienCong > 0) { 
-                staffHtml += `<tr class="clickable-row" onclick="showStaffDetail('${st.id}', '${st.name}')">
-                    <td><b style="font-size:1.05rem; color:var(--primary); text-decoration:underline;">${st.name}</b></td>
-                    <td style="text-align:right; font-weight:800; color:var(--success); font-size:1.05rem;">+${formatMoney(totalIn)} đ</td>
-                    <td style="text-align:right; font-weight:800; color:var(--danger); font-size:1.05rem;">${totalOut > 0 ? '-' + formatMoney(totalOut) + ' đ' : '-'}</td>
+            if (totalRevenue > 0 || totalOut > 0) { 
+                staffHtml += `<tr class="clickable-row" onclick="showStaffDetail('${stId}', '${stName}')">
+                    <td><b style="font-size:1.05rem; color:var(--primary); text-decoration:underline;">${stName}</b></td>
+                    <td style="text-align:right; font-weight:800; color:var(--success); font-size:1.05rem;">+${formatMoney(totalRevenue)} đ</td>
+                    <td style="text-align:right; font-weight:800; color:var(--danger); font-size:1.05rem;">-${formatMoney(totalOut)} đ</td>
                     <td style="text-align:right; font-weight:900; color:${profit >= 0 ? 'var(--primary)' : 'var(--danger)'}; font-size:1.1rem;">${formatMoney(profit)} đ</td>
                 </tr>`; 
             } 
