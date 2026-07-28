@@ -1435,16 +1435,17 @@
             <div class="dash-card" style="grid-column: 1 / -1; background:#dcfce7; border-color:#86efac; cursor:default;"><div class="dash-info" style="text-align:center; width:100%;"><h4 style="color:#166534; font-size:1.1rem;">LỢI NHUẬN KỲ LỌC</h4><p class="value" style="color:#14532d; font-size:2.5rem;">${genPrivacyMask(formatMoney(profit) + ' đ')}</p></div></div>
         `;
         
-        let staffHtml = ''; 
+ let staffHtml = ''; 
         Object.values(staffStats).forEach(st => { 
-            if (st.thuTienMat > 0 || st.banNo > 0 || st.thuNo > 0 || st.chiPhi > 0 || st.thuKhac > 0 || st.tienCong > 0) { 
+            let totalIn = st.thuTienMat + st.thuKhac + st.thuNo;
+            let totalOut = st.chiPhi;
+            let profit = totalIn - totalOut;
+            if (totalIn > 0 || totalOut > 0 || st.banNo > 0 || st.tienCong > 0) { 
                 staffHtml += `<tr class="clickable-row" onclick="showStaffDetail('${st.id}', '${st.name}')">
                     <td><b style="font-size:1.05rem; color:var(--primary); text-decoration:underline;">${st.name}</b></td>
-                    <td style="text-align:right; font-weight:900; color:#0284c7; font-size:1.1rem;">${formatMoney(st.tienCong)}đ</td>
-                    <td style="text-align:right; font-weight:800; color:var(--success); font-size:1.05rem;">+${formatMoney(st.thuTienMat + st.thuKhac)}đ</td>
-                    <td style="text-align:right; font-weight:bold; color:#b45309;">${formatMoney(st.banNo)}đ</td>
-                    <td style="text-align:right; font-weight:bold; color:var(--info);">+${formatMoney(st.thuNo)}đ</td>
-                    <td style="text-align:right; font-weight:800; color:var(--danger); font-size:1.05rem;">${st.chiPhi > 0 ? '-' + formatMoney(st.chiPhi) + 'đ' : '-'}</td>
+                    <td style="text-align:right; font-weight:800; color:var(--success); font-size:1.05rem;">+${formatMoney(totalIn)} đ</td>
+                    <td style="text-align:right; font-weight:800; color:var(--danger); font-size:1.05rem;">${totalOut > 0 ? '-' + formatMoney(totalOut) + ' đ' : '-'}</td>
+                    <td style="text-align:right; font-weight:900; color:${profit >= 0 ? 'var(--primary)' : 'var(--danger)'}; font-size:1.1rem;">${formatMoney(profit)} đ</td>
                 </tr>`; 
             } 
         });
