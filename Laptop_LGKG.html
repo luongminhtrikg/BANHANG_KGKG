@@ -69,7 +69,7 @@
         .cart-list { border: 1px solid var(--border); border-radius: 8px; background: #fff; overflow: hidden; padding: 0; margin: 0; list-style: none; }
         .cart-item { padding: 10px 15px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
         
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 2000; backdrop-filter: blur(2px); }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 10000; backdrop-filter: blur(2px); }
         .modal-box { background: #fff; width: 90%; max-width: 500px; border-radius: 12px; padding: 20px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
         .modal-title { margin-top: 0; font-size: 1.2rem; margin-bottom: 15px; color: var(--primary); border-bottom: 1px solid var(--border); padding-bottom: 10px; }
 
@@ -546,8 +546,11 @@
     function doLogin() {
         let u = document.getElementById('login-user').value, p = document.getElementById('login-pass').value;
         let s = staffs.find(x => x.id === u);
-        if(s && s.pass === p) { activeUser=u; localStorage.setItem('lg_user',u); document.getElementById('loginOverlay').style.display='none'; initSession(); }
-        else uiAlert('Sai mật khẩu!');
+        // Thêm s.password === p để tương thích với dữ liệu gốc của bro
+        if(s && (s.pass === p || s.password === p)) { 
+            activeUser=u; localStorage.setItem('lg_user',u); document.getElementById('loginOverlay').style.display='none'; initSession(); 
+        }
+        else uiAlert('Sai mật khẩu! Vui lòng thử lại.');
     }
     function logout() { activeUser=null; localStorage.removeItem('lg_user'); location.reload(); }
     function initSession() {
