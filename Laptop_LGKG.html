@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Lương Gia KG - V16.1 Kiot Style</title>
+    <title>Lương Gia KG - V16.2 Kiot Style (Mobile Pro)</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -39,8 +39,8 @@
         .row { display: flex; gap: 15px; flex-wrap: wrap; }
         .col { flex: 1; min-width: 250px; }
 
-        .table-wrap { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
-        table { width: 100%; border-collapse: collapse; background: #fff; font-size: 0.9rem; }
+        .table-wrap { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); width: 100%; }
+        table { width: 100%; border-collapse: collapse; background: #fff; font-size: 0.9rem; min-width: 600px; } /* Đảm bảo bảng không bị bóp méo */
         th, td { padding: 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; }
         th { background: #f9fafb; font-weight: 600; color: var(--text-muted); text-transform: uppercase; font-size: 0.8rem; }
         tr:hover { background: #f4f6f8; }
@@ -56,10 +56,10 @@
 
         #sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 900; }
 
-        .main-wrapper { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
+        .main-wrapper { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); width: 100%; }
         .header { height: var(--header-h); background: #fff; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; padding: 0 20px; z-index: 90; }
-        .content-area { flex: 1; overflow-y: auto; padding: 20px; }
-        .tab-content { display: none; max-width: 1400px; margin: 0 auto; animation: fadeIn 0.2s; }
+        .content-area { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 20px; width: 100%; }
+        .tab-content { display: none; max-width: 1400px; margin: 0 auto; animation: fadeIn 0.2s; width: 100%; }
         .tab-content.active { display: block; }
 
         /* Custom widgets */
@@ -77,16 +77,24 @@
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Mobile tweaks */
+        /* --- MOBILE OPTIMIZATION TWEAKS --- */
         #mobile-menu-btn { display: none; background: none; border: none; font-size: 1.5rem; cursor: pointer; }
+        
         @media (max-width: 768px) {
             .sidebar { position: fixed; left: -240px; height: 100vh; }
             .sidebar.show { left: 0; box-shadow: 10px 0 20px rgba(0,0,0,0.2); }
             #sidebar-overlay.show { display: block; }
             #mobile-menu-btn { display: block; }
+            
             .header { padding: 0 15px; }
-            .content-area { padding: 15px 10px; }
-            .row { flex-direction: column; gap: 10px; }
+            .content-area { padding: 10px; }
+            .card { padding: 15px; margin-bottom: 15px; }
+            
+            .row { flex-direction: column; gap: 15px; }
+            .col { min-width: 100%; flex: none; width: 100%; }
+            
+            /* Bí kíp đảo ngược Form lên trên cùng cho mobile */
+            .row.reverse-mobile { flex-direction: column-reverse; }
         }
     </style>
 </head>
@@ -115,7 +123,7 @@
     <div id="loginOverlay" style="position:fixed; inset:0; background:#1c252e; z-index:15000; display:flex; justify-content:center; align-items:center;">
         <div class="card" style="width: 90%; max-width: 400px; text-align: center; padding: 40px 20px;">
             <h2 style="color:var(--primary); margin-top:0;">LƯƠNG GIA KG</h2>
-            <p style="color:var(--text-muted); margin-bottom:30px;">Phần mềm quản lý V16.1</p>
+            <p style="color:var(--text-muted); margin-bottom:30px;">Phần mềm quản lý V16.2 Mobile</p>
             <select id="login-user" class="form-control" style="margin-bottom:15px;"></select>
             <input type="password" id="login-pass" class="form-control" placeholder="Mật khẩu..." style="margin-bottom:20px;" onkeypress="if(event.key==='Enter') doLogin()">
             <button class="btn btn-primary" style="width:100%; padding:12px;" onclick="doLogin()">ĐĂNG NHẬP</button>
@@ -163,19 +171,17 @@
 
             <!-- POS TAB (Bán Hàng: Danh sách tìm kiếm bên Trái, Giỏ hàng bên Phải) -->
             <div id="pos" class="tab-content active">
+                <!-- Không dùng reverse-mobile ở đây vì muốn Search luôn nằm trên cùng ở đt -->
                 <div class="row">
-                    <!-- Trái: Tìm kiếm sản phẩm to -->
                     <div class="col" style="flex:2;">
-                        <div class="card" id="pos-header-card" style="min-height: 400px;">
-                            <div class="card-header"><h3 class="card-title" id="pos-title-txt">🛒 Tìm Kiếm & Chọn Hàng Hóa</h3></div>
+                        <div class="card" id="pos-header-card" style="min-height: 200px;">
+                            <div class="card-header"><h3 class="card-title" id="pos-title-txt">🛒 Tìm Kiếm Hàng Hóa</h3></div>
                             <div class="form-group search-box" style="max-width:100%;">
                                 <input type="text" id="pos-prod-input" class="form-control" placeholder="🔍 Tít mã vạch hoặc gõ tên mặt hàng..." oninput="handleSearch('pos-prod', inventory, addProdToCart)" autocomplete="off">
                                 <div id="pos-prod-autocomplete" class="autocomplete-items"></div>
                             </div>
-                            <div style="margin-top:20px; font-size:0.9rem; color:var(--text-muted); text-align:center;">Gõ tên sản phẩm vào ô trên để thêm vào giỏ hàng bên phải 👉</div>
                         </div>
                     </div>
-                    <!-- Phải: Giỏ hàng và Thanh toán -->
                     <div class="col" style="flex:1;">
                         <div class="card" style="background: #f8fafc; padding:15px;">
                             <div class="form-group search-box" style="max-width:100%;">
@@ -219,29 +225,30 @@
                 </div>
             </div>
 
-            <!-- INVENTORY & IMPORT TAB (Kho: Danh sách Trái, Form Nhập Phải) -->
+            <!-- INVENTORY & IMPORT TAB (Kho) -->
             <div id="inventory" class="tab-content">
-                <div class="row">
-                    <!-- Trái: Danh sách hàng -->
+                <!-- Thêm class reverse-mobile để đưa form nhập hàng lên trên khi dùng đt -->
+                <div class="row reverse-mobile">
+                    <!-- Trái (hoặc dưới cùng trên đt): Danh sách hàng -->
                     <div class="col" style="flex:2;">
                         <div class="card">
                             <div class="card-header">
                                 <h3 class="card-title">📦 Danh Mục Hàng Hóa</h3>
-                                <button class="btn btn-primary" onclick="openModal('quickAddModal')">➕ Thêm Hàng Mới</button>
+                                <button class="btn btn-primary" onclick="openModal('quickAddModal')">➕ Thêm Hàng</button>
                             </div>
                             <input type="text" id="search-inv" class="form-control" placeholder="Lọc hàng hóa..." onkeyup="filterTable('inv-tbl', this.value)" style="margin-bottom:15px;">
                             <div class="table-wrap">
                                 <table>
-                                    <thead><tr><th>Mã SP</th><th>Tên Hàng</th><th>Giá Vốn</th><th>Giá Bán</th><th>Tồn</th><th>Thao Tác</th></tr></thead>
+                                    <thead><tr><th>Mã SP</th><th>Tên Hàng</th><th>Giá Vốn</th><th>Giá Bán</th><th>Tồn</th><th>Xóa</th></tr></thead>
                                     <tbody id="inv-tbl"></tbody>
                                 </table>
                             </div>
                         </div>
                     </div>
-                    <!-- Phải: Khu vực nhập hàng -->
+                    <!-- Phải (hoặc trên cùng trên đt): Khu vực nhập hàng -->
                     <div class="col" style="flex:1;">
                         <div class="card" style="border-color: var(--success); background:#f8fafc;">
-                            <div class="card-header"><h3 class="card-title" style="color:var(--success);">📥 Phiếu Nhập Hàng Lô</h3></div>
+                            <div class="card-header"><h3 class="card-title" style="color:var(--success);">📥 Lập Phiếu Nhập Lô</h3></div>
                             <div class="form-group search-box" style="max-width:100%;">
                                 <label>1. Chọn NCC:</label>
                                 <div style="display:flex; gap:5px;">
@@ -252,17 +259,16 @@
                                 <input type="hidden" id="imp-sup-id">
                             </div>
                             <div class="form-group search-box" style="max-width:100%;">
-                                <label>2. Thêm Hàng Vào Phiếu Nhập:</label>
-                                <input type="text" id="imp-prod-input" class="form-control" placeholder="Tìm mặt hàng để nhập..." oninput="handleSearch('imp-prod', inventory, addProdToImp)" autocomplete="off">
+                                <label>2. Tìm mặt hàng để nhập:</label>
+                                <input type="text" id="imp-prod-input" class="form-control" placeholder="Tít mã vạch/tên..." oninput="handleSearch('imp-prod', inventory, addProdToImp)" autocomplete="off">
                                 <div id="imp-prod-autocomplete" class="autocomplete-items"></div>
                             </div>
                             <ul id="imp-cart" class="cart-list" style="max-height:300px; overflow-y:auto; margin-bottom:15px; font-size:0.9rem;"></ul>
                             <div style="background:#fff; padding:15px; border-radius:8px; border:1px solid var(--border);">
-                                <div style="display:flex; justify-content:space-between; font-size:1.1rem;"><b>TỔNG TIỀN NHẬP:</b> <b id="imp-total-txt" style="color:var(--danger);">0</b></div>
+                                <div style="display:flex; justify-content:space-between; font-size:1.1rem;"><b>TỔNG TIỀN:</b> <b id="imp-total-txt" style="color:var(--danger);">0</b></div>
                                 <div class="form-group" style="margin-top:10px;">
                                     <label>Đã trả NCC đợt này (đ):</label>
                                     <input type="text" inputmode="numeric" id="imp-paid" class="form-control" value="0" oninput="formatNum(this)" style="font-weight:bold; font-size:1.1rem; color:var(--success);">
-                                    <small style="color:var(--text-muted);">* Tiền trả sẽ trừ trong Két, phần thiếu ghi nợ NCC.</small>
                                 </div>
                                 <button class="btn btn-success" style="width:100%; margin-top:10px;" onclick="submitImport()">LƯU PHIẾU NHẬP & CỘNG KHO</button>
                             </div>
@@ -271,10 +277,11 @@
                 </div>
             </div>
 
-            <!-- SERVICE DESK (Dịch vụ: Danh sách Trái, Form Phải) -->
+            <!-- SERVICE DESK (Dịch vụ) -->
             <div id="service" class="tab-content">
-                <div class="row">
-                    <!-- Trái: Danh sách máy -->
+                <!-- Thêm class reverse-mobile để đưa form nhận máy lên trên khi dùng đt -->
+                <div class="row reverse-mobile">
+                    <!-- Trái (dưới đt): Danh sách máy -->
                     <div class="col" style="flex:2;">
                         <div class="card">
                             <div class="card-header"><h3 class="card-title">📋 Máy Đang Nằm Viện</h3></div>
@@ -286,7 +293,7 @@
                             </div>
                         </div>
                     </div>
-                    <!-- Phải: Lập phiếu -->
+                    <!-- Phải (trên đt): Lập phiếu -->
                     <div class="col" style="flex:1;">
                         <div class="card" style="border-color:var(--warning); background:#fcf9f2;">
                             <div class="card-header"><h3 class="card-title" id="srv-title-txt">🛠️ Lập Phiếu Nhận Máy</h3></div>
@@ -308,27 +315,28 @@
                 </div>
             </div>
             
-            <!-- CASHBOOK (Sổ quỹ: Danh sách Trái, Form Phải) -->
+            <!-- CASHBOOK (Sổ quỹ) -->
             <div id="cashbook" class="tab-content">
-                <div class="row">
-                    <!-- Trái: Bảng kê Sổ Quỹ -->
+                <!-- Thêm class reverse-mobile để đưa form thu/chi lên trên khi dùng đt -->
+                <div class="row reverse-mobile">
+                    <!-- Trái (dưới đt): Bảng kê Sổ Quỹ -->
                     <div class="col" style="flex:2;">
                         <div class="card">
                             <h3 class="card-title">Sổ Quỹ Tiền Mặt Ngày <input type="date" id="cb-date" onchange="renderData()" style="border:none; border-bottom:1px solid; outline:none; font-weight:bold; color:var(--primary);"></h3>
-                            <div class="row" style="margin-bottom:15px; text-align:center;">
+                            <div class="row" style="margin-bottom:15px; text-align:center; flex-direction:row;">
                                 <div class="col card" style="background:#f0fdf4; padding:10px;"><small>Thu</small><br><b style="color:var(--success); font-size:1.2rem;" id="cb-sum-in">0</b></div>
                                 <div class="col card" style="background:#fef2f2; padding:10px;"><small>Chi</small><br><b style="color:var(--danger); font-size:1.2rem;" id="cb-sum-out">0</b></div>
-                                <div class="col card" style="background:#eff6ff; padding:10px;"><small>Két Hiện Tại</small><br><b style="color:var(--primary); font-size:1.2rem;" id="cb-net">0</b></div>
+                                <div class="col card" style="background:#eff6ff; padding:10px;"><small>Két (Ngày này)</small><br><b style="color:var(--primary); font-size:1.2rem;" id="cb-net">0</b></div>
                             </div>
                             <div class="table-wrap">
                                 <table>
-                                    <thead><tr><th>Giờ</th><th>Loại</th><th>Diễn giải</th><th style="text-align:right;">Số tiền</th><th>Tác vụ</th></tr></thead>
+                                    <thead><tr><th>Giờ</th><th>Loại</th><th>Diễn giải</th><th style="text-align:right;">Số tiền</th><th>Xóa</th></tr></thead>
                                     <tbody id="cb-tbl"></tbody>
                                 </table>
                             </div>
                         </div>
                     </div>
-                    <!-- Phải: Lập Phiếu Thu/Chi -->
+                    <!-- Phải (trên đt): Lập Phiếu Thu/Chi -->
                     <div class="col" style="flex:1;">
                         <div class="card" style="background:#f8fafc;">
                             <h3 class="card-title">Lập Phiếu Thu/Chi Tiệm</h3>
@@ -663,7 +671,7 @@
         pushDB(); logAction('Đổi thông tin NV', `Mã NV: ${id}`); uiAlert('Đã cập nhật!');
     }
 
-    // --- POS MODULE (FIXED EDIT LOGIC) ---
+    // --- POS MODULE ---
     function selectPosCus(c) { document.getElementById('pos-cus-input').value = `${c.name} - ${c.phone}`; document.getElementById('pos-cus-id').value = c.id; }
     function addProdToCart(p) {
         let ex = posCart.find(i => i.id === p.id);
@@ -723,7 +731,7 @@
             
             if(editingTxId) { 
                 editingTxId = null; setTxt('top-title', 'BÁN HÀNG'); 
-                document.getElementById('pos-title-txt').innerHTML = '🛒 Tìm Kiếm & Chọn Hàng Hóa';
+                document.getElementById('pos-title-txt').innerHTML = '🛒 Tìm Kiếm Hàng Hóa';
                 uiAlert('Lưu đè sửa đổi thành công!'); switchTab('history'); 
             } else {
                 renderPosCart(); uiAlert('Chốt đơn thành công!'); printBill(tId, 'sales');
@@ -743,9 +751,9 @@
             switchTab('pos'); renderPosCart();
         });
     }
-    function cancelEditTx() { posCart=[]; editingTxId=null; document.getElementById('pos-cus-input').value=''; document.getElementById('pos-cus-id').value=''; document.getElementById('pos-note').value=''; document.getElementById('pos-title-txt').innerHTML='🛒 Tìm Kiếm & Chọn Hàng Hóa'; renderPosCart(); setTxt('top-title', 'BÁN HÀNG'); uiAlert('Đã hủy sửa, hóa đơn gốc giữ nguyên.'); }
+    function cancelEditTx() { posCart=[]; editingTxId=null; document.getElementById('pos-cus-input').value=''; document.getElementById('pos-cus-id').value=''; document.getElementById('pos-note').value=''; document.getElementById('pos-title-txt').innerHTML='🛒 Tìm Kiếm Hàng Hóa'; renderPosCart(); setTxt('top-title', 'BÁN HÀNG'); uiAlert('Đã hủy sửa, hóa đơn gốc giữ nguyên.'); }
 
-    // --- IMPORT MODULE (MULTI-ITEM) ---
+    // --- IMPORT MODULE ---
     function selectImpSup(s) { document.getElementById('imp-sup-input').value = `${s.name} - ${s.phone}`; document.getElementById('imp-sup-id').value = s.id; }
     function addProdToImp(p) {
         let ex = impCart.find(i => i.id === p.id);
@@ -784,7 +792,7 @@
             let rId = genId('PN');
             importReceipts.push({ id: rId, supId: sId, date: getToday(), time: getTime(), total: sum, paid: paid, items: JSON.parse(JSON.stringify(impCart)), staffId: activeUser });
             
-            impCart.forEach(c => { let inv = inventory.find(x=>x.id===c.id); if(inv) { inv.stock += c.qty; inv.cost = c.cost; } }); // Cập nhật kho và giá vốn mới
+            impCart.forEach(c => { let inv = inventory.find(x=>x.id===c.id); if(inv) { inv.stock += c.qty; inv.cost = c.cost; } }); 
             
             if(paid > 0) cashflow.push({ id: genId('CF'), date: getToday(), time: getTime(), type: 'chi', amount: paid, reason: `Thanh toán phiếu nhập hàng ${rId}`, staffId: activeUser });
             pushDB();
