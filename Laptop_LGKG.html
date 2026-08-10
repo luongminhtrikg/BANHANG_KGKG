@@ -386,18 +386,14 @@
                 </div>
             </div>
 
-            <!-- DASHBOARD / ADMIN -->
-            <div id="dashboard" class="tab-content"><div class="card"><h3>Chào sếp, dữ liệu đang load...</h3></div></div>
-            <div id="admin" class="tab-content">
-                <div class="card">
-                    <h3>Hệ Thống</h3>
-                    <button class="btn btn-success" onclick="exportData()">⬇️ Tải Backup Cứu Hộ</button>
-                    <p style="font-size:0.85rem; color:var(--text-muted); margin-top:10px;">Lưu file này cất kỹ. Cần phục hồi thì tải lên lại.</p>
+           <!-- DASHBOARD / ADMIN -->
+            <div id="dashboard" class="tab-content">
+                <div class="card" style="margin-bottom:15px; display:flex; gap:15px; align-items:center;">
+                    <label style="font-weight:bold; margin:0;">Tóm tắt hoạt động ngày:</label>
+                    <input type="date" id="dash-date" class="form-control" style="width:auto;" onchange="renderDashboard()">
                 </div>
+                <div class="row" id="dash-cards"></div>
             </div>
-
-        </div>
-    </div>
 
     <!-- Modals Lập Liệu -->
     <div id="quickAddModal" class="modal-overlay">
