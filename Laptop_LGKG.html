@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>Lương Gia KG - V16.8 Pro</title>
+    <title>Lương Gia KG - V16.9 Pro</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -130,7 +130,7 @@
     <div id="loginOverlay" style="position:fixed; inset:0; background:#1c252e; z-index:15000; display:flex; justify-content:center; align-items:center;">
         <div class="card" style="width: 90%; max-width: 400px; text-align: center; padding: 40px 20px;">
             <h2 style="color:var(--primary); margin-top:0;">LƯƠNG GIA KG</h2>
-            <p style="color:var(--text-muted); margin-bottom:10px;">Phần mềm quản lý V16.8</p>
+            <p style="color:var(--text-muted); margin-bottom:10px;">Phần mềm quản lý V16.9</p>
             <div id="net-status" style="font-size:0.8rem; color:var(--warning); margin-bottom:15px; min-height:15px;">Đang dò kết nối máy chủ...</div>
             <select id="login-user" class="form-control" style="margin-bottom:15px;"></select>
             <input type="password" id="login-pass" class="form-control" placeholder="Mật khẩu..." style="margin-bottom:20px;" onkeypress="if(event.key==='Enter') doLogin()">
@@ -471,7 +471,7 @@
         </div>
     </div>
 
-    <!-- Modal Thu Nợ -->
+    <!-- Modal Thu Nợ Khách -->
     <div id="debtModal" class="modal-overlay">
         <div class="modal-box">
             <h3 class="modal-title" style="color:var(--info);">💵 Thu Nợ Khách Hàng</h3>
@@ -486,6 +486,24 @@
 
             <div class="form-group"><label>Khách trả đợt này (đ):</label><input type="text" inputmode="numeric" id="debt-pay-amount" class="form-control" style="font-size:1.3rem; font-weight:bold; color:var(--success);" oninput="formatNum(this)"></div>
             <div style="display:flex; gap:10px;"><button class="btn btn-info" style="flex:1; width:100%;" onclick="submitDebtPay()">Thu Tiền & Lập Phiếu</button></div>
+        </div>
+    </div>
+    
+    <!-- Modal Trả Nợ NCC -->
+    <div id="paySupModal" class="modal-overlay">
+        <div class="modal-box">
+            <h3 class="modal-title" style="color:var(--danger);">🔴 Chi Trả Nợ Nhà Cung Cấp</h3>
+            <input type="hidden" id="paysup-id">
+            <div style="margin-bottom:15px; font-size:1.1rem;">Nhà cung cấp: <b id="paysup-name" style="color:var(--primary);"></b></div>
+            <div style="margin-bottom:15px; font-size:1.1rem;">Đang nợ họ: <b id="paysup-debt" style="color:var(--danger);"></b></div>
+            
+            <div class="form-group">
+                <label>Ghi chú chi trả:</label>
+                <input type="text" id="paysup-note" class="form-control" placeholder="Ví dụ: Chuyển khoản trả nợ tiền hàng...">
+            </div>
+
+            <div class="form-group"><label>Số tiền trả đợt này (đ):</label><input type="text" inputmode="numeric" id="paysup-amount" class="form-control" style="font-size:1.3rem; font-weight:bold; color:var(--danger);" oninput="formatNum(this)"></div>
+            <div style="display:flex; justify-content:center;"><button class="btn btn-danger" style="width:100%; padding:12px;" onclick="submitPaySup()">Lập Phiếu Chi & Trừ Nợ NCC</button></div>
         </div>
     </div>
 
@@ -829,17 +847,19 @@
             transactions.forEach(t => { 
                 if(t.date === target) {
                     let s = staffs.find(x=>x.id===t.staffId);
-                    if(t.type === 'cash' || t.type === 'debt') {
-                        html += `<tr><td>${t.time}</td><td>${t.details}</td><td style="color:var(--success); font-weight:bold;">${(t.amount + (t.partsRevenue||0)).toLocaleString()}đ</td><td>${s?s.name:'-'}</td></tr>`;
+                    if(t.type === 'cash') {
+                        html += `<tr><td>${t.time}</td><td><span style="color:var(--success); font-weight:bold;">[Tiền mặt]</span> ${t.details}</td><td style="color:var(--success); font-weight:bold;">${(t.amount + (t.partsRevenue||0)).toLocaleString()}đ</td><td>${s?s.name:'-'}</td></tr>`;
+                    } else if (t.type === 'debt') {
+                        html += `<tr><td>${t.time}</td><td><span style="color:var(--warning); font-weight:bold;">[Công nợ]</span> ${t.details}</td><td style="color:var(--success); font-weight:bold;">${(t.amount + (t.partsRevenue||0)).toLocaleString()}đ</td><td>${s?s.name:'-'}</td></tr>`;
                     } else if (t.type === 'pay') {
-                        html += `<tr><td>${t.time}</td><td><span style="color:var(--info);">[Thu nợ]</span> ${t.details}</td><td style="color:var(--success); font-weight:bold;">${t.amount.toLocaleString()}đ</td><td>${s?s.name:'-'}</td></tr>`;
+                        html += `<tr><td>${t.time}</td><td><span style="color:var(--info); font-weight:bold;">[Thu nợ]</span> ${t.details}</td><td style="color:var(--success); font-weight:bold;">${t.amount.toLocaleString()}đ</td><td>${s?s.name:'-'}</td></tr>`;
                     }
                 } 
             });
             cashflow.forEach(c => {
                 if(c.date === target && c.type === 'thu') {
                     let s = staffs.find(x=>x.id===c.staffId);
-                    html += `<tr><td>${c.time}</td><td><span style="color:var(--info);">[Thu khác]</span> ${c.reason}</td><td style="color:var(--success); font-weight:bold;">${c.amount.toLocaleString()}đ</td><td>${s?s.name:'-'}</td></tr>`;
+                    html += `<tr><td>${c.time}</td><td><span style="color:var(--primary); font-weight:bold;">[Thu khác]</span> ${c.reason}</td><td style="color:var(--success); font-weight:bold;">${c.amount.toLocaleString()}đ</td><td>${s?s.name:'-'}</td></tr>`;
                 }
             });
             if(!html) html = '<tr><td colspan="4" style="text-align:center;">Không có khoản thu.</td></tr>';
@@ -857,7 +877,7 @@
         } else if (type === 'expenses') {
             title = 'Chi Phí Ngày ' + formatD(target); head = '<tr><th>Giờ</th><th>Lý do</th><th>Tiền</th><th>Nhân viên</th></tr>';
             cashflow.forEach(c => { 
-                if(c.date === target && c.type === 'chi') { 
+                if(c.date === target && (c.type === 'chi' || c.type === 'chi_ncc')) { 
                     let s = staffs.find(x=>x.id===c.staffId); html += `<tr><td>${c.time}</td><td>${c.reason}</td><td style="color:var(--danger); font-weight:bold;">${c.amount.toLocaleString()}đ</td><td>${s?s.name:'-'}</td></tr>`;
                 } 
             });
@@ -995,7 +1015,7 @@
         uiConfirm("Lưu vào sổ quỹ?", () => { cashflow.push({id: genId('CF'), date: getToday(), time: getTime(), type: t, amount: a, reason: r, staffId: activeUser}); pushDB(); setVal('cb-amt',0); document.getElementById('cb-reason').value=''; renderData(); setTimeout(()=>uiAlert('Lưu sổ quỹ OK!'),200); });
     }
 
-    // --- DEBT STATEMENT (BẢNG KÊ CÔNG NỢ) ---
+    // --- DEBT STATEMENT (BẢNG KÊ CÔNG NỢ KHÁCH HÀNG) ---
     function openStatement(id, name) {
         document.getElementById('stmt-cus-id').value = id;
         document.getElementById('stmt-cus-name').innerText = name;
@@ -1094,7 +1114,7 @@
         window.print(); p.style.display = 'none';
     }
 
-    // --- DEBT PAY ---
+    // --- DEBT PAY (KHÁCH HÀNG) ---
     function openDebtModal(id, name, debt) {
         document.getElementById('debt-cus-id').value = id; 
         document.getElementById('debt-cus-name').innerText = name; 
@@ -1112,6 +1132,34 @@
             let id = genId('PT'); 
             transactions.push({ id: id, customerId: cId, date: getToday(), time: getTime(), type: 'pay', amount: amt, details: note ? note : 'Khách thanh toán thu nợ', staffId: activeUser });
             pushDB(); closeModal('debtModal'); renderData(); printBill(id, 'sales'); setTimeout(()=>uiAlert('✅ Đã lưu phiếu thu nợ!'), 200);
+        });
+    }
+
+    // --- PAY SUPPLIER (TRẢ NỢ NCC) ---
+    function openPaySupModal(id, name, debt) {
+        document.getElementById('paysup-id').value = id;
+        document.getElementById('paysup-name').innerText = name;
+        document.getElementById('paysup-debt').innerText = debt.toLocaleString() + ' đ';
+        document.getElementById('paysup-amount').value = debt.toLocaleString();
+        document.getElementById('paysup-note').value = 'Trả nợ tiền hàng NCC ' + name;
+        openModal('paySupModal');
+    }
+
+    function submitPaySup() {
+        let sId = document.getElementById('paysup-id').value;
+        let amt = getVal('paysup-amount');
+        let note = document.getElementById('paysup-note').value.trim();
+        
+        if(amt <= 0) return uiAlert('Nhập số tiền trả hợp lệ!');
+        
+        uiConfirm(`Xác nhận chi trả: ${amt.toLocaleString()} đ cho NCC?`, () => {
+            cashflow.push({
+                id: genId('CF'), date: getToday(), time: getTime(), 
+                type: 'chi_ncc', amount: amt, reason: note, 
+                staffId: activeUser, supId: sId
+            });
+            pushDB(); closeModal('paySupModal'); renderData(); 
+            setTimeout(()=>uiAlert('✅ Đã lưu phiếu chi & trừ nợ NCC!'), 200);
         });
     }
 
@@ -1200,7 +1248,8 @@
         cashflow.forEach(c => {
             if(c.date >= from && c.date <= to) {
                 let st = sStats[c.staffId] || {rev:0, cost:0, exp:0};
-                if(c.type==='thu') { tExIn += c.amount; st.rev += c.amount; } else { tExOut += c.amount; st.exp += c.amount; }
+                if(c.type==='thu') { tExIn += c.amount; st.rev += c.amount; } 
+                else if(c.type==='chi' || c.type==='chi_ncc') { tExOut += c.amount; st.exp += c.amount; }
             }
         });
 
@@ -1221,7 +1270,14 @@
     }
 
     function getCusDebt(id) { let d=0; transactions.filter(t=>t.customerId===id).forEach(t=>{ if(t.type==='debt')d+=(t.amount+(t.partsRevenue||0)); else if(t.type==='pay')d-=t.amount; }); return d<0?0:d; }
-    function getSupDebt(id) { let d=0; importReceipts.filter(r=>r.supId===id).forEach(r=>{ d += (r.total - r.paid); }); return d<0?0:d; }
+    
+    // Đã cập nhật: Nợ NCC = Tổng Phiếu Nhập - Tiền Trả Ngay - Tiền Trả Bổ Sung (từ cashflow type 'chi_ncc')
+    function getSupDebt(id) { 
+        let d = 0; 
+        importReceipts.filter(r=>r.supId===id).forEach(r=>{ d += (r.total - r.paid); }); 
+        cashflow.filter(c=>c.supId===id && c.type==='chi_ncc').forEach(c=>{ d -= c.amount; });
+        return d < 0 ? 0 : d; 
+    }
 
     function renderDashboard() {
         let dEl = document.getElementById('dash-date'); if(!dEl) return; if(!dEl.value) dEl.value = getToday(); let target = dEl.value;
@@ -1237,7 +1293,7 @@
         let expenses = 0; 
         cashflow.forEach(c => { 
             if(c.date === target && c.type === 'thu') otherIn += c.amount;
-            if(c.date === target && c.type === 'chi') expenses += c.amount; 
+            if(c.date === target && (c.type === 'chi' || c.type === 'chi_ncc')) expenses += c.amount; 
         });
 
         let thucThu = cashSales + payIn + otherIn;
@@ -1284,7 +1340,7 @@
             document.getElementById('cus-tbl').innerHTML = cusList.map(c=>`<tr><td><b>${c.name}</b><br><small>${c.phone}</small></td><td><b style="color:${c.debt>0?'var(--danger)':'var(--text-main)'};">${c.debt.toLocaleString()} đ</b></td><td><div style="display:flex; gap:5px;"><button class="btn btn-outline" style="padding:4px 8px;" onclick="openEditCus('${c.id}')">✏️</button><button class="btn btn-info" style="padding:4px 8px; font-size:0.8rem;" onclick="openStatement('${c.id}', '${c.name}')">📝 Bảng Kê</button><button class="btn btn-success" style="padding:4px 8px; font-size:0.8rem;" onclick="openDebtModal('${c.id}', '${c.name}', ${c.debt})">💵 Thu</button></div></td></tr>`).join('');
             
             let supList = suppliers.map(s => ({...s, debt: getSupDebt(s.id)})).sort((a,b) => b.debt - a.debt);
-            document.getElementById('sup-tbl').innerHTML = supList.map(s=>`<tr><td><b>${s.name}</b><br><small>${s.phone}</small></td><td><b style="color:var(--danger);">${s.debt.toLocaleString()} đ</b></td><td><button class="btn btn-outline" style="padding:4px 8px;" onclick="openEditSup('${s.id}')">✏️</button></td></tr>`).join('');
+            document.getElementById('sup-tbl').innerHTML = supList.map(s=>`<tr><td><b>${s.name}</b><br><small>${s.phone}</small></td><td><b style="color:var(--danger);">${s.debt.toLocaleString()} đ</b></td><td><div style="display:flex; gap:5px;"><button class="btn btn-outline" style="padding:4px 8px;" onclick="openEditSup('${s.id}')">✏️</button><button class="btn btn-danger" style="padding:4px 8px; font-size:0.8rem;" onclick="openPaySupModal('${s.id}', '${s.name}', ${s.debt})">🔴 Trả Nợ</button></div></td></tr>`).join('');
             
             document.getElementById('staff-table').innerHTML = staffs.map(s => `<tr><td><b>${s.id}</b></td><td><input type="text" class="form-control" style="padding:8px;" value="${s.name}" onchange="updateStaffField('${s.id}', 'name', this.value)"></td><td><input type="text" class="form-control" style="padding:8px; color:var(--danger);" value="${s.password || s.pass}" onchange="updateStaffField('${s.id}', 'password', this.value)"></td></tr>`).join('');
             document.getElementById('recycle-bin-table').innerHTML = recycleBin.slice().reverse().map(rb => `<tr><td style="font-size:0.8rem;">${rb.deletedAt}</td><td><span class="badge" style="background:#f1f5f9; color:var(--text-muted);">${rb.type}</span></td><td><b style="font-size:0.85rem;">${rb.label}</b></td><td><button class="btn btn-info" style="padding:4px 8px; font-size:0.8rem; background:var(--info); color:#fff;" onclick="restoreBinItem('${rb.id}')">♻️ Khôi Phục</button></td></tr>`).join('') || `<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:20px;">Thùng rác sạch sẽ ✨</td></tr>`;
@@ -1351,7 +1407,13 @@
         cashflow.forEach(c=>{ 
             if(activeUser !== 'ADMIN' && c.staffId !== activeUser) return;
             if(c.date<cbDate){if(c.type==='thu')net+=c.amount; else net-=c.amount;} 
-            else if(c.date===cbDate){ if(c.type==='thu'){inC+=c.amount; net+=c.amount; cbArrIn.push({t:c.time, note:c.reason, amt:c.amount, id:c.id, isTx:false});}else{outC+=c.amount; net-=c.amount; cbArrOut.push({t:c.time, note:c.reason, amt:c.amount, id:c.id, isTx:false});} } 
+            else if(c.date===cbDate){ 
+                if(c.type==='thu'){
+                    inC+=c.amount; net+=c.amount; cbArrIn.push({t:c.time, note:c.reason, amt:c.amount, id:c.id, isTx:false});
+                } else {
+                    outC+=c.amount; net-=c.amount; cbArrOut.push({t:c.time, note:c.reason, amt:c.amount, id:c.id, isTx:false});
+                } 
+            } 
         });
         
         setTxt('cb-net', net);
