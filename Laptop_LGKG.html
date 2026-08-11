@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>Lương Gia KG - V16.9 Pro</title>
+    <title>Lương Gia KG - V17.0 Pro</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -130,7 +130,7 @@
     <div id="loginOverlay" style="position:fixed; inset:0; background:#1c252e; z-index:15000; display:flex; justify-content:center; align-items:center;">
         <div class="card" style="width: 90%; max-width: 400px; text-align: center; padding: 40px 20px;">
             <h2 style="color:var(--primary); margin-top:0;">LƯƠNG GIA KG</h2>
-            <p style="color:var(--text-muted); margin-bottom:10px;">Phần mềm quản lý V16.9</p>
+            <p style="color:var(--text-muted); margin-bottom:10px;">Phần mềm quản lý V17.0</p>
             <div id="net-status" style="font-size:0.8rem; color:var(--warning); margin-bottom:15px; min-height:15px;">Đang dò kết nối máy chủ...</div>
             <select id="login-user" class="form-control" style="margin-bottom:15px;"></select>
             <input type="password" id="login-pass" class="form-control" placeholder="Mật khẩu..." style="margin-bottom:20px;" onkeypress="if(event.key==='Enter') doLogin()">
@@ -342,14 +342,20 @@
                 <div class="row">
                     <div class="col">
                         <details class="card" style="border-top:4px solid var(--info);" open>
-                            <summary style="font-size:1.1rem; font-weight:700; cursor:pointer; outline:none; margin-bottom:10px;">👥 Khách Hàng (Bấm mở/đóng)</summary>
+                            <summary style="font-size:1.1rem; font-weight:700; cursor:pointer; outline:none; margin-bottom:10px;">
+                                👥 Khách Hàng 
+                                <button class="btn btn-success btn-icon" style="padding:2px 8px; font-size:0.8rem; margin-left:10px; border:none;" onclick="openModal('quickAddCusModal'); event.preventDefault();" title="Thêm khách hàng">➕</button>
+                            </summary>
                             <input type="text" class="form-control" placeholder="Tìm khách..." onkeyup="filterTable('cus-tbl', this.value)" style="margin-bottom:15px;">
                             <div class="table-wrap"><table><thead><tr><th>Tên & SĐT</th><th>Tổng Nợ</th><th>Thao Tác</th></tr></thead><tbody id="cus-tbl"></tbody></table></div>
                         </details>
                     </div>
                     <div class="col">
                         <details class="card" style="border-top:4px solid var(--warning);" open>
-                            <summary style="font-size:1.1rem; font-weight:700; cursor:pointer; outline:none; margin-bottom:10px;">🏢 Nhà Cung Cấp (Bấm mở/đóng)</summary>
+                            <summary style="font-size:1.1rem; font-weight:700; cursor:pointer; outline:none; margin-bottom:10px;">
+                                🏢 Nhà Cung Cấp 
+                                <button class="btn btn-danger btn-icon" style="padding:2px 8px; font-size:0.8rem; margin-left:10px; border:none;" onclick="openModal('addSupModal'); event.preventDefault();" title="Thêm Nhà cung cấp">➕</button>
+                            </summary>
                             <input type="text" class="form-control" placeholder="Tìm NCC..." onkeyup="filterTable('sup-tbl', this.value)" style="margin-bottom:15px;">
                             <div class="table-wrap"><table><thead><tr><th>Nhà Cung Cấp</th><th>Đang Nợ Họ</th><th>Thao Tác</th></tr></thead><tbody id="sup-tbl"></tbody></table></div>
                         </details>
@@ -430,7 +436,7 @@
 
     <!-- Modals -->
 
-    <!-- Modal Dash Detail -->
+    <!-- Modal Dash/Report Detail -->
     <div id="dashDetailModal" class="modal-overlay">
         <div class="modal-box" style="max-width: 800px;">
             <h3 class="modal-title" id="dd-title">Chi Tiết</h3>
@@ -603,7 +609,7 @@
         </div>
     </div>
     
-    <div id="print-area" style="display:none;"></div>
+    <div id="print-area" class="no-print"></div>
 
 <script>
     // Logic tắt popup khi click ra ngoài vùng xám
@@ -843,23 +849,26 @@
         let title = '', head = '', html = '';
         if (type === 'sales') {
             title = 'Doanh Thu ' + formatD(target); 
-            head = '<tr><th>Giờ</th><th>Nội dung</th><th>Tiền</th><th>Nhân viên</th></tr>';
+            head = '<tr><th>Khách Hàng</th><th>Nội dung</th><th>Tiền</th><th>Nhân viên</th></tr>';
             transactions.forEach(t => { 
                 if(t.date === target) {
                     let s = staffs.find(x=>x.id===t.staffId);
+                    let c = customers.find(x=>x.id===t.customerId);
+                    let cName = c ? c.name : 'Khách lẻ';
+                    
                     if(t.type === 'cash') {
-                        html += `<tr><td>${t.time}</td><td><span style="color:var(--success); font-weight:bold;">[Tiền mặt]</span> ${t.details}</td><td style="color:var(--success); font-weight:bold;">${(t.amount + (t.partsRevenue||0)).toLocaleString()}đ</td><td>${s?s.name:'-'}</td></tr>`;
+                        html += `<tr><td><b>${cName}</b></td><td><span style="color:var(--success); font-weight:bold;">[Tiền mặt]</span> ${t.details}</td><td style="color:var(--success); font-weight:bold;">${(t.amount + (t.partsRevenue||0)).toLocaleString()}đ</td><td>${s?s.name:'-'}</td></tr>`;
                     } else if (t.type === 'debt') {
-                        html += `<tr><td>${t.time}</td><td><span style="color:var(--warning); font-weight:bold;">[Công nợ]</span> ${t.details}</td><td style="color:var(--success); font-weight:bold;">${(t.amount + (t.partsRevenue||0)).toLocaleString()}đ</td><td>${s?s.name:'-'}</td></tr>`;
+                        html += `<tr><td><b>${cName}</b></td><td><span style="color:var(--warning); font-weight:bold;">[Công nợ]</span> ${t.details}</td><td style="color:var(--success); font-weight:bold;">${(t.amount + (t.partsRevenue||0)).toLocaleString()}đ</td><td>${s?s.name:'-'}</td></tr>`;
                     } else if (t.type === 'pay') {
-                        html += `<tr><td>${t.time}</td><td><span style="color:var(--info); font-weight:bold;">[Thu nợ]</span> ${t.details}</td><td style="color:var(--success); font-weight:bold;">${t.amount.toLocaleString()}đ</td><td>${s?s.name:'-'}</td></tr>`;
+                        html += `<tr><td><b>${cName}</b></td><td><span style="color:var(--info); font-weight:bold;">[Thu nợ]</span> ${t.details}</td><td style="color:var(--success); font-weight:bold;">${t.amount.toLocaleString()}đ</td><td>${s?s.name:'-'}</td></tr>`;
                     }
                 } 
             });
             cashflow.forEach(c => {
                 if(c.date === target && c.type === 'thu') {
                     let s = staffs.find(x=>x.id===c.staffId);
-                    html += `<tr><td>${c.time}</td><td><span style="color:var(--primary); font-weight:bold;">[Thu khác]</span> ${c.reason}</td><td style="color:var(--success); font-weight:bold;">${c.amount.toLocaleString()}đ</td><td>${s?s.name:'-'}</td></tr>`;
+                    html += `<tr><td><b>Khách lẻ</b></td><td><span style="color:var(--primary); font-weight:bold;">[Thu khác]</span> ${c.reason}</td><td style="color:var(--success); font-weight:bold;">${c.amount.toLocaleString()}đ</td><td>${s?s.name:'-'}</td></tr>`;
                 }
             });
             if(!html) html = '<tr><td colspan="4" style="text-align:center;">Không có khoản thu.</td></tr>';
@@ -884,6 +893,72 @@
             if(!html) html = '<tr><td colspan="4" style="text-align:center;">Không có khoản chi.</td></tr>';
         }
         document.getElementById('dd-title').innerText = title; document.getElementById('dd-head').innerHTML = head; document.getElementById('dd-body').innerHTML = html; openModal('dashDetailModal');
+    }
+
+    // --- REPORT DETAILS (Bấm là ra bảng chi tiết) ---
+    function showReportDetail(type) {
+        let from = document.getElementById('rp-from').value, to = document.getElementById('rp-to').value;
+        if(!from || !to) return;
+        
+        let title = '', head = '<tr><th>Ngày</th><th>Khách/Nội dung</th><th>Tiền</th></tr>', html = '';
+        
+        if (type === 'rev') {
+            title = 'Chi Tiết Doanh Thu Hàng';
+            transactions.forEach(t => {
+                if(t.date >= from && t.date <= to && (t.type==='cash' || t.type==='debt')) {
+                    let isSrv = t.note && t.note.includes('Từ phiếu');
+                    if(!isSrv) {
+                        let c = customers.find(x=>x.id===t.customerId);
+                        let r = t.amount + (t.partsRevenue||0);
+                        html += `<tr><td>${formatD(t.date)}</td><td><b>${c?c.name:'Khách lẻ'}</b><br><small>${t.details}</small></td><td style="color:var(--success); font-weight:bold;">+${r.toLocaleString()} đ</td></tr>`;
+                    }
+                }
+            });
+        } else if (type === 'cost') {
+            title = 'Chi Tiết Tiền Vốn Hàng';
+            transactions.forEach(t => {
+                if(t.date >= from && t.date <= to && (t.type==='cash' || t.type==='debt')) {
+                    let isSrv = t.note && t.note.includes('Từ phiếu');
+                    let c = t.totalCost||0;
+                    if(c > 0) {
+                        let cus = customers.find(x=>x.id===t.customerId);
+                        html += `<tr><td>${formatD(t.date)}</td><td><b>${cus?cus.name:'Khách lẻ'}</b><br><small>Vốn của: ${t.id}</small></td><td style="color:var(--warning); font-weight:bold;">-${c.toLocaleString()} đ</td></tr>`;
+                    }
+                }
+            });
+        } else if (type === 'srv') {
+            title = 'Chi Tiết Tiền Công Sửa';
+            transactions.forEach(t => {
+                if(t.date >= from && t.date <= to && (t.type==='cash' || t.type==='debt')) {
+                    let isSrv = t.note && t.note.includes('Từ phiếu');
+                    if(isSrv && t.amount > 0) {
+                        let cus = customers.find(x=>x.id===t.customerId);
+                        html += `<tr><td>${formatD(t.date)}</td><td><b>${cus?cus.name:'Khách'}</b><br><small>${t.details}</small></td><td style="color:var(--success); font-weight:bold;">+${t.amount.toLocaleString()} đ</td></tr>`;
+                    }
+                }
+            });
+        } else if (type === 'in') {
+            title = 'Chi Tiết Thu Khác';
+            cashflow.forEach(c => {
+                if(c.date >= from && c.date <= to && c.type === 'thu') {
+                    html += `<tr><td>${formatD(c.date)}</td><td>${c.reason}</td><td style="color:var(--success); font-weight:bold;">+${c.amount.toLocaleString()} đ</td></tr>`;
+                }
+            });
+        } else if (type === 'out') {
+            title = 'Chi Tiết Chi Phí / Trả Nợ';
+            cashflow.forEach(c => {
+                if(c.date >= from && c.date <= to && (c.type === 'chi' || c.type === 'chi_ncc')) {
+                    html += `<tr><td>${formatD(c.date)}</td><td>${c.reason}</td><td style="color:var(--danger); font-weight:bold;">-${c.amount.toLocaleString()} đ</td></tr>`;
+                }
+            });
+        }
+
+        if(!html) html = '<tr><td colspan="3" style="text-align:center;">Không có dữ liệu trong khoảng thời gian này.</td></tr>';
+        
+        document.getElementById('dd-title').innerText = title; 
+        document.getElementById('dd-head').innerHTML = head; 
+        document.getElementById('dd-body').innerHTML = html; 
+        openModal('dashDetailModal');
     }
 
     // --- IMPORT MODULE ---
@@ -1087,9 +1162,9 @@
         let to = formatD(document.getElementById('stmt-to').value);
         let trs = document.getElementById('stmt-tbody').innerHTML;
         
-        let logoHtml = storeInfo.logoUrl ? `<img src="${storeInfo.logoUrl}" style="max-width:120px; max-height:60px; object-fit:contain; margin-bottom:5px;">` : '';
+        let logoHtml = storeInfo.logoUrl ? `<img src="${storeInfo.logoUrl}" style="max-width:120px; max-height:60px; object-fit:contain; margin:0 auto 5px auto; display:block;">` : '';
         
-        let h = `<div style="width:78mm; font-family:sans-serif; color:#000;">
+        let h = `<div style="width:78mm; margin:0 auto; font-family:sans-serif; color:#000; text-align:left;">
                     <div style="text-align:center;">
                         ${logoHtml}
                         <h2 style="margin:0; font-size:18px;">${storeInfo.name}</h2>
@@ -1110,8 +1185,8 @@
                     <div style="text-align:right; font-size:15px; margin:15px 0; font-weight:bold; border-top:1px dashed #000; padding-top:10px;">TỔNG NỢ HIỆN TẠI:<br>${document.getElementById('stmt-nocuoi').innerText}</div>
                 </div>`;
                 
-        let p = document.getElementById('print-area'); p.innerHTML = h; p.style.display = 'block';
-        window.print(); p.style.display = 'none';
+        let p = document.getElementById('print-area'); p.innerHTML = h;
+        window.print(); 
     }
 
     // --- DEBT PAY (KHÁCH HÀNG) ---
@@ -1254,12 +1329,30 @@
         });
 
         document.getElementById('rp-cards').innerHTML = `
-            <div class="col card" style="border-left: 4px solid var(--info);"><div style="font-size:0.85rem; color:var(--text-muted); font-weight:700;">DOANH THU HÀNG</div><b class="blur-money" onclick="this.classList.toggle('revealed')" style="font-size:1.5rem;">${tRev.toLocaleString()}</b></div>
-            <div class="col card" style="border-left: 4px solid var(--warning);"><div style="font-size:0.85rem; color:var(--text-muted); font-weight:700;">(-) VỐN HÀNG</div><b class="blur-money" onclick="this.classList.toggle('revealed')" style="font-size:1.5rem; color:var(--warning);">${tCost.toLocaleString()}</b></div>
-            <div class="col card" style="border-left: 4px solid var(--success);"><div style="font-size:0.85rem; color:var(--text-muted); font-weight:700;">(+) CÔNG SỬA</div><b class="blur-money" onclick="this.classList.toggle('revealed')" style="font-size:1.5rem; color:var(--success);">${tSrv.toLocaleString()}</b></div>
-            <div class="col card" style="border-left: 4px solid var(--success);"><div style="font-size:0.85rem; color:var(--text-muted); font-weight:700;">(+) THU KHÁC</div><b class="blur-money" onclick="this.classList.toggle('revealed')" style="font-size:1.5rem; color:var(--success);">${tExIn.toLocaleString()}</b></div>
-            <div class="col card" style="border-left: 4px solid var(--danger);"><div style="font-size:0.85rem; color:var(--text-muted); font-weight:700;">(-) CHI PHÍ TIỆM</div><b class="blur-money" onclick="this.classList.toggle('revealed')" style="font-size:1.5rem; color:var(--danger);">${tExOut.toLocaleString()}</b></div>
-            <div class="col card" style="flex: 100%; background: #f0fdf4; border-color: #86efac; text-align: center;"><div style="font-size:1rem; color:#166534; font-weight:700;">LỢI NHUẬN KỲ LỌC</div><b class="blur-money" onclick="this.classList.toggle('revealed')" style="font-size:2.5rem; color:#14532d;">${((tRev - tCost) + tSrv + tExIn - tExOut).toLocaleString()} đ</b></div>
+            <div class="col card dash-card" style="border-left: 4px solid var(--info);" onclick="showReportDetail('rev')">
+                <div style="font-size:0.85rem; color:var(--text-muted); font-weight:700;">DOANH THU HÀNG (Bấm xem)</div>
+                <b class="blur-money" onclick="event.stopPropagation(); this.classList.toggle('revealed')" style="font-size:1.5rem;">${tRev.toLocaleString()}</b>
+            </div>
+            <div class="col card dash-card" style="border-left: 4px solid var(--warning);" onclick="showReportDetail('cost')">
+                <div style="font-size:0.85rem; color:var(--text-muted); font-weight:700;">(-) VỐN HÀNG (Bấm xem)</div>
+                <b class="blur-money" onclick="event.stopPropagation(); this.classList.toggle('revealed')" style="font-size:1.5rem; color:var(--warning);">${tCost.toLocaleString()}</b>
+            </div>
+            <div class="col card dash-card" style="border-left: 4px solid var(--success);" onclick="showReportDetail('srv')">
+                <div style="font-size:0.85rem; color:var(--text-muted); font-weight:700;">(+) CÔNG SỬA (Bấm xem)</div>
+                <b class="blur-money" onclick="event.stopPropagation(); this.classList.toggle('revealed')" style="font-size:1.5rem; color:var(--success);">${tSrv.toLocaleString()}</b>
+            </div>
+            <div class="col card dash-card" style="border-left: 4px solid var(--success);" onclick="showReportDetail('in')">
+                <div style="font-size:0.85rem; color:var(--text-muted); font-weight:700;">(+) THU KHÁC (Bấm xem)</div>
+                <b class="blur-money" onclick="event.stopPropagation(); this.classList.toggle('revealed')" style="font-size:1.5rem; color:var(--success);">${tExIn.toLocaleString()}</b>
+            </div>
+            <div class="col card dash-card" style="border-left: 4px solid var(--danger);" onclick="showReportDetail('out')">
+                <div style="font-size:0.85rem; color:var(--text-muted); font-weight:700;">(-) CHI PHÍ TIỆM (Bấm xem)</div>
+                <b class="blur-money" onclick="event.stopPropagation(); this.classList.toggle('revealed')" style="font-size:1.5rem; color:var(--danger);">${tExOut.toLocaleString()}</b>
+            </div>
+            <div class="col card" style="flex: 100%; background: #f0fdf4; border-color: #86efac; text-align: center;">
+                <div style="font-size:1rem; color:#166534; font-weight:700;">LỢI NHUẬN KỲ LỌC</div>
+                <b class="blur-money" onclick="this.classList.toggle('revealed')" style="font-size:2.5rem; color:#14532d;">${((tRev - tCost) + tSrv + tExIn - tExOut).toLocaleString()} đ</b>
+            </div>
         `;
         let sHtml = '';
         Object.keys(sStats).forEach(id => {
@@ -1271,7 +1364,7 @@
 
     function getCusDebt(id) { let d=0; transactions.filter(t=>t.customerId===id).forEach(t=>{ if(t.type==='debt')d+=(t.amount+(t.partsRevenue||0)); else if(t.type==='pay')d-=t.amount; }); return d<0?0:d; }
     
-    // Đã cập nhật: Nợ NCC = Tổng Phiếu Nhập - Tiền Trả Ngay - Tiền Trả Bổ Sung (từ cashflow type 'chi_ncc')
+    // Nợ NCC = Tổng Phiếu Nhập - Tiền Trả Ngay - Tiền Trả Bổ Sung (từ cashflow type 'chi_ncc')
     function getSupDebt(id) { 
         let d = 0; 
         importReceipts.filter(r=>r.supId===id).forEach(r=>{ d += (r.total - r.paid); }); 
@@ -1282,11 +1375,10 @@
     function renderDashboard() {
         let dEl = document.getElementById('dash-date'); if(!dEl) return; if(!dEl.value) dEl.value = getToday(); let target = dEl.value;
         
-        let cashSales = 0, debtSales = 0, payIn = 0, otherIn = 0;
+        let cashSales = 0, payIn = 0, otherIn = 0;
         transactions.forEach(t => { 
             if(t.date === target) { 
                 if(t.type === 'cash') { cashSales += t.amount + (t.partsRevenue || 0); }
-                if(t.type === 'debt') { debtSales += t.amount + (t.partsRevenue || 0); }
                 if(t.type === 'pay') { payIn += t.amount; }
             } 
         });
@@ -1305,7 +1397,6 @@
             <div class="col card dash-card" style="border-left: 4px solid var(--primary);" onclick="showDashDetail('sales')">
                 <div style="font-size:0.85rem; color:var(--text-muted); font-weight:700;">THỰC THU TRONG NGÀY (Xem)</div>
                 <b class="blur-money" onclick="event.stopPropagation(); this.classList.toggle('revealed')" style="font-size:1.8rem; color:var(--primary);">${thucThu.toLocaleString()} đ</b>
-                <div style="font-size:0.85rem; color:var(--danger); margin-top:5px; font-weight:600;">+ Khách nợ mới: ${debtSales.toLocaleString()} đ</div>
             </div>
             <div class="col card dash-card" style="border-left: 4px solid var(--warning);" onclick="showDashDetail('repairs')">
                 <div style="font-size:0.85rem; color:var(--text-muted); font-weight:700;">MÁY NẰM VIỆN (Bấm xem)</div>
@@ -1340,7 +1431,7 @@
             document.getElementById('cus-tbl').innerHTML = cusList.map(c=>`<tr><td><b>${c.name}</b><br><small>${c.phone}</small></td><td><b style="color:${c.debt>0?'var(--danger)':'var(--text-main)'};">${c.debt.toLocaleString()} đ</b></td><td><div style="display:flex; gap:5px;"><button class="btn btn-outline" style="padding:4px 8px;" onclick="openEditCus('${c.id}')">✏️</button><button class="btn btn-info" style="padding:4px 8px; font-size:0.8rem;" onclick="openStatement('${c.id}', '${c.name}')">📝 Bảng Kê</button><button class="btn btn-success" style="padding:4px 8px; font-size:0.8rem;" onclick="openDebtModal('${c.id}', '${c.name}', ${c.debt})">💵 Thu</button></div></td></tr>`).join('');
             
             let supList = suppliers.map(s => ({...s, debt: getSupDebt(s.id)})).sort((a,b) => b.debt - a.debt);
-            document.getElementById('sup-tbl').innerHTML = supList.map(s=>`<tr><td><b>${s.name}</b><br><small>${s.phone}</small></td><td><b style="color:var(--danger);">${s.debt.toLocaleString()} đ</b></td><td><div style="display:flex; gap:5px;"><button class="btn btn-outline" style="padding:4px 8px;" onclick="openEditSup('${s.id}')">✏️</button><button class="btn btn-danger" style="padding:4px 8px; font-size:0.8rem;" onclick="openPaySupModal('${s.id}', '${s.name}', ${s.debt})">🔴 Trả Nợ</button></div></td></tr>`).join('');
+            document.getElementById('sup-tbl').innerHTML = supList.map(s=>`<tr><td><b>${s.name}</b><br><small>${s.phone}</small></td><td><b style="color:var(--danger);">${s.debt.toLocaleString()} đ</b></td><td><div style="display:flex; gap:5px;"><button class="btn btn-outline" style="padding:4px 8px;" onclick="openEditSup('${s.id}')">✏️</button>${s.debt > 0 ? `<button class="btn btn-danger" style="padding:4px 8px; font-size:0.8rem;" onclick="openPaySupModal('${s.id}', '${s.name}', ${s.debt})">🔴 Trả Nợ</button>` : ''}</div></td></tr>`).join('');
             
             document.getElementById('staff-table').innerHTML = staffs.map(s => `<tr><td><b>${s.id}</b></td><td><input type="text" class="form-control" style="padding:8px;" value="${s.name}" onchange="updateStaffField('${s.id}', 'name', this.value)"></td><td><input type="text" class="form-control" style="padding:8px; color:var(--danger);" value="${s.password || s.pass}" onchange="updateStaffField('${s.id}', 'password', this.value)"></td></tr>`).join('');
             document.getElementById('recycle-bin-table').innerHTML = recycleBin.slice().reverse().map(rb => `<tr><td style="font-size:0.8rem;">${rb.deletedAt}</td><td><span class="badge" style="background:#f1f5f9; color:var(--text-muted);">${rb.type}</span></td><td><b style="font-size:0.85rem;">${rb.label}</b></td><td><button class="btn btn-info" style="padding:4px 8px; font-size:0.8rem; background:var(--info); color:#fff;" onclick="restoreBinItem('${rb.id}')">♻️ Khôi Phục</button></td></tr>`).join('') || `<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:20px;">Thùng rác sạch sẽ ✨</td></tr>`;
@@ -1359,10 +1450,18 @@
         serviceOrders.slice().sort((a,b) => {
             let wA = getW(a.status), wB = getW(b.status);
             if(wA !== wB) return wA - wB;
-            return b.id.localeCompare(a.id); // Sắp xếp mới nhất lên trên
+            return b.id.localeCompare(a.id);
         }).forEach(o => {
             if(o.status.includes('Đã trả') || o.status.includes('Đã giao')) doneSrv.push(o);
             else activeSrv.push(o);
+        });
+        
+        // Sắp xếp máy đã trả theo thời gian bàn giao (Mới nhất nằm trên)
+        doneSrv.sort((a, b) => {
+            let tA = (a.receiveDate || '') + (a.receiveTime || '');
+            let tB = (b.receiveDate || '') + (b.receiveTime || '');
+            if (tA !== tB) return tB.localeCompare(tA);
+            return b.id.localeCompare(a.id);
         });
         
         let mapSrv = (o, isDone) => {
@@ -1444,7 +1543,7 @@
 
     function printBill(id, type) {
         let h = '', d = getToday();
-        let logoHtml = storeInfo.logoUrl ? `<img src="${storeInfo.logoUrl}" style="max-width:120px; max-height:60px; object-fit:contain; margin-bottom:5px;">` : '';
+        let logoHtml = storeInfo.logoUrl ? `<img src="${storeInfo.logoUrl}" style="max-width:120px; max-height:60px; object-fit:contain; margin:0 auto 5px auto; display:block;">` : '';
         
         if(type==='sales') {
             let t = transactions.find(x=>x.id===id); if(!t) return;
@@ -1455,7 +1554,7 @@
             } else {
                 trs=`<tr><td style="padding:6px 0; border-bottom:1px dashed #ccc;">${t.details}</td><td style="text-align:right; font-weight:bold; vertical-align:bottom; padding:6px 0; border-bottom:1px dashed #ccc;">${(t.amount+(t.partsRevenue||0)).toLocaleString()}</td></tr>`;
             }
-            h = `<div style="width:78mm; font-family:sans-serif; color:#000;">
+            h = `<div style="width:78mm; margin:0 auto; font-family:sans-serif; color:#000; text-align:left;">
                     <div style="text-align:center;">
                         ${logoHtml}
                         <h2 style="margin:0; font-size:18px;">${storeInfo.name}</h2>
@@ -1476,7 +1575,7 @@
         } else if(type==='service') {
             let o = serviceOrders.find(x=>x.id===id); if(!o) return;
             let c = customers.find(x=>x.id===o.customerId) || {name:'Khách', phone:''};
-            h = `<div style="width:78mm; font-family:sans-serif; color:#000;">
+            h = `<div style="width:78mm; margin:0 auto; font-family:sans-serif; color:#000; text-align:left;">
                     <div style="text-align:center;">
                         ${logoHtml}
                         <h2 style="margin:0; font-size:18px;">${storeInfo.name}</h2>
@@ -1495,10 +1594,17 @@
                     <div style="text-align:center; font-size:12px; font-weight:bold; margin-top:15px;">Lưu ý: Quý khách vui lòng giữ kỹ biên nhận để đối chiếu khi lấy máy!</div>
                 </div>`;
         }
-        let p = document.getElementById('print-area'); p.innerHTML = h; p.style.display = 'block';
-        window.print(); p.style.display = 'none';
+        let p = document.getElementById('print-area'); p.innerHTML = h;
+        window.print();
     }
 </script>
-<style> @media print { body * { display: none !important; } #print-area, #print-area * { display: block !important; } @page { margin: 0; } } </style>
+<style> 
+    @media print { 
+        body * { display: none !important; } 
+        #print-area, #print-area * { display: block !important; } 
+        #print-area { position: absolute; left: 0; top: 0; width: 100%; display: flex !important; justify-content: center !important; }
+        @page { margin: 0; } 
+    } 
+</style>
 </body>
 </html>
