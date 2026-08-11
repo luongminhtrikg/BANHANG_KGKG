@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>Lương Gia KG - V16.6 Final</title>
+    <title>Lương Gia KG - V16.7 Smart Pro</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -84,6 +84,9 @@
         .modal-box { background: #fff; width: 90%; max-width: 700px; border-radius: 12px; padding: 20px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
         .modal-title { margin-top: 0; font-size: 1.2rem; margin-bottom: 15px; color: var(--primary); border-bottom: 1px solid var(--border); padding-bottom: 10px; }
 
+        details > summary { list-style: none; }
+        details > summary::-webkit-details-marker { display: none; }
+
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
         #mobile-menu-btn { display: none; background: none; border: none; font-size: 1.5rem; cursor: pointer; }
@@ -127,7 +130,7 @@
     <div id="loginOverlay" style="position:fixed; inset:0; background:#1c252e; z-index:15000; display:flex; justify-content:center; align-items:center;">
         <div class="card" style="width: 90%; max-width: 400px; text-align: center; padding: 40px 20px;">
             <h2 style="color:var(--primary); margin-top:0;">LƯƠNG GIA KG</h2>
-            <p style="color:var(--text-muted); margin-bottom:10px;">Phần mềm quản lý V16.6</p>
+            <p style="color:var(--text-muted); margin-bottom:10px;">Phần mềm quản lý V16.7</p>
             <div id="net-status" style="font-size:0.8rem; color:var(--warning); margin-bottom:15px; min-height:15px;">Đang dò kết nối máy chủ...</div>
             <select id="login-user" class="form-control" style="margin-bottom:15px;"></select>
             <input type="password" id="login-pass" class="form-control" placeholder="Mật khẩu..." style="margin-bottom:20px;" onkeypress="if(event.key==='Enter') doLogin()">
@@ -269,10 +272,18 @@
                 <div class="row reverse-mobile">
                     <div class="col" style="flex:2;">
                         <div class="card">
-                            <div class="card-header"><h3 class="card-title">📋 Trạng Thái Máy Sửa Chữa</h3></div>
+                            <h3 class="card-title" style="margin-bottom:15px;">📋 Máy Đang Nằm Viện</h3>
                             <div class="table-wrap">
-                                <table><thead><tr><th>Mã/Khách</th><th>Tên Máy / Lỗi</th><th>Trạng thái</th><th>Tác vụ</th></tr></thead><tbody id="srv-tbl"></tbody></table>
+                                <table><thead><tr><th>Mã/Khách</th><th>Tên Máy / Lỗi</th><th>Trạng thái</th><th>Tác vụ</th></tr></thead><tbody id="srv-tbl-active"></tbody></table>
                             </div>
+                            
+                            <!-- Bảng máy đã trả ẩn bên dưới -->
+                            <details style="margin-top:20px; background:#f8fafc; border:1px solid var(--border); border-radius:8px;">
+                                <summary style="font-weight:bold; cursor:pointer; padding:12px; color:var(--text-muted);">✅ MÁY ĐÃ GIAO KHÁCH (Bấm để xem lịch sử)</summary>
+                                <div class="table-wrap" style="padding:10px;">
+                                    <table><thead><tr><th>Mã/Khách</th><th>Tên Máy / Lỗi</th><th>Trạng thái</th><th>Tác vụ</th></tr></thead><tbody id="srv-tbl-done"></tbody></table>
+                                </div>
+                            </details>
                         </div>
                     </div>
                     <div class="col" style="flex:1;">
@@ -331,18 +342,18 @@
             <div id="partners" class="tab-content">
                 <div class="row">
                     <div class="col">
-                        <div class="card" style="border-top:4px solid var(--info);">
-                            <div class="card-header"><h3 class="card-title">👥 Khách Hàng (Sổ Nợ)</h3></div>
+                        <details class="card" style="border-top:4px solid var(--info);" open>
+                            <summary style="font-size:1.1rem; font-weight:700; cursor:pointer; outline:none; margin-bottom:10px;">👥 Khách Hàng (Bấm mở/đóng)</summary>
                             <input type="text" class="form-control" placeholder="Tìm khách..." onkeyup="filterTable('cus-tbl', this.value)" style="margin-bottom:15px;">
                             <div class="table-wrap"><table><thead><tr><th>Tên & SĐT</th><th>Tổng Nợ</th><th>Thao Tác</th></tr></thead><tbody id="cus-tbl"></tbody></table></div>
-                        </div>
+                        </details>
                     </div>
                     <div class="col">
-                        <div class="card" style="border-top:4px solid var(--warning);">
-                            <div class="card-header"><h3 class="card-title">🏢 Nhà Cung Cấp (Mình Nợ)</h3></div>
+                        <details class="card" style="border-top:4px solid var(--warning);" open>
+                            <summary style="font-size:1.1rem; font-weight:700; cursor:pointer; outline:none; margin-bottom:10px;">🏢 Nhà Cung Cấp (Bấm mở/đóng)</summary>
                             <input type="text" class="form-control" placeholder="Tìm NCC..." onkeyup="filterTable('sup-tbl', this.value)" style="margin-bottom:15px;">
                             <div class="table-wrap"><table><thead><tr><th>Nhà Cung Cấp</th><th>Đang Nợ Họ</th><th>Thao Tác</th></tr></thead><tbody id="sup-tbl"></tbody></table></div>
-                        </div>
+                        </details>
                     </div>
                 </div>
             </div>
@@ -437,6 +448,12 @@
             <input type="hidden" id="debt-cus-id">
             <div style="margin-bottom:15px; font-size:1.1rem;">Khách hàng: <b id="debt-cus-name" style="color:var(--primary);"></b></div>
             <div style="margin-bottom:15px; font-size:1.1rem;">Đang nợ: <b id="debt-cus-amount" style="color:var(--danger);"></b></div>
+            
+            <div class="form-group">
+                <label>Ghi chú thu nợ (Tùy chọn):</label>
+                <input type="text" id="debt-note" class="form-control" placeholder="Ví dụ: Thanh toán bill tháng 7...">
+            </div>
+
             <div class="form-group"><label>Khách trả đợt này (đ):</label><input type="text" inputmode="numeric" id="debt-pay-amount" class="form-control" style="font-size:1.3rem; font-weight:bold; color:var(--success);" oninput="formatNum(this)"></div>
             <div style="display:flex; gap:10px;"><button class="btn btn-outline" style="flex:1;" onclick="closeModal('debtModal')">Hủy</button><button class="btn btn-info" style="flex:1;" onclick="submitDebtPay()">Thu Tiền & Lập Phiếu</button></div>
         </div>
@@ -497,6 +514,13 @@
     <div id="print-area" style="display:none;"></div>
 
 <script>
+    // Logic tắt popup khi click ra ngoài vùng xám
+    document.querySelectorAll('.modal-overlay').forEach(el => {
+        el.addEventListener('mousedown', function(e) {
+            if(e.target === this) this.style.display = 'none';
+        });
+    });
+
     const firebaseConfig = { databaseURL: "https://luonggiakg-default-rtdb.asia-southeast1.firebasedatabase.app/" };
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
@@ -520,6 +544,7 @@
         activityLogs.push({ id: 'LOG_'+Date.now(), time: formatD(getToday()) + ' ' + getTime(), staff: sName, action: action, detail: detail }); 
         if(activityLogs.length > 200) activityLogs.shift(); 
     }
+    
     function deleteItemToBin(id, type, arrayRef, labelGen) { 
         uiConfirm('⚠️ CHẮC CHẮN MUỐN XÓA?', () => { 
             let index = arrayRef.findIndex(x => x.id === id); 
@@ -531,6 +556,7 @@
             } 
         }); 
     }
+    
     function restoreBinItem(rbId) { 
         uiConfirm('♻️ Phục hồi lại dữ liệu này?', () => { 
             let index = recycleBin.findIndex(x => x.id === rbId); 
@@ -539,6 +565,7 @@
                 if(rb.type === 'Sản Phẩm') inventory.push(rb.data); 
                 else if(rb.type === 'Sổ Quỹ') cashflow.push(rb.data); 
                 else if(rb.type === 'Phiếu Nhận Máy') serviceOrders.push(rb.data);
+                else if(rb.type === 'Giao Dịch') transactions.push(rb.data);
                 logAction(`Khôi phục thùng rác`, rb.label); 
                 recycleBin.splice(index, 1); pushDB(); renderData(); uiAlert('✅ Khôi phục thành công!'); 
             } 
@@ -723,16 +750,29 @@
         let dEl = document.getElementById('dash-date'); if(!dEl) return; let target = dEl.value || getToday();
         let title = '', head = '', html = '';
         if (type === 'sales') {
-            title = 'Doanh Thu ' + formatD(target); head = '<tr><th>Giờ</th><th>Mã HĐ</th><th>Tiền</th><th>Nhân viên</th></tr>';
+            title = 'Doanh Thu ' + formatD(target); 
+            // Cột Mã HĐ được thay bằng Nội dung
+            head = '<tr><th>Giờ</th><th>Nội dung</th><th>Tiền</th><th>Nhân viên</th></tr>';
             transactions.forEach(t => { 
-                if(t.date === target && t.type !== 'pay') { 
-                    let s = staffs.find(x=>x.id===t.staffId); html += `<tr><td>${t.time}</td><td>${t.id}</td><td style="color:var(--success); font-weight:bold;">${(t.amount + (t.partsRevenue||0)).toLocaleString()}đ</td><td>${s?s.name:'-'}</td></tr>`;
+                if(t.date === target) {
+                    let s = staffs.find(x=>x.id===t.staffId);
+                    if(t.type === 'cash' || t.type === 'debt') {
+                        html += `<tr><td>${t.time}</td><td>${t.details}</td><td style="color:var(--success); font-weight:bold;">${(t.amount + (t.partsRevenue||0)).toLocaleString()}đ</td><td>${s?s.name:'-'}</td></tr>`;
+                    } else if (t.type === 'pay') {
+                        html += `<tr><td>${t.time}</td><td><span style="color:var(--info);">[Thu nợ]</span> ${t.details}</td><td style="color:var(--success); font-weight:bold;">${t.amount.toLocaleString()}đ</td><td>${s?s.name:'-'}</td></tr>`;
+                    }
                 } 
             });
-            if(!html) html = '<tr><td colspan="4" style="text-align:center;">Không có doanh thu.</td></tr>';
+            cashflow.forEach(c => {
+                if(c.date === target && c.type === 'thu') {
+                    let s = staffs.find(x=>x.id===c.staffId);
+                    html += `<tr><td>${c.time}</td><td><span style="color:var(--info);">[Thu khác]</span> ${c.reason}</td><td style="color:var(--success); font-weight:bold;">${c.amount.toLocaleString()}đ</td><td>${s?s.name:'-'}</td></tr>`;
+                }
+            });
+            if(!html) html = '<tr><td colspan="4" style="text-align:center;">Không có khoản thu.</td></tr>';
         } else if (type === 'repairs') {
             title = 'Máy Đang Nằm Viện'; head = '<tr><th>Mã/Khách</th><th>Máy / Lỗi</th><th>Trạng thái</th></tr>';
-            let pend = serviceOrders.filter(o => !o.status.includes('Đã trả') && !o.status.includes('Trả'));
+            let pend = serviceOrders.filter(o => !o.status.includes('Đã trả') && !o.status.includes('Trả') && o.status !== 'Không sửa được');
             pend.forEach(o => {
                 let c = customers.find(x=>x.id===o.customerId); html += `<tr><td>${o.id}<br><small>${c?c.name:'-'}</small></td><td><b>${o.model}</b><br><small>${o.condition}</small></td><td><span class="badge" style="background:var(--warning); color:#000;">${o.status}</span></td></tr>`;
             });
@@ -880,14 +920,21 @@
     }
 
     function openDebtModal(id, name, debt) {
-        document.getElementById('debt-cus-id').value = id; document.getElementById('debt-cus-name').innerText = name; document.getElementById('debt-cus-amount').innerText = debt.toLocaleString() + ' đ'; document.getElementById('debt-pay-amount').value = debt.toLocaleString(); openModal('debtModal');
+        document.getElementById('debt-cus-id').value = id; 
+        document.getElementById('debt-cus-name').innerText = name; 
+        document.getElementById('debt-cus-amount').innerText = debt.toLocaleString() + ' đ'; 
+        document.getElementById('debt-pay-amount').value = debt.toLocaleString(); 
+        document.getElementById('debt-note').value = '';
+        openModal('debtModal');
     }
 
     function submitDebtPay() {
         let cId = document.getElementById('debt-cus-id').value, amt = getVal('debt-pay-amount');
+        let note = document.getElementById('debt-note').value.trim();
         if(amt <= 0) return uiAlert('Nhập số tiền hợp lệ!');
         uiConfirm(`Xác nhận thu nợ: ${amt.toLocaleString()} đ?`, () => {
-            let id = genId('PT'); transactions.push({ id: id, customerId: cId, date: getToday(), time: getTime(), type: 'pay', amount: amt, details: 'Khách thanh toán thu nợ', staffId: activeUser });
+            let id = genId('PT'); 
+            transactions.push({ id: id, customerId: cId, date: getToday(), time: getTime(), type: 'pay', amount: amt, details: note ? `Thu nợ: ${note}` : 'Khách thanh toán thu nợ', staffId: activeUser });
             pushDB(); closeModal('debtModal'); renderData(); printBill(id, 'sales'); setTimeout(()=>uiAlert('✅ Đã lưu phiếu thu nợ!'), 200);
         });
     }
@@ -936,16 +983,48 @@
 
     function renderDashboard() {
         let dEl = document.getElementById('dash-date'); if(!dEl) return; if(!dEl.value) dEl.value = getToday(); let target = dEl.value;
-        let sales = 0, count = 0; transactions.forEach(t => { if(t.date === target && t.type !== 'pay') { sales += t.amount + (t.partsRevenue || 0); count++; } });
+        
+        let cashSales = 0, debtSales = 0, payIn = 0, otherIn = 0;
+        let count = 0;
+        transactions.forEach(t => { 
+            if(t.date === target) { 
+                if(t.type === 'cash') { cashSales += t.amount + (t.partsRevenue || 0); count++; }
+                if(t.type === 'debt') { debtSales += t.amount + (t.partsRevenue || 0); count++; }
+                if(t.type === 'pay') { payIn += t.amount; }
+            } 
+        });
+        let expenses = 0; 
+        cashflow.forEach(c => { 
+            if(c.date === target && c.type === 'thu') otherIn += c.amount;
+            if(c.date === target && c.type === 'chi') expenses += c.amount; 
+        });
+
+        let thucThu = cashSales + payIn + otherIn;
+        
         let pendingRepairs = serviceOrders.filter(o => !o.status.includes('Đã trả') && !o.status.includes('Trả') && o.status !== 'Không sửa được').length;
         let totalDebt = 0; customers.forEach(c => { totalDebt += getCusDebt(c.id); });
-        let expenses = 0; cashflow.forEach(c => { if(c.date === target && c.type === 'chi') expenses += c.amount; });
 
         document.getElementById('dash-cards').innerHTML = `
-            <div class="col card dash-card" style="border-left: 4px solid var(--primary);" onclick="showDashDetail('sales')"><div style="font-size:0.85rem; color:var(--text-muted); font-weight:700;">DOANH THU (Bấm xem chi tiết)</div><b class="blur-money" onclick="event.stopPropagation(); this.classList.toggle('revealed')" style="font-size:1.8rem; color:var(--primary);">${sales.toLocaleString()} đ</b><div style="font-size:0.85rem; color:var(--text-muted); margin-top:5px;">Từ ${count} hóa đơn/phiếu</div></div>
-            <div class="col card dash-card" style="border-left: 4px solid var(--warning);" onclick="showDashDetail('repairs')"><div style="font-size:0.85rem; color:var(--text-muted); font-weight:700;">MÁY NẰM VIỆN (Bấm xem)</div><b style="font-size:1.8rem; color:var(--warning);">${pendingRepairs}</b><div style="font-size:0.85rem; color:var(--text-muted); margin-top:5px;">Chưa giao khách</div></div>
-            <div class="col card dash-card" style="border-left: 4px solid var(--danger);" onclick="showDashDetail('debt')"><div style="font-size:0.85rem; color:var(--text-muted); font-weight:700;">KHÁCH ĐANG NỢ (Bấm xem)</div><b class="blur-money" onclick="event.stopPropagation(); this.classList.toggle('revealed')" style="font-size:1.8rem; color:var(--danger);">${totalDebt.toLocaleString()} đ</b><div style="font-size:0.85rem; color:var(--text-muted); margin-top:5px;">Chờ thu hồi</div></div>
-            <div class="col card dash-card" style="border-left: 4px solid #f43f5e;" onclick="showDashDetail('expenses')"><div style="font-size:0.85rem; color:var(--text-muted); font-weight:700;">TỔNG CHI NGÀY (Bấm xem)</div><b class="blur-money" onclick="event.stopPropagation(); this.classList.toggle('revealed')" style="font-size:1.8rem; color:#f43f5e;">${expenses.toLocaleString()} đ</b><div style="font-size:0.85rem; color:var(--text-muted); margin-top:5px;">Chi phí hoạt động</div></div>
+            <div class="col card dash-card" style="border-left: 4px solid var(--primary);" onclick="showDashDetail('sales')">
+                <div style="font-size:0.85rem; color:var(--text-muted); font-weight:700;">THỰC THU TRONG NGÀY (Xem)</div>
+                <b class="blur-money" onclick="event.stopPropagation(); this.classList.toggle('revealed')" style="font-size:1.8rem; color:var(--primary);">${thucThu.toLocaleString()} đ</b>
+                <div style="font-size:0.85rem; color:var(--danger); margin-top:5px; font-weight:600;">+ Khách nợ mới: ${debtSales.toLocaleString()} đ</div>
+            </div>
+            <div class="col card dash-card" style="border-left: 4px solid var(--warning);" onclick="showDashDetail('repairs')">
+                <div style="font-size:0.85rem; color:var(--text-muted); font-weight:700;">MÁY NẰM VIỆN (Bấm xem)</div>
+                <b style="font-size:1.8rem; color:var(--warning);">${pendingRepairs}</b>
+                <div style="font-size:0.85rem; color:var(--text-muted); margin-top:5px;">Chưa giao khách</div>
+            </div>
+            <div class="col card dash-card" style="border-left: 4px solid var(--danger);" onclick="showDashDetail('debt')">
+                <div style="font-size:0.85rem; color:var(--text-muted); font-weight:700;">TỔNG KHÁCH ĐANG NỢ (Bấm xem)</div>
+                <b class="blur-money" onclick="event.stopPropagation(); this.classList.toggle('revealed')" style="font-size:1.8rem; color:var(--danger);">${totalDebt.toLocaleString()} đ</b>
+                <div style="font-size:0.85rem; color:var(--text-muted); margin-top:5px;">Chờ thu hồi</div>
+            </div>
+            <div class="col card dash-card" style="border-left: 4px solid #f43f5e;" onclick="showDashDetail('expenses')">
+                <div style="font-size:0.85rem; color:var(--text-muted); font-weight:700;">TỔNG CHI NGÀY (Bấm xem)</div>
+                <b class="blur-money" onclick="event.stopPropagation(); this.classList.toggle('revealed')" style="font-size:1.8rem; color:#f43f5e;">${expenses.toLocaleString()} đ</b>
+                <div style="font-size:0.85rem; color:var(--text-muted); margin-top:5px;">Chi phí hoạt động</div>
+            </div>
         `;
     }
 
@@ -978,15 +1057,19 @@
             if(st === 'Không sửa được (Chờ trả)') return 4;
             return 5;
         };
-        let srvList = serviceOrders.slice().sort((a,b) => {
+        
+        let activeSrv = [], doneSrv = [];
+        serviceOrders.slice().sort((a,b) => {
             let wA = getW(a.status), wB = getW(b.status);
             if(wA !== wB) return wA - wB;
             return b.id.localeCompare(a.id);
+        }).forEach(o => {
+            if(o.status.includes('Đã trả') || o.status.includes('Trả')) doneSrv.push(o);
+            else activeSrv.push(o);
         });
         
-        document.getElementById('srv-tbl').innerHTML = srvList.map(o=>{ 
+        let mapSrv = (o, isDone) => {
             let c=customers.find(x=>x.id===o.customerId); 
-            let isDone = (o.status==='Đã trả khách' || o.status==='Không sửa được');
             let statHtml = isDone ? 
                 `<span class="badge" style="background:#f4f6f8; color:${o.status==='Đã trả khách'?'var(--success)':'var(--text-muted)'};">${o.status}</span>` : 
                 `<select style="padding:4px; border-radius:4px; border:1px solid #ccc; font-size:0.8rem;" onchange="changeSrvStatus('${o.id}', this.value, this)">
@@ -997,23 +1080,26 @@
                     <option value="Không sửa được (Chờ trả)">Không sửa được (Chờ trả)</option>
                     <option value="Đã trả khách">Giao Khách (Thu Tiền)</option>
                 </select>`; 
-            return `<tr><td><small>${o.id}</small><br><b>${c?c.name:'Khách'}</b></td><td><b style="color:var(--primary);">${o.model}</b><br><small>${o.condition}</small></td><td>${statHtml}</td><td style="white-space:nowrap;"><button class="btn btn-outline" style="padding:4px 8px;" onclick="printBill('${o.id}','service')">🖨️</button> ${!isDone ? `<button class="btn btn-outline" style="padding:4px 8px; color:var(--warning);" onclick="editServiceOrder('${o.id}')">✏️</button>` : ''} ${activeUser==='ADMIN'?`<button class="btn btn-outline" style="padding:4px 8px; color:var(--danger);" onclick="deleteItemToBin('${o.id}', 'Phiếu Nhận Máy', serviceOrders, x => x.model)">🗑️</button>`:''}</td></tr>`; 
-        }).join('');
+            return `<tr><td><small>${o.id}</small><br><b>${c?c.name:'Khách'}</b></td><td><b style="color:var(--primary);">${o.model}</b><br><small>${o.condition}</small></td><td>${statHtml}</td><td style="white-space:nowrap;"><button class="btn btn-outline" style="padding:4px 8px;" onclick="printBill('${o.id}','service')">🖨️</button> ${!isDone ? `<button class="btn btn-outline" style="padding:4px 8px; color:var(--warning);" onclick="editServiceOrder('${o.id}')">✏️</button>` : ''} <button class="btn btn-outline" style="padding:4px 8px; color:var(--danger);" onclick="deleteItemToBin('${o.id}', 'Phiếu Nhận Máy', serviceOrders, x => x.model)">🗑️</button></td></tr>`;
+        };
+        
+        document.getElementById('srv-tbl-active').innerHTML = activeSrv.map(o => mapSrv(o, false)).join('') || `<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">Không có máy đang nằm viện</td></tr>`;
+        document.getElementById('srv-tbl-done').innerHTML = doneSrv.map(o => mapSrv(o, true)).join('') || `<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">Trống</td></tr>`;
         
         let histSales = [], histPay = [];
         transactions.slice().reverse().forEach(t => {
             let c=customers.find(x=>x.id===t.customerId);
             if(t.type === 'pay') {
-                histPay.push(`<tr><td><small>${formatD(t.date)} ${t.time||''}</small></td><td><b>${c?c.name:'Khách'}</b></td><td><b style="color:var(--success);">${t.amount.toLocaleString()}đ</b></td><td><button class="btn btn-outline" style="padding:4px 8px;" onclick="printBill('${t.id}','sales')">🖨️</button></td></tr>`);
+                histPay.push(`<tr><td><small>${formatD(t.date)} ${t.time||''}</small></td><td><b>${c?c.name:'Khách'}</b></td><td><b style="color:var(--success);">${t.amount.toLocaleString()}đ</b></td><td><button class="btn btn-outline" style="padding:4px 8px;" onclick="printBill('${t.id}','sales')">🖨️</button> <button class="btn btn-outline" style="padding:4px 8px; color:var(--danger);" onclick="deleteItemToBin('${t.id}', 'Giao Dịch', transactions, x => x.details)">🗑️</button></td></tr>`);
             } else {
                 let typ = t.type==='cash' ? '<span class="badge" style="background:#e0f2fe; color:#0284c7;">Tiền mặt</span>' : '<span class="badge" style="background:#ffedd5; color:#ea580c;">Bán nợ</span>';
-                histSales.push(`<tr><td><small>${formatD(t.date)} ${t.time||''}</small></td><td><b>${c?c.name:'Khách'}</b><br>${typ}</td><td><small>${t.details}</small></td><td><b style="color:var(--primary);">${(t.amount+(t.partsRevenue||0)).toLocaleString()}đ</b></td><td><button class="btn btn-outline" style="padding:4px 8px;" onclick="printBill('${t.id}','sales')">🖨️</button> ${activeUser==='ADMIN'?`<button class="btn btn-outline" style="padding:4px 8px; color:var(--warning);" onclick="editFullTransaction('${t.id}')">✏️</button>`:''}</td></tr>`);
+                histSales.push(`<tr><td><small>${formatD(t.date)} ${t.time||''}</small></td><td><b>${c?c.name:'Khách'}</b><br>${typ}</td><td><small>${t.details}</small></td><td><b style="color:var(--primary);">${(t.amount+(t.partsRevenue||0)).toLocaleString()}đ</b></td><td style="white-space:nowrap;"><button class="btn btn-outline" style="padding:4px 8px;" onclick="printBill('${t.id}','sales')">🖨️</button> <button class="btn btn-outline" style="padding:4px 8px; color:var(--warning);" onclick="editFullTransaction('${t.id}')">✏️</button> <button class="btn btn-outline" style="padding:4px 8px; color:var(--danger);" onclick="deleteItemToBin('${t.id}', 'Giao Dịch', transactions, x => x.details)">🗑️</button></td></tr>`);
             }
         });
         document.getElementById('hist-tbl-sales').innerHTML = histSales.join('') || `<tr><td colspan="5" style="text-align:center;">Trống</td></tr>`;
         document.getElementById('hist-tbl-pay').innerHTML = histPay.join('') || `<tr><td colspan="4" style="text-align:center;">Trống</td></tr>`;
 
-        // Lọc Sổ Quỹ cho riêng nhân viên / cho toàn tiệm (ADMIN)
+        // Lọc Sổ Quỹ
         let cbDate = document.getElementById('cb-date').value; let inC=0, outC=0, net=0;
         let cbArrIn = [], cbArrOut = [];
         transactions.forEach(t=>{ 
@@ -1113,3 +1199,4 @@
 <style> @media print { body * { display: none !important; } #print-area, #print-area * { display: block !important; } @page { margin: 0; } } </style>
 </body>
 </html>
+                    
