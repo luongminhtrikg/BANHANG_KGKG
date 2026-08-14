@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>Lương Gia KG - V18.0 Pro</title>
+    <title>Lương Gia KG - V19.0 Pro</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -67,9 +67,11 @@
         .tab-content { display: none; max-width: 1400px; margin: 0 auto; animation: fadeIn 0.2s; width: 100%; }
         .tab-content.active { display: block; }
 
-        .blur-money { filter: blur(6px); cursor: pointer; transition: filter 0.3s ease; user-select: none; }
-        .blur-money:hover { filter: blur(3px); }
-        .blur-money.revealed { filter: blur(0); }
+        /* Khối làm mờ đồng bộ */
+        .blur-wrapper { cursor: pointer; user-select: none; transition: 0.3s; }
+        .blur-wrapper .blur-target { filter: blur(6px); transition: filter 0.3s ease; }
+        .blur-wrapper:hover .blur-target { filter: blur(3px); }
+        .blur-wrapper.revealed .blur-target { filter: blur(0); }
 
         .search-box { position: relative; width: 100%; max-width: 100%; }
         .autocomplete-items { position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid var(--border); border-radius: 8px; max-height: 250px; overflow-y: auto; z-index: 999; box-shadow: 0 10px 20px rgba(0,0,0,0.1); display: none; }
@@ -80,13 +82,13 @@
         .cart-item { padding: 10px 15px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
         
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 10000; backdrop-filter: blur(2px); }
-        .modal-box { background: #fff; width: 90%; max-width: 700px; border-radius: 12px; padding: 20px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+        .modal-box { background: #fff; width: 90%; max-width: 800px; border-radius: 12px; padding: 20px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
         .modal-title { margin-top: 0; font-size: 1.2rem; margin-bottom: 15px; color: var(--primary); border-bottom: 1px solid var(--border); padding-bottom: 10px; }
 
         details > summary { list-style: none; }
         details > summary::-webkit-details-marker { display: none; }
         
-        #print-area { display: none; } /* Ẩn phân vùng in trên màn hình thường */
+        #print-area { display: none; }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -132,7 +134,7 @@
     <div id="loginOverlay" style="position:fixed; inset:0; background:#1c252e; z-index:15000; display:flex; justify-content:center; align-items:center;">
         <div class="card" style="width: 90%; max-width: 400px; text-align: center; padding: 40px 20px;">
             <h2 style="color:var(--primary); margin-top:0;">LƯƠNG GIA KG</h2>
-            <p style="color:var(--text-muted); margin-bottom:10px;">Phần mềm quản lý V18.0</p>
+            <p style="color:var(--text-muted); margin-bottom:10px;">Phần mềm quản lý V19.0</p>
             <div id="net-status" style="font-size:0.8rem; color:var(--warning); margin-bottom:15px; min-height:15px;">Đang dò kết nối máy chủ...</div>
             <select id="login-user" class="form-control" style="margin-bottom:15px;"></select>
             <input type="password" id="login-pass" class="form-control" placeholder="Mật khẩu..." style="margin-bottom:20px;" onkeypress="if(event.key==='Enter') doLogin()">
@@ -310,7 +312,7 @@
                 <div class="card" style="background:#f8fafc;">
                     <div class="row" style="align-items:flex-end;">
                         <div class="col form-group" style="margin:0;"><label style="font-size:1rem; color:var(--primary);">Chọn ngày xem sổ:</label><input type="date" id="cb-date" class="form-control" onchange="renderData()" style="font-weight:bold; color:var(--primary);"></div>
-                        <div class="col" style="text-align:right;"><span style="font-size:0.9rem; color:var(--text-muted);" id="cb-net-title">Tồn quỹ:</span><br><b class="blur-money" onclick="this.classList.toggle('revealed')" style="color:var(--primary); font-size:1.5rem;" id="cb-net">0</b> đ</div>
+                        <div class="col" style="text-align:right;"><span style="font-size:0.9rem; color:var(--text-muted);" id="cb-net-title">Tồn quỹ:</span><br><b class="blur-wrapper" onclick="this.classList.toggle('revealed')"><span class="blur-target" style="color:var(--primary); font-size:1.5rem;" id="cb-net">0</span></b> đ</div>
                     </div>
                 </div>
                 
@@ -386,14 +388,12 @@
                 <div class="row">
                     <div class="col card" style="padding:15px; border-top:4px solid var(--primary);">
                         <h4 style="text-align:center; color:var(--primary); margin-top:0;">🛒 LỊCH SỬ BÁN HÀNG & DỊCH VỤ</h4>
-                        <select id="hist-filter-cus" class="form-control" onchange="renderData()" style="margin-bottom:15px;">
-                            <option value="">-- Tất cả khách hàng --</option>
-                        </select>
+                        <input type="text" id="hist-search-sales" class="form-control" placeholder="🔍 Gõ tên khách hàng để tìm nhanh..." onkeyup="filterTable('hist-tbl-sales', this.value)" style="margin-bottom:15px;">
                         <div class="table-wrap"><table><thead><tr><th>Thời gian</th><th>Khách</th><th>Chi tiết</th><th>Tiền</th><th>Thao tác</th></tr></thead><tbody id="hist-tbl-sales"></tbody></table></div>
                     </div>
                     <div class="col card" style="padding:15px; border-top:4px solid var(--info);">
                         <h4 style="text-align:center; color:var(--info); margin-top:0;">💵 LỊCH SỬ THU NỢ KHÁCH</h4>
-                        <input type="text" class="form-control" placeholder="Lọc bảng theo chữ..." onkeyup="filterTable('hist-tbl-pay', this.value)" style="margin-bottom:15px;">
+                        <input type="text" class="form-control" placeholder="🔍 Gõ tên khách hàng để tìm nhanh..." onkeyup="filterTable('hist-tbl-pay', this.value)" style="margin-bottom:15px;">
                         <div class="table-wrap"><table><thead><tr><th>Thời gian</th><th>Khách</th><th>Tiền thu</th><th>Thao tác</th></tr></thead><tbody id="hist-tbl-pay"></tbody></table></div>
                     </div>
                 </div>
@@ -475,7 +475,7 @@
             </div>
             
             <div style="display:flex; gap:10px;">
-                <button class="btn btn-outline" style="flex:1;" onclick="printStatement()">🖨️ In Bảng Kê</button>
+                <button class="btn btn-outline" style="flex:1;" onclick="printStatement()">🖨️ In Bảng Kê (A4)</button>
                 <button class="btn btn-info" style="flex:2;" onclick="payStatement()">💵 Lập Phiếu Thu Bảng Kê Này</button>
             </div>
         </div>
@@ -1123,9 +1123,12 @@
         document.getElementById('stmt-cus-id').value = id;
         document.getElementById('stmt-cus-name').innerText = name;
         let today = getToday();
+        
+        // Mặc định lấy từ đầu tháng hiện tại để view ngay chi tiết
         document.getElementById('stmt-from').value = today.substring(0,8) + '01';
         document.getElementById('stmt-to').value = today;
-        viewStatement();
+        
+        viewStatement(); // Load danh sách chi tiết tự động
         openModal('stmtModal');
     }
 
@@ -1167,8 +1170,11 @@
     }
 
     function payStatement() {
-        let noCuoi = getVal('stmt-nocuoi');
+        let noCuoiTxt = document.getElementById('stmt-nocuoi').innerText.replace(/[^0-9]/g, '');
+        let noCuoi = parseInt(noCuoiTxt) || 0;
+        
         if (noCuoi <= 0) return uiAlert("Khách hàng không có nợ trong bảng kê này!");
+        
         let cId = document.getElementById('stmt-cus-id').value;
         let cName = document.getElementById('stmt-cus-name').innerText;
         let from = formatD(document.getElementById('stmt-from').value);
@@ -1185,36 +1191,120 @@
     }
 
     function printStatement() {
+        let cId = document.getElementById('stmt-cus-id').value;
         let cName = document.getElementById('stmt-cus-name').innerText;
-        let from = formatD(document.getElementById('stmt-from').value);
-        let to = formatD(document.getElementById('stmt-to').value);
-        let trs = document.getElementById('stmt-tbody').innerHTML;
+        let from = document.getElementById('stmt-from').value;
+        let to = document.getElementById('stmt-to').value;
+        let phone = customers.find(x => x.id === cId)?.phone || '';
+
+        let noCu = 0, phatSinh = 0, daTra = 0;
+        let rowsHtml = '';
+        let stt = 1;
+
+        // Quét lại giao dịch để chèn vào template in
+        transactions.forEach(t => {
+            if(t.customerId === cId) {
+                if(t.date < from) {
+                    if(t.type === 'debt') noCu += (t.amount + (t.partsRevenue||0));
+                    else if(t.type === 'pay') noCu -= t.amount;
+                } else if (t.date >= from && t.date <= to) {
+                    if (t.type === 'debt') {
+                        let amt = t.amount + (t.partsRevenue || 0);
+                        phatSinh += amt;
+                        rowsHtml += `<tr>
+                            <td style="border:1px solid #000; padding:8px; text-align:center;">${stt++}</td>
+                            <td style="border:1px solid #000; padding:8px; text-align:center;">${formatD(t.date)}</td>
+                            <td style="border:1px solid #000; padding:8px; text-align:center;">${t.id}</td>
+                            <td style="border:1px solid #000; padding:8px;">${t.details}</td>
+                            <td style="border:1px solid #000; padding:8px; text-align:right;">${amt.toLocaleString()}</td>
+                            <td style="border:1px solid #000; padding:8px; text-align:center;">-</td>
+                        </tr>`;
+                    } else if (t.type === 'pay') {
+                        daTra += t.amount;
+                        rowsHtml += `<tr>
+                            <td style="border:1px solid #000; padding:8px; text-align:center;">${stt++}</td>
+                            <td style="border:1px solid #000; padding:8px; text-align:center;">${formatD(t.date)}</td>
+                            <td style="border:1px solid #000; padding:8px; text-align:center;">${t.id}</td>
+                            <td style="border:1px solid #000; padding:8px;">Thanh toán nợ: ${t.details}</td>
+                            <td style="border:1px solid #000; padding:8px; text-align:center;">-</td>
+                            <td style="border:1px solid #000; padding:8px; text-align:right;">${t.amount.toLocaleString()}</td>
+                        </tr>`;
+                    }
+                }
+            }
+        });
+
+        let noCuoi = noCu + phatSinh - daTra;
+        let logoHtml = storeInfo.logoUrl ? `<img src="${storeInfo.logoUrl}" style="max-height:80px; max-width:200px; object-fit:contain;">` : '';
+
+        // Form Bảng Kê A4 chuyên nghiệp
+        let h = `
+        <div style="width:100%; max-width:210mm; padding: 20px 0; margin:0 auto; font-family:'Times New Roman', serif; color:#000; line-height:1.5;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-end; border-bottom:2px solid #000; padding-bottom:15px; margin-bottom:20px;">
+                <div style="width:40%; text-align:left;">${logoHtml}</div>
+                <div style="width:60%; text-align:right;">
+                    <h2 style="margin:0; font-size:20px; text-transform:uppercase;">${storeInfo.name}</h2>
+                    <p style="margin:5px 0 0 0; font-size:14px;">ĐC: ${storeInfo.address}<br>ĐT: ${storeInfo.phone}</p>
+                </div>
+            </div>
+
+            <h1 style="text-align:center; font-size:24px; margin:20px 0 5px 0;">BẢNG KÊ CHI TIẾT CÔNG NỢ</h1>
+            <p style="text-align:center; font-style:italic; margin:0 0 25px 0;">(Từ ngày ${formatD(from)} đến ngày ${formatD(to)})</p>
+
+            <div style="margin-bottom:20px; font-size:15px;">
+                <p style="margin:5px 0;"><b>Khách hàng:</b> ${cName}</p>
+                <p style="margin:5px 0;"><b>Điện thoại:</b> ${phone}</p>
+            </div>
+
+            <table style="width:100%; border-collapse:collapse; font-size:14px; margin-bottom:25px;">
+                <thead>
+                    <tr style="background-color:#f0f0f0;">
+                        <th style="border:1px solid #000; padding:10px; width:6%;">STT</th>
+                        <th style="border:1px solid #000; padding:10px; width:12%;">Ngày</th>
+                        <th style="border:1px solid #000; padding:10px; width:15%;">Chứng từ</th>
+                        <th style="border:1px solid #000; padding:10px; width:33%;">Diễn giải</th>
+                        <th style="border:1px solid #000; padding:10px; width:17%;">Phát sinh (Nợ)</th>
+                        <th style="border:1px solid #000; padding:10px; width:17%;">Thanh toán (Có)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="4" style="border:1px solid #000; padding:8px; font-weight:bold; text-align:right;">Số dư nợ đầu kỳ:</td>
+                        <td style="border:1px solid #000; padding:8px; font-weight:bold; text-align:right;">${noCu.toLocaleString()}</td>
+                        <td style="border:1px solid #000; padding:8px; text-align:center;">-</td>
+                    </tr>
+                    ${rowsHtml || `<tr><td colspan="6" style="border:1px solid #000; padding:10px; text-align:center; font-style:italic;">Không có phát sinh trong kỳ</td></tr>`}
+                    <tr>
+                        <td colspan="4" style="border:1px solid #000; padding:8px; font-weight:bold; text-align:right;">Cộng phát sinh trong kỳ:</td>
+                        <td style="border:1px solid #000; padding:8px; font-weight:bold; text-align:right;">${phatSinh.toLocaleString()}</td>
+                        <td style="border:1px solid #000; padding:8px; font-weight:bold; text-align:right;">${daTra.toLocaleString()}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="4" style="border:1px solid #000; padding:10px; font-weight:bold; text-align:right; font-size:16px;">SỐ DƯ NỢ CUỐI KỲ (KHÁCH CÒN NỢ):</td>
+                        <td colspan="2" style="border:1px solid #000; padding:10px; font-weight:bold; text-align:center; font-size:18px; color:red;">${noCuoi.toLocaleString()} đ</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div style="display:flex; justify-content:space-between; margin-top:30px; font-size:15px; text-align:center;">
+                <div style="width:40%;">
+                    <b>Người lập biểu</b><br>
+                    <i style="font-size:13px;">(Ký, ghi rõ họ tên)</i>
+                </div>
+                <div style="width:40%;">
+                    <b>Xác nhận của Khách hàng</b><br>
+                    <i style="font-size:13px;">(Ký, ghi rõ họ tên)</i>
+                </div>
+            </div>
+        </div>
+        `;
         
-        let logoHtml = storeInfo.logoUrl ? `<img src="${storeInfo.logoUrl}" style="max-width:120px; max-height:60px; object-fit:contain; margin:0 auto 5px auto; display:block;">` : '';
+        let p = document.getElementById('print-area'); 
+        p.innerHTML = h;
         
-        let h = `<div style="width:78mm; margin:0 auto; font-family:sans-serif; color:#000; text-align:left;">
-                    <div style="text-align:center;">
-                        ${logoHtml}
-                        <h2 style="margin:0; font-size:18px;">${storeInfo.name}</h2>
-                        <p style="margin:5px 0; font-size:12px;">ĐC: ${storeInfo.address}<br>ĐT: ${storeInfo.phone}</p>
-                    </div>
-                    <h3 style="text-align:center; background:#000; color:#fff; padding:6px; margin:15px 0 10px 0; font-size:14px; border-radius:4px;">BẢNG KÊ CÔNG NỢ</h3>
-                    <div style="font-size:13px; margin-bottom:10px;">Khách hàng: <b>${cName}</b></div>
-                    <div style="font-size:13px; margin-bottom:10px;">Thời gian: <b>${from}</b> - <b>${to}</b></div>
-                    <div style="border:1px solid #000; border-radius:6px; padding:8px; margin-bottom:10px; font-size:13px;">
-                        <div style="display:flex; justify-content:space-between;"><span>Nợ cũ:</span> <b>${document.getElementById('stmt-nocu').innerText}</b></div>
-                        <div style="display:flex; justify-content:space-between;"><span>Phát sinh mua:</span> <b>${document.getElementById('stmt-phatsinh').innerText}</b></div>
-                        <div style="display:flex; justify-content:space-between;"><span>Đã thanh toán:</span> <b>${document.getElementById('stmt-datra').innerText}</b></div>
-                    </div>
-                    <table style="width:100%; font-size:12px; border-collapse:collapse; margin-bottom:10px;">
-                        <thead><tr style="border-bottom:1px solid #000;"><th style="text-align:left;">Ngày</th><th style="text-align:left;">Nội dung</th><th style="text-align:right;">Tiền</th></tr></thead>
-                        <tbody>${trs.replace(/<td><small>.*?<\/small><\/td>/g, '') /* bỏ cột id cho gọn bill */}</tbody>
-                    </table>
-                    <div style="text-align:right; font-size:15px; margin:15px 0; font-weight:bold; border-top:1px dashed #000; padding-top:10px;">TỔNG NỢ HIỆN TẠI:<br>${document.getElementById('stmt-nocuoi').innerText}</div>
-                </div>`;
-                
-        let p = document.getElementById('print-area'); p.innerHTML = h;
+        document.body.classList.add('print-a4-mode');
         window.print(); 
+        document.body.classList.remove('print-a4-mode');
     }
 
     // --- DEBT PAY (KHÁCH HÀNG) ---
@@ -1357,29 +1447,29 @@
         });
 
         document.getElementById('rp-cards').innerHTML = `
-            <div class="col card dash-card" style="border-left: 4px solid var(--info);" onclick="showReportDetail('rev')">
+            <div class="col card dash-card blur-wrapper" style="border-left: 4px solid var(--info);" onclick="this.classList.toggle('revealed')">
                 <div style="font-size:0.85rem; color:var(--text-muted); font-weight:700;">DOANH THU HÀNG (Bấm xem)</div>
-                <b class="blur-money" onclick="event.stopPropagation(); this.classList.toggle('revealed')" style="font-size:1.5rem;">${tRev.toLocaleString()}</b>
+                <b class="blur-target" style="font-size:1.5rem;" onclick="event.stopPropagation(); showReportDetail('rev')">${tRev.toLocaleString()}</b>
             </div>
-            <div class="col card dash-card" style="border-left: 4px solid var(--warning);" onclick="showReportDetail('cost')">
+            <div class="col card dash-card blur-wrapper" style="border-left: 4px solid var(--warning);" onclick="this.classList.toggle('revealed')">
                 <div style="font-size:0.85rem; color:var(--text-muted); font-weight:700;">(-) VỐN HÀNG (Bấm xem)</div>
-                <b class="blur-money" onclick="event.stopPropagation(); this.classList.toggle('revealed')" style="font-size:1.5rem; color:var(--warning);">${tCost.toLocaleString()}</b>
+                <b class="blur-target" style="font-size:1.5rem; color:var(--warning);" onclick="event.stopPropagation(); showReportDetail('cost')">${tCost.toLocaleString()}</b>
             </div>
-            <div class="col card dash-card" style="border-left: 4px solid var(--success);" onclick="showReportDetail('srv')">
+            <div class="col card dash-card blur-wrapper" style="border-left: 4px solid var(--success);" onclick="this.classList.toggle('revealed')">
                 <div style="font-size:0.85rem; color:var(--text-muted); font-weight:700;">(+) CÔNG SỬA (Bấm xem)</div>
-                <b class="blur-money" onclick="event.stopPropagation(); this.classList.toggle('revealed')" style="font-size:1.5rem; color:var(--success);">${tSrv.toLocaleString()}</b>
+                <b class="blur-target" style="font-size:1.5rem; color:var(--success);" onclick="event.stopPropagation(); showReportDetail('srv')">${tSrv.toLocaleString()}</b>
             </div>
-            <div class="col card dash-card" style="border-left: 4px solid var(--success);" onclick="showReportDetail('in')">
+            <div class="col card dash-card blur-wrapper" style="border-left: 4px solid var(--success);" onclick="this.classList.toggle('revealed')">
                 <div style="font-size:0.85rem; color:var(--text-muted); font-weight:700;">(+) THU KHÁC (Bấm xem)</div>
-                <b class="blur-money" onclick="event.stopPropagation(); this.classList.toggle('revealed')" style="font-size:1.5rem; color:var(--success);">${tExIn.toLocaleString()}</b>
+                <b class="blur-target" style="font-size:1.5rem; color:var(--success);" onclick="event.stopPropagation(); showReportDetail('in')">${tExIn.toLocaleString()}</b>
             </div>
-            <div class="col card dash-card" style="border-left: 4px solid var(--danger);" onclick="showReportDetail('out')">
+            <div class="col card dash-card blur-wrapper" style="border-left: 4px solid var(--danger);" onclick="this.classList.toggle('revealed')">
                 <div style="font-size:0.85rem; color:var(--text-muted); font-weight:700;">(-) CHI PHÍ TIỆM (Bấm xem)</div>
-                <b class="blur-money" onclick="event.stopPropagation(); this.classList.toggle('revealed')" style="font-size:1.5rem; color:var(--danger);">${tExOut.toLocaleString()}</b>
+                <b class="blur-target" style="font-size:1.5rem; color:var(--danger);" onclick="event.stopPropagation(); showReportDetail('out')">${tExOut.toLocaleString()}</b>
             </div>
-            <div class="col card" style="flex: 100%; background: #f0fdf4; border-color: #86efac; text-align: center;">
+            <div class="col card blur-wrapper" style="flex: 100%; background: #f0fdf4; border-color: #86efac; text-align: center;" onclick="this.classList.toggle('revealed')">
                 <div style="font-size:1rem; color:#166534; font-weight:700;">LỢI NHUẬN KỲ LỌC</div>
-                <b class="blur-money" onclick="this.classList.toggle('revealed')" style="font-size:2.5rem; color:#14532d;">${((tRev - tCost) + tSrv + tExIn - tExOut).toLocaleString()} đ</b>
+                <b class="blur-target" style="font-size:2.5rem; color:#14532d;">${((tRev - tCost) + tSrv + tExIn - tExOut).toLocaleString()} đ</b>
             </div>
         `;
         let sHtml = '';
@@ -1433,10 +1523,10 @@
         let pendingRepairs = serviceOrders.filter(o => !o.status.includes('Đã trả') && !o.status.includes('Đã giao')).length;
 
         document.getElementById('dash-cards').innerHTML = `
-            <div class="col card dash-card" style="border-left: 4px solid var(--primary);" onclick="showDashDetail('sales')">
-                <div style="font-size:0.85rem; color:var(--text-muted); font-weight:700;">TỔNG DOANH THU (Xem)</div>
-                <b class="blur-money" onclick="event.stopPropagation(); this.classList.toggle('revealed')" style="font-size:1.8rem; color:var(--primary);">${totalRevDay.toLocaleString()} đ</b>
-                <div style="display:flex; justify-content:space-between; margin-top:5px; font-size:0.85rem; font-weight:bold;">
+            <div class="col card dash-card blur-wrapper" style="border-left: 4px solid var(--primary);" onclick="this.classList.toggle('revealed')">
+                <div style="font-size:0.85rem; color:var(--text-muted); font-weight:700;" onclick="event.stopPropagation(); showDashDetail('sales')">TỔNG DOANH THU (Xem)</div>
+                <b class="blur-target" style="font-size:1.8rem; color:var(--primary);">${totalRevDay.toLocaleString()} đ</b>
+                <div class="blur-target" style="display:flex; justify-content:space-between; margin-top:5px; font-size:0.85rem; font-weight:bold;">
                     <span style="color:var(--success);">TM: ${thucThu.toLocaleString()}đ</span>
                     <span style="color:var(--danger);">Nợ: ${debtSales.toLocaleString()}đ</span>
                 </div>
@@ -1451,10 +1541,10 @@
                 <b style="font-size:1.8rem; color:var(--warning);">${pendingRepairs}</b>
                 <div style="font-size:0.85rem; color:var(--text-muted); margin-top:5px;">Chưa giao khách</div>
             </div>
-            <div class="col card dash-card" style="border-left: 4px solid #f43f5e;" onclick="showDashDetail('expenses')">
-                <div style="font-size:0.85rem; color:var(--text-muted); font-weight:700;">TỔNG CHI NGÀY (Bấm xem)</div>
-                <b class="blur-money" onclick="event.stopPropagation(); this.classList.toggle('revealed')" style="font-size:1.8rem; color:#f43f5e;">${expenses.toLocaleString()} đ</b>
-                <div style="font-size:0.85rem; color:var(--text-muted); margin-top:5px;">Chi phí hoạt động</div>
+            <div class="col card dash-card blur-wrapper" style="border-left: 4px solid #f43f5e;" onclick="this.classList.toggle('revealed')">
+                <div style="font-size:0.85rem; color:var(--text-muted); font-weight:700;" onclick="event.stopPropagation(); showDashDetail('expenses')">TỔNG CHI NGÀY (Bấm xem)</div>
+                <b class="blur-target" style="font-size:1.8rem; color:#f43f5e;">${expenses.toLocaleString()} đ</b>
+                <div class="blur-target" style="font-size:0.85rem; color:var(--text-muted); margin-top:5px;">Chi phí hoạt động</div>
             </div>
         `;
     }
@@ -1525,20 +1615,9 @@
         
         document.getElementById('srv-tbl-active').innerHTML = activeSrv.map(o => mapSrv(o, false)).join('') || `<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">Không có máy đang nằm viện</td></tr>`;
         document.getElementById('srv-tbl-done').innerHTML = doneSrv.map(o => mapSrv(o, true)).join('') || `<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">Trống</td></tr>`;
-        
-        // --- Cập nhật Dropdown Lọc khách hàng ở mục Lịch Sử ---
-        let filterCusId = document.getElementById('hist-filter-cus') ? document.getElementById('hist-filter-cus').value : '';
-        let cusOpts = `<option value="">-- Tất cả khách hàng --</option>` + customers.map(c=>`<option value="${c.id}">${c.name} ${c.phone ? '- '+c.phone : ''}</option>`).join('');
-        let cusSel = document.getElementById('hist-filter-cus');
-        if(cusSel && cusSel.innerHTML !== cusOpts) {
-            cusSel.innerHTML = cusOpts;
-            cusSel.value = filterCusId;
-        }
 
         let histSales = [], histPay = [];
         transactions.slice().reverse().forEach(t => {
-            if(filterCusId && t.customerId !== filterCusId) return; // Bỏ qua nếu không đúng khách được lọc
-
             let c=customers.find(x=>x.id===t.customerId);
             if(t.type === 'pay') {
                 histPay.push(`<tr><td><small>${formatD(t.date)} ${t.time||''}</small></td><td><b>${c?c.name:'Khách'}</b></td><td><b style="color:var(--success);">${t.amount.toLocaleString()}đ</b></td><td><button class="btn btn-outline" style="padding:4px 8px;" onclick="printBill('${t.id}','sales')">🖨️</button> <button class="btn btn-outline" style="padding:4px 8px; color:var(--danger);" onclick="deleteItemToBin('${t.id}', 'Giao Dịch', transactions, x => x.details)">🗑️</button></td></tr>`);
@@ -1549,6 +1628,10 @@
         });
         document.getElementById('hist-tbl-sales').innerHTML = histSales.join('') || `<tr><td colspan="5" style="text-align:center;">Trống</td></tr>`;
         document.getElementById('hist-tbl-pay').innerHTML = histPay.join('') || `<tr><td colspan="4" style="text-align:center;">Trống</td></tr>`;
+
+        // Khôi phục bộ lọc tìm kiếm cho tab lịch sử nếu user đang gõ dở
+        let searchSalesStr = document.getElementById('hist-search-sales').value;
+        if(searchSalesStr) filterTable('hist-tbl-sales', searchSalesStr);
 
         let cbDate = document.getElementById('cb-date').value; let inC=0, outC=0, net=0;
         let cbArrIn = [], cbArrOut = [];
@@ -1656,8 +1739,13 @@
     @media print { 
         body * { display: none !important; } 
         #print-area, #print-area * { display: block !important; } 
+        /* Reset form in về đầu trang */
         #print-area { position: absolute; left: 0; top: 0; width: 100%; display: flex !important; justify-content: center !important; }
         @page { margin: 0; } 
+        
+        /* Riêng cho chức năng In Bảng Kê A4 */
+        body.print-a4-mode #print-area { display: block !important; width: 100%; padding: 0; }
+        body.print-a4-mode @page { margin: 10mm; size: auto; } /* Auto để dễ ăn theo khổ giấy chuẩn ở máy in */
     } 
 </style>
 </body>
