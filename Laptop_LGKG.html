@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>Lương Gia KG - V19.4 Pro</title>
+    <title>Lương Gia KG - V19.5 Pro</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -134,7 +134,7 @@
     <div id="loginOverlay" style="position:fixed; inset:0; background:#1c252e; z-index:15000; display:flex; justify-content:center; align-items:center;">
         <div class="card" style="width: 90%; max-width: 400px; text-align: center; padding: 40px 20px;">
             <h2 style="color:var(--primary); margin-top:0;">LƯƠNG GIA KG</h2>
-            <p style="color:var(--text-muted); margin-bottom:10px;">Phần mềm quản lý V19.4 Pro</p>
+            <p style="color:var(--text-muted); margin-bottom:10px;">Phần mềm quản lý V19.5 Pro</p>
             <div id="net-status" style="font-size:0.8rem; color:var(--warning); margin-bottom:15px; min-height:15px;">Đang dò kết nối máy chủ...</div>
             <select id="login-user" class="form-control" style="margin-bottom:15px;"></select>
             <input type="password" id="login-pass" class="form-control" placeholder="Mật khẩu..." style="margin-bottom:20px;" onkeypress="if(event.key==='Enter') doLogin()">
@@ -307,7 +307,7 @@
                 </div>
             </div>
             
-            <!-- CASHBOOK TAB (V19.4 UPDATE: Date Range & Search) -->
+            <!-- CASHBOOK TAB (V19.5 CẬP NHẬT: Ẩn Tồn Quỹ NV) -->
             <div id="cashbook" class="tab-content">
                 <div class="card" style="background:#f8fafc;">
                     <div class="row" style="align-items:flex-end;">
@@ -317,7 +317,11 @@
                             <button class="btn btn-outline" style="flex:1;" onclick="setCbDate('today')">Hôm nay</button>
                             <button class="btn btn-outline" style="flex:1;" onclick="setCbDate('month')">Tháng này</button>
                         </div>
-                        <div class="col" style="text-align:right;"><span style="font-size:0.9rem; color:var(--text-muted);" id="cb-net-title">Tồn quỹ cuối kỳ:</span><br><b class="blur-wrapper" onclick="this.classList.toggle('revealed')"><span class="blur-target" style="color:var(--primary); font-size:1.5rem;" id="cb-net">0</span></b> đ</div>
+                        <!-- Cục tồn quỹ sẽ bị ẩn nếu là Nhân viên -->
+                        <div class="col" style="text-align:right;" id="cb-net-box">
+                            <span style="font-size:0.9rem; color:var(--text-muted);" id="cb-net-title">Tồn quỹ cuối kỳ:</span><br>
+                            <b class="blur-wrapper" onclick="this.classList.toggle('revealed')"><span class="blur-target" style="color:var(--primary); font-size:1.5rem;" id="cb-net">0</span></b> đ
+                        </div>
                     </div>
                     <div class="form-group" style="margin-top:15px;">
                         <input type="text" id="cb-search" class="form-control" placeholder="🔍 Gõ lý do thu/chi để lọc phiếu (vd: Mua thùng rác)..." onkeyup="filterTable('cb-tbl-in', this.value); filterTable('cb-tbl-out', this.value);">
@@ -392,7 +396,7 @@
                 </div>
             </div>
 
-            <!-- HISTORY TAB (V19.4 UPDATE: Universal Search) -->
+            <!-- HISTORY TAB (Universal Search) -->
             <div id="history" class="tab-content">
                 <div class="card" style="padding:15px; background:#f0fdf4; border-color:#86efac; margin-bottom:20px;">
                     <div class="search-box">
@@ -455,12 +459,11 @@
 
     <!-- Modals -->
 
-    <!-- V19.4 Preview Print Modal -->
+    <!-- Preview Print Modal -->
     <div id="previewModal" class="modal-overlay" style="z-index: 12000;">
         <div class="modal-box" style="max-width: 900px; max-height: 95vh; display:flex; flex-direction:column;">
             <h3 class="modal-title">👀 XEM TRƯỚC BẢN IN</h3>
             <div style="flex:1; overflow:auto; background:#525659; padding:20px; display:flex; justify-content:center; border-radius:8px;">
-                <!-- Nội dung bill in sẽ nằm trọn ở đây để xem trước -->
                 <div id="preview-content" style="background:#fff; padding:20px; box-shadow:0 0 10px rgba(0,0,0,0.5); color:#000;"></div>
             </div>
             <div style="display:flex; gap:10px; margin-top:15px;">
@@ -470,7 +473,7 @@
         </div>
     </div>
 
-    <!-- V19.4 Monthly Debt Modal -->
+    <!-- Monthly Debt Modal -->
     <div id="monthlyDebtModal" class="modal-overlay">
         <div class="modal-box">
             <h3 class="modal-title" style="color:var(--warning);">📅 Danh Sách Khách Hàng Nợ Tháng</h3>
@@ -780,12 +783,11 @@
         }
     }
 
-    // V19.4: 1 Ô Tìm Kiếm Lịch Sử
+    // 1 Ô Tìm Kiếm Lịch Sử
     function handleHistSearch() {
         let val = document.getElementById('hist-search-sales').value.toLowerCase();
         let listEl = document.getElementById('hist-search-autocomplete');
         
-        // 1. Lọc khách hàng làm gợi ý (Autocomplete)
         let matches = customers.filter(c => c.name.toLowerCase().includes(val) || (c.phone||'').includes(val)).slice(0, 5);
         if(matches.length > 0 && val) {
             listEl.innerHTML = matches.map(m => {
@@ -793,9 +795,8 @@
                 div.innerHTML = `🎯 <b>${m.name}</b> - ${m.phone||''}`;
                 div.onclick = (e) => {
                     e.stopPropagation();
-                    document.getElementById('hist-search-sales').value = m.name; // Gán đúng tên
+                    document.getElementById('hist-search-sales').value = m.name;
                     listEl.style.display = 'none';
-                    // Áp dụng lọc bảng ngay lập tức
                     filterTable('hist-tbl-sales', m.name);
                     filterTable('hist-tbl-pay', m.name);
                 };
@@ -806,7 +807,6 @@
             listEl.style.display = 'none';
         }
         
-        // 2. Đồng thời Lọc bảng theo ký tự tự do luôn (từ khóa)
         filterTable('hist-tbl-sales', val);
         filterTable('hist-tbl-pay', val);
     }
@@ -867,11 +867,14 @@
         let s = staffs.find(x=>x.id===activeUser); setTxt('top-user', s ? s.name : 'Vô danh');
         document.querySelectorAll('.admin-only').forEach(el => el.style.display = activeUser==='ADMIN'?'flex':'none');
         
-        // V19.4 Set default dates
+        // Cài mặc định Sổ Quỹ là tháng này
         document.getElementById('dash-date').value = getToday();
-        setCbDate('month'); // Mặc định sổ quỹ mở lên là tháng này cho tiện
+        setCbDate('month');
         
-        document.getElementById('cb-net-title').innerText = activeUser==='ADMIN' ? 'Tồn quỹ cuối kỳ (Tiệm):' : 'Tồn quỹ (Cá nhân):';
+        // V19.5: Ẩn hoàn toàn cục Tồn Quỹ nếu là nhân viên
+        let cbNetBox = document.getElementById('cb-net-box');
+        if(cbNetBox) cbNetBox.style.display = activeUser==='ADMIN' ? 'block' : 'none';
+        
         switchTab(activeUser==='ADMIN' ? 'dashboard' : 'pos');
     }
 
@@ -1052,7 +1055,7 @@
         });
     }
 
-    // --- QUICK ADD & EDIT (V19.4 Update: MinStock & Monthly Debt) ---
+    // --- QUICK ADD & EDIT ---
     function saveProduct() {
         let id = document.getElementById('qa-id').value.trim(); if(!id) id = genId('SP');
         let name = document.getElementById('qa-name').value.trim(), cost = getVal('qa-cost'), price = getVal('qa-price'), stock = getVal('qa-stock'), minStock = getVal('qa-minstock');
@@ -1175,7 +1178,6 @@
                     if(t.type === 'debt') noCu += (t.amount + (t.partsRevenue||0));
                     else if(t.type === 'pay') noCu -= t.amount;
                 } else if (t.date >= from && t.date <= to) {
-                    // V19.4: Thêm ghi chú nhỏ dưới nội dung
                     let extraNote = (t.note && !t.details.includes(t.note)) ? `<br><i style="font-size:12px; color:#555;">(${t.note})</i>` : '';
                     
                     if (t.type === 'debt') {
@@ -1309,7 +1311,6 @@
         });
     }
 
-    // --- V19.4 Thống kê nợ tháng ---
     function showMonthlyDebtModal() {
         let html = '';
         customers.forEach(c => {
@@ -1483,7 +1484,6 @@
             </div>
         `;
         
-        // V19.4 Cảnh báo tồn kho
         let lowStockHtml = '';
         inventory.forEach(i => {
             if(i.minStock > 0 && i.stock <= i.minStock) {
@@ -1546,7 +1546,6 @@
         document.getElementById('hist-tbl-sales').innerHTML = histSales.join('') || `<tr><td colspan="5" style="text-align:center;">Trống</td></tr>`;
         document.getElementById('hist-tbl-pay').innerHTML = histPay.join('') || `<tr><td colspan="4" style="text-align:center;">Trống</td></tr>`;
 
-        // V19.4 Sổ quỹ: Lọc theo khoảng thời gian
         let cbFrom = document.getElementById('cb-from').value;
         let cbTo = document.getElementById('cb-to').value;
         if(!cbFrom) { cbFrom = getToday(); document.getElementById('cb-from').value = cbFrom; }
@@ -1611,7 +1610,6 @@
         reader.readAsText(file); 
     }
 
-    // --- V19.4 Cập nhật In (Preview + Chốt In + Đồng bộ Header) ---
     function printBill(id, type) {
         let h = '';
         let logoHtml = storeInfo.logoUrl ? `<img src="${storeInfo.logoUrl}" style="max-width:120px; max-height:60px; object-fit:contain; margin:0 auto 5px auto; display:block;">` : '';
@@ -1666,7 +1664,6 @@
                 </div>`;
         }
         
-        // Đẩy nội dung vào Modal Preview và mở Modal
         document.getElementById('preview-content').innerHTML = h;
         document.getElementById('print-area').innerHTML = h;
         openModal('previewModal');
