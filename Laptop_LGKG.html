@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>Lương Gia KG - V19.1 Pro</title>
+    <title>Lương Gia KG - V19.3 Pro</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -134,7 +134,7 @@
     <div id="loginOverlay" style="position:fixed; inset:0; background:#1c252e; z-index:15000; display:flex; justify-content:center; align-items:center;">
         <div class="card" style="width: 90%; max-width: 400px; text-align: center; padding: 40px 20px;">
             <h2 style="color:var(--primary); margin-top:0;">LƯƠNG GIA KG</h2>
-            <p style="color:var(--text-muted); margin-bottom:10px;">Phần mềm quản lý V19.1</p>
+            <p style="color:var(--text-muted); margin-bottom:10px;">Phần mềm quản lý V19.3</p>
             <div id="net-status" style="font-size:0.8rem; color:var(--warning); margin-bottom:15px; min-height:15px;">Đang dò kết nối máy chủ...</div>
             <select id="login-user" class="form-control" style="margin-bottom:15px;"></select>
             <input type="password" id="login-pass" class="form-control" placeholder="Mật khẩu..." style="margin-bottom:20px;" onkeypress="if(event.key==='Enter') doLogin()">
@@ -678,7 +678,7 @@
     let confirmCb = null; 
     function uiConfirm(msg, cb) { document.getElementById('confirm-msg').innerText=msg; confirmCb=cb; openModal('uiConfirm'); }
     function closeConfirm(isYes) { closeModal('uiConfirm'); if(isYes && confirmCb) confirmCb(); confirmCb=null; }
-    function uiAlert(msg) { document.getElementById('alert-msg').innerText=msg; openModal('uiAlert'); }
+    function uiAlert(msg) { document.getElementById('alert-msg').innerHTML=msg; openModal('uiAlert'); }
 
     function switchTab(tab) {
         if(!activeUser) return;
@@ -740,7 +740,24 @@
         if(activeUser) renderData();
     });
     
-    function pushDB() { db.ref().set({ staffs, inventory, customers, suppliers, transactions, serviceOrders, importReceipts, cashflow, recycleBin, activityLogs, storeInfo }); }
+    // --- BẢN V19.3: BỘ LỌC KHỬ TRÙNG DỮ LIỆU ---
+    // Khử triệt để mọi biến undefined gây treo mạng Firebase
+    function pushDB() { 
+        let rawPayload = { staffs, inventory, customers, suppliers, transactions, serviceOrders, importReceipts, cashflow, recycleBin, activityLogs, storeInfo };
+        
+        try {
+            // Bước quan trọng nhất: Dùng kỹ thuật JSON để "chặt đứt" mọi biến undefined đang trốn ngầm trong dữ liệu
+            let cleanPayload = JSON.parse(JSON.stringify(rawPayload));
+            
+            db.ref().set(cleanPayload).catch(error => {
+                console.error("Lỗi mạng Firebase:", error);
+                uiAlert(`<span style="color:red; font-size:1.1rem; font-weight:bold;">❌ LỖI ĐƯỜNG TRUYỀN:</span><br><br>${error.message}`);
+            });
+        } catch(err) {
+            console.error("Lỗi cục bộ:", err);
+            uiAlert(`<span style="color:red; font-size:1.1rem; font-weight:bold;">❌ LỖI DỮ LIỆU:</span><br><br>Hệ thống vừa phát hiện 1 dữ liệu hỏng. Bấm OK để tiếp tục, dữ liệu đã được làm sạch.`);
+        }
+    }
 
     function saveStoreInfo() {
         storeInfo.name = document.getElementById('cfg-name').value.trim() || 'LƯƠNG GIA KG';
@@ -1585,7 +1602,8 @@
             try { 
                 let importedData = JSON.parse(event.target.result); 
                 uiConfirm("⚠️ CẢNH BÁO: Phục hồi sẽ XÓA ĐÈ toàn bộ dữ liệu hiện tại bằng dữ liệu của file này. Chắc chắn không?", () => { 
-                    db.ref().set(importedData).then(() => { uiAlert("✅ Phục hồi dữ liệu thành công!"); document.getElementById('import-file').value = ''; }); 
+                    db.ref().set(importedData).then(() => { uiAlert("✅ Phục hồi dữ liệu thành công!"); document.getElementById('import-file').value = ''; })
+                    .catch(err => { uiAlert("❌ Lỗi phục hồi: " + err.message); document.getElementById('import-file').value = ''; }); 
                 }, () => { document.getElementById('import-file').value = ''; }); 
             } catch(err) { uiAlert("❌ File không hợp lệ!"); } 
         }; 
@@ -1653,13 +1671,8 @@
 </script>
 <style> 
     @media print { 
-        /* Ẩn mọi thứ đi bằng display:none để không chiếm space */
         body.is-printing > :not(#print-area) { display: none !important; }
-        
-        /* Hiển thị form in, khôi phục lại tính chất khối tĩnh */
         #print-area { display: block !important; position: absolute; left: 0; top: 0; width: 100%; }
-        
-        /* Chỉnh lại margin cho các loại giấy in bill */
         @page { margin: 0; } 
     } 
 </style>
