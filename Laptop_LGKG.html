@@ -1186,16 +1186,56 @@
     function getSupDebt(sId) { let n = 0; importReceipts.forEach(r => { if(r.supId === sId) n += (r.total - (r.paid||0)); }); cashflow.forEach(c => { if(c.type === 'chi_ncc' && c.supId === sId) n -= c.amount; }); return n; }
     function updateStaffField(id, field, val) { let s = staffs.find(x=>x.id===id); if(s) { s[field]=val.trim(); pushDB(); uiAlert('Đã cập nhật nhân viên!'); } }
 
-    function openEditProd(id) { let p = inventory.find(x => String(x.id) === String(id)); if(!p) return; document.getElementById('ep-id').value = p.id; document.getElementById('ep-name').value = p.name; setVal('ep-cost', p.cost || 0); setVal('ep-price', p.price || 0); setVal('ep-stock', p.stock || 0); setVal('ep-minstock', p.minStock || 0); openModal('editProdModal'); }
-    function saveEditProduct() { let id = document.getElementById('ep-id').value, p = inventory.find(x => String(x.id) === String(id)); if(!p) return; p.name = document.getElementById('ep-name').value.trim(); p.cost = getVal('ep-cost'); p.price = getVal('ep-price'); p.stock = getVal('ep-stock'); p.minStock = getVal('ep-minstock'); pushDB(); renderData(); closeModal('editProdModal'); setTimeout(()=>uiAlert('✅ Đã cập nhật Hàng hóa!'),200); }
+   function openEditProd(id) { let p = inventory.find(x => String(x.id) === String(id)); if(!p) return; document.getElementById('ep-id').value = p.id; document.getElementById('ep-name').value = p.name; setVal('ep-cost', p.cost || 0); setVal('ep-price', p.price || 0); setVal('ep-stock', p.stock || 0); setVal('ep-minstock', p.minStock || 0); openModal('editProdModal'); }
+    
+    function saveEditProduct() { 
+        let id = document.getElementById('ep-id').value;
+        let p = inventory.find(x => String(x.id) === String(id)); 
+        if(!p) { uiAlert('❌ Lỗi: Không tìm thấy dữ liệu mặt hàng này để lưu!'); return; } 
+        p.name = document.getElementById('ep-name').value.trim(); 
+        p.cost = getVal('ep-cost'); 
+        p.price = getVal('ep-price'); 
+        p.stock = getVal('ep-stock'); 
+        p.minStock = getVal('ep-minstock'); 
+        pushDB(); 
+        renderData(); 
+        closeModal('editProdModal'); 
+        setTimeout(() => uiAlert('✅ Đã cập nhật mặt hàng thành công!'), 300); 
+    }
+    
     function deleteProductBtn() { let id = document.getElementById('ep-id').value; closeModal('editProdModal'); setTimeout(() => deleteItemToBin(id, 'Sản Phẩm', inventory, x => x.name), 300); }
     
     function openEditCus(id) { let c = customers.find(x => String(x.id) === String(id)); if(!c) return; document.getElementById('ec-id').value = c.id; document.getElementById('ec-name').value = c.name; document.getElementById('ec-phone').value = c.phone || ''; document.getElementById('ec-monthly').checked = c.isMonthlyDebt ? true : false; openModal('editCusModal'); }
-    function saveEditCus() { let id = document.getElementById('ec-id').value, c = customers.find(x => String(x.id) === String(id)); if(!c) return; c.name = document.getElementById('ec-name').value.trim(); c.phone = document.getElementById('ec-phone').value.trim(); c.isMonthlyDebt = document.getElementById('ec-monthly').checked; pushDB(); renderData(); closeModal('editCusModal'); setTimeout(()=>uiAlert('✅ Đã cập nhật Khách hàng!'),200); }
+    
+    function saveEditCus() { 
+        let id = document.getElementById('ec-id').value;
+        let c = customers.find(x => String(x.id) === String(id)); 
+        if(!c) { uiAlert('❌ Lỗi: Không tìm thấy dữ liệu Khách hàng!'); return; } 
+        c.name = document.getElementById('ec-name').value.trim(); 
+        c.phone = document.getElementById('ec-phone').value.trim(); 
+        c.isMonthlyDebt = document.getElementById('ec-monthly').checked; 
+        pushDB(); 
+        renderData(); 
+        closeModal('editCusModal'); 
+        setTimeout(() => uiAlert('✅ Đã cập nhật Khách hàng thành công!'), 300); 
+    }
+    
     function deleteCusBtn() { let id = document.getElementById('ec-id').value; closeModal('editCusModal'); setTimeout(() => deleteItemToBin(id, 'Khách Hàng', customers, x => x.name), 300); }
     
     function openEditSup(id) { let s = suppliers.find(x => String(x.id) === String(id)); if(!s) return; document.getElementById('es-id').value = s.id; document.getElementById('es-name').value = s.name; document.getElementById('es-phone').value = s.phone || ''; openModal('editSupModal'); }
-    function saveEditSup() { let id = document.getElementById('es-id').value, s = suppliers.find(x => String(x.id) === String(id)); if(!s) return; s.name = document.getElementById('es-name').value.trim(); s.phone = document.getElementById('es-phone').value.trim(); pushDB(); renderData(); closeModal('editSupModal'); setTimeout(()=>uiAlert('✅ Đã cập nhật NCC!'),200); }
+    
+    function saveEditSup() { 
+        let id = document.getElementById('es-id').value;
+        let s = suppliers.find(x => String(x.id) === String(id)); 
+        if(!s) { uiAlert('❌ Lỗi: Không tìm thấy dữ liệu Nhà cung cấp!'); return; } 
+        s.name = document.getElementById('es-name').value.trim(); 
+        s.phone = document.getElementById('es-phone').value.trim(); 
+        pushDB(); 
+        renderData(); 
+        closeModal('editSupModal'); 
+        setTimeout(() => uiAlert('✅ Đã cập nhật Nhà cung cấp thành công!'), 300); 
+    }
+    
     function deleteSupBtn() { let id = document.getElementById('es-id').value; closeModal('editSupModal'); setTimeout(() => deleteItemToBin(id, 'Nhà Cung Cấp', suppliers, x => x.name), 300); }
     /* ---------------- RENDER TẤT CẢ DỮ LIỆU ---------------- */
     function renderData() {
