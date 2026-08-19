@@ -1217,15 +1217,16 @@
             document.getElementById('recycle-bin-table').innerHTML = recycleBin.slice().reverse().map(rb => `<tr><td style="font-size:0.8rem;">${rb.deletedAt}</td><td><span class="badge" style="background:#f1f5f9; color:var(--text-muted);">${rb.type}</span></td><td><b style="font-size:0.85rem;">${rb.label}</b></td><td><button class="btn btn-info" style="padding:4px 8px; font-size:0.8rem; background:var(--info); color:#fff;" onclick="restoreBinItem('${rb.id}')">♻️ Khôi Phục</button></td></tr>`).join('') || `<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:20px;">Thùng rác sạch sẽ ✨</td></tr>`;
         }
 
-        // Render Inventory (Cho cả NV và Admin, cột admin-only tự động ẩn/hiện bằng CSS)
+        // Render Inventory (Fix lỗi xô lệch cột bằng logic JS)
+        let isAdmin = (activeUser === 'ADMIN');
         document.getElementById('inv-tbl').innerHTML = inventory.map(i=>`
             <tr>
                 <td><small>${i.id}</small></td>
                 <td><b>${i.name}</b></td>
-                <td class="admin-only"><span style="color:var(--warning); font-weight:bold;">${(i.cost||0).toLocaleString()}đ</span></td>
+                ${isAdmin ? `<td><span style="color:var(--warning); font-weight:bold;">${(i.cost||0).toLocaleString()}đ</span></td>` : ''}
                 <td><span style="color:var(--primary); font-weight:bold;">${i.price.toLocaleString()}đ</span></td>
-                <td><span style="font-weight:bold; ${i.minStock>0 && i.stock<=i.minStock ? 'color:var(--danger);' : ''}">${i.stock}</span></td>
-                <td class="admin-only"><button class="btn btn-outline" style="padding:4px 8px; color:var(--primary);" onclick="openEditProd('${i.id}')">✏️ Sửa</button></td>
+                <td><span style="font-weight:bold; ${i.minStock>0 && i.stock<=i.minStock ? 'color:var(--danger);' : ''}">${i.stock !== undefined ? i.stock : 0}</span></td>
+                ${isAdmin ? `<td><button class="btn btn-outline" style="padding:4px 8px; color:var(--primary);" onclick="openEditProd('${i.id}')">✏️ Sửa</button></td>` : ''}
             </tr>
         `).join('');
         
