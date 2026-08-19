@@ -1185,8 +1185,6 @@
     function getCusDebt(cId) { let n = 0; transactions.forEach(t => { if(t.customerId === cId) { if(t.type === 'debt') n += (t.amount + (t.partsRevenue||0)); else if(t.type === 'pay') n -= t.amount; } }); return n; }
     function getSupDebt(sId) { let n = 0; importReceipts.forEach(r => { if(r.supId === sId) n += (r.total - (r.paid||0)); }); cashflow.forEach(c => { if(c.type === 'chi_ncc' && c.supId === sId) n -= c.amount; }); return n; }
     function updateStaffField(id, field, val) { let s = staffs.find(x=>x.id===id); if(s) { s[field]=val.trim(); pushDB(); uiAlert('Đã cập nhật nhân viên!'); } }
-
-   function openEditProd(id) { let p = inventory.find(x => String(x.id) === String(id)); if(!p) return; document.getElementById('ep-id').value = p.id; document.getElementById('ep-name').value = p.name; setVal('ep-cost', p.cost || 0); setVal('ep-price', p.price || 0); setVal('ep-stock', p.stock || 0); setVal('ep-minstock', p.minStock || 0); openModal('editProdModal'); }
     
     function saveEditProduct() { 
         let id = document.getElementById('ep-id').value;
