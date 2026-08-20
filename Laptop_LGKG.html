@@ -374,20 +374,30 @@
             </div>
 
             <!-- BÁO CÁO -->
+            <!-- BÁO CÁO -->
             <div id="reports" class="tab-content">
-                <div class="card">
-                    <div class="row" style="align-items:flex-end;">
-                        <div class="form-group col"><label>Từ ngày:</label><input type="date" id="rp-from" class="form-control"></div>
-                        <div class="form-group col"><label>Đến ngày:</label><input type="date" id="rp-to" class="form-control"></div>
-                        <div class="form-group col"><button class="btn btn-primary" onclick="genReport()" style="width:100%; height:42px;">Xem Báo Cáo</button></div>
+                <div class="card" style="padding: 12px 15px;">
+                    <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;">
+                        <!-- Nút chọn nhanh -->
+                        <div style="display: flex; gap: 5px; flex-wrap: wrap; align-items: center;">
+                            <button class="btn btn-outline" style="padding: 6px 12px; font-size: 0.85rem;" onclick="setRpDate('today')">Hôm nay</button>
+                            <button class="btn btn-outline" style="padding: 6px 12px; font-size: 0.85rem;" onclick="setRpDate('this_month')">Tháng này</button>
+                            <input type="month" id="rp-month" class="form-control" style="width: auto; padding: 5px 10px; font-size: 0.85rem;" onchange="setRpDate('select_month')" title="Chọn nhanh 1 tháng">
+                        </div>
+                        <!-- Cụm chọn Từ ngày - Đến ngày -->
+                        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                            <div style="display: flex; align-items: center; gap: 5px;">
+                                <span style="font-size: 0.85rem; font-weight: 600;">Từ:</span>
+                                <input type="date" id="rp-from" class="form-control" style="padding: 5px 8px; font-size: 0.85rem; width: 130px;">
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 5px;">
+                                <span style="font-size: 0.85rem; font-weight: 600;">Đến:</span>
+                                <input type="date" id="rp-to" class="form-control" style="padding: 5px 8px; font-size: 0.85rem; width: 130px;">
+                            </div>
+                            <button class="btn btn-primary" onclick="genReport()" style="padding: 6px 15px; font-size: 0.85rem;">🔍 TÌM</button>
+                        </div>
                     </div>
                 </div>
-                <div class="row" id="rp-cards" style="margin-bottom:20px;"></div>
-                <div class="card">
-                    <h3 class="card-title">Hiệu Suất Nhân Viên</h3>
-                    <div class="table-wrap"><table><thead><tr><th>Nhân Viên</th><th style="text-align:right;">Tổng Doanh Thu (+)</th><th style="text-align:right;">Giá Vốn & Chi Phí (-)</th><th style="text-align:right;">Lợi Nhuận Thực</th></tr></thead><tbody id="rp-staff-tbl"></tbody></table></div>
-                </div>
-            </div>
 
             <!-- LỊCH SỬ -->
             <div id="history" class="tab-content">
@@ -1136,6 +1146,27 @@
         document.getElementById('dd-body').innerHTML = html || `<tr><td colspan="4" style="text-align:center;">Chưa có dữ liệu</td></tr>`; openModal('dashDetailModal');
     }
 
+    // HÀM CHỌN NGÀY NHANH CHO BÁO CÁO
+    function setRpDate(type) {
+        let today = getToday();
+        let fromEl = document.getElementById('rp-from'), toEl = document.getElementById('rp-to');
+        if (type === 'today') {
+            fromEl.value = today; toEl.value = today;
+        } else if (type === 'this_month') {
+            fromEl.value = today.substring(0,8) + '01'; toEl.value = today;
+        } else if (type === 'select_month') {
+            let m = document.getElementById('rp-month').value; // Dạng YYYY-MM
+            if (m) {
+                fromEl.value = m + '-01';
+                let year = parseInt(m.split('-')[0]), month = parseInt(m.split('-')[1]);
+                let lastDay = new Date(year, month, 0).getDate();
+                toEl.value = m + '-' + lastDay.toString().padStart(2, '0');
+            }
+        }
+        genReport(); // Tự động hiển thị báo cáo sau khi chọn xong
+    }
+
+    // HÀM XUẤT BÁO CÁO
     function genReport() {
         let from = document.getElementById('rp-from').value, to = document.getElementById('rp-to').value;
         if(!from || !to) return uiAlert("Chọn đủ từ ngày - đến ngày");
