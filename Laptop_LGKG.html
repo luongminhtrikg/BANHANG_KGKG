@@ -1083,18 +1083,27 @@
     /* ---------------- DASHBOARD & BÁO CÁO ---------------- */
     function renderDashboard() {
         let target = document.getElementById('dash-date').value;
-        let sales = 0, bills = 0, repairs = 0, expenses = 0;
+        let sales = 0, cashSales = 0, debtSales = 0, bills = 0, repairs = 0, expenses = 0;
         
         transactions.forEach(t => {
-            if(t.date === target && (t.type === 'cash' || t.type === 'debt')) { sales += (t.amount + (t.partsRevenue||0)); bills++; }
-            if(t.date === target && t.type === 'pay') bills++;
+            if(t.date === target) {
+                let amt = t.amount + (t.partsRevenue||0);
+                if(t.type === 'cash') { cashSales += amt; sales += amt; bills++; }
+                else if(t.type === 'debt') { debtSales += amt; sales += amt; bills++; }
+                else if(t.type === 'pay') { bills++; }
+            }
         });
         serviceOrders.forEach(o => { if(!o.status.includes('Đã trả') && !o.status.includes('Đã giao')) repairs++; });
         cashflow.forEach(c => { if(c.date === target && (c.type === 'chi' || c.type === 'chi_ncc')) expenses += c.amount; });
 
         document.getElementById('dash-cards').innerHTML = `
             <div class="col card dash-card" style="border-left:4px solid var(--primary);" onclick="showDashDetail('sales')">
-                <h4 style="margin:0 0 10px 0; color:var(--text-muted);">💰 Doanh Thu Hôm Nay</h4><h2 style="margin:0; color:var(--primary);">${sales.toLocaleString()} đ</h2>
+                <h4 style="margin:0 0 10px 0; color:var(--text-muted);">💰 Doanh Thu Hôm Nay</h4>
+                <h2 style="margin:0; color:var(--primary);">${sales.toLocaleString()} đ</h2>
+                <div style="font-size:0.85rem; margin-top:8px;">
+                    Tiền mặt: <b style="color:var(--success);">${cashSales.toLocaleString()} đ</b><br>
+                    Công nợ: <b style="color:var(--warning);">${debtSales.toLocaleString()} đ</b>
+                </div>
             </div>
             <div class="col card dash-card" style="border-left:4px solid var(--success);" onclick="showDashDetail('bills')">
                 <h4 style="margin:0 0 10px 0; color:var(--text-muted);">🧾 Số Lượng Bill</h4><h2 style="margin:0; color:var(--success);">${bills}</h2>
