@@ -374,17 +374,16 @@
             </div>
 
             <!-- BÁO CÁO -->
-            <!-- BÁO CÁO -->
+         <!-- BÁO CÁO -->
             <div id="reports" class="tab-content">
+                <!-- Thanh chọn ngày thu gọn -->
                 <div class="card" style="padding: 12px 15px;">
                     <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;">
-                        <!-- Nút chọn nhanh -->
                         <div style="display: flex; gap: 5px; flex-wrap: wrap; align-items: center;">
                             <button class="btn btn-outline" style="padding: 6px 12px; font-size: 0.85rem;" onclick="setRpDate('today')">Hôm nay</button>
                             <button class="btn btn-outline" style="padding: 6px 12px; font-size: 0.85rem;" onclick="setRpDate('this_month')">Tháng này</button>
                             <input type="month" id="rp-month" class="form-control" style="width: auto; padding: 5px 10px; font-size: 0.85rem;" onchange="setRpDate('select_month')" title="Chọn nhanh 1 tháng">
                         </div>
-                        <!-- Cụm chọn Từ ngày - Đến ngày -->
                         <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                             <div style="display: flex; align-items: center; gap: 5px;">
                                 <span style="font-size: 0.85rem; font-weight: 600;">Từ:</span>
@@ -398,7 +397,23 @@
                         </div>
                     </div>
                 </div>
-
+                
+                <!-- Khu vực hiển thị kết quả (Hồi nãy bro bị mất đoạn này) -->
+                <div class="row" id="rp-cards" style="margin-bottom:20px;"></div>
+                
+                <!-- Khu vực bảng Hiệu Suất Nhân Viên -->
+                <div class="card">
+                    <h3 class="card-title">Hiệu Suất Nhân Viên</h3>
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr><th>Nhân Viên</th><th style="text-align:right;">Tổng Doanh Thu (+)</th><th style="text-align:right;">Giá Vốn & Chi Phí (-)</th><th style="text-align:right;">Lợi Nhuận Thực</th></tr>
+                            </thead>
+                            <tbody id="rp-staff-tbl"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
             <!-- LỊCH SỬ -->
             <div id="history" class="tab-content">
                 <div class="card" style="padding:15px; background:#f0fdf4; border-color:#86efac; margin-bottom:20px;">
