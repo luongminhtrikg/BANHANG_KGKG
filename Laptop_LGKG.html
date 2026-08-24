@@ -924,7 +924,7 @@
         setTxt('top-user', s ? s.name : 'Vô danh');
         
         document.querySelectorAll('.admin-only').forEach(el => el.style.display = activeUser==='ADMIN'?'flex':'none');
-        document.querySelectorAll('th.admin-only, td.admin-only, div.admin-only').forEach(el => el.style.display = activeUser==='ADMIN'?'table-cell':'none');
+        document.querySelectorAll('th.admin-only, td.admin-only').forEach(el => el.style.display = activeUser==='ADMIN'?'table-cell':'none');
         document.querySelectorAll('.staff-only').forEach(el => el.style.display = activeUser!=='ADMIN'?'flex':'none');
         
         document.getElementById('dash-date').value = getToday(); 
