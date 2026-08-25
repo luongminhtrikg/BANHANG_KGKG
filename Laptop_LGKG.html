@@ -359,7 +359,13 @@
                         <div class="card" style="background:#fff;">
                             <h3 class="card-title">📝 Lập Phiếu Thu/Chi</h3>
                             
-                            <div class="form-group"><label>Loại Phiếu:</label><select id="cb-type" class="form-control" onchange="toggleCreditorField()"></select></div>
+                            <div class="form-group">
+    <label>Loại Phiếu:</label>
+    <select id="cb-type" class="form-control" onchange="toggleCreditorField()">
+        <option value="chi">🔴 Chi Tiền (Điện, nước, nhập hàng...)</option>
+        <option value="thu">🟢 Thu Khác (Bán phế liệu...)</option>
+    </select>
+</div>
                             
                             <!-- KHUNG CHỦ NỢ (Mặc định ẩn, chỉ hiện khi mượn/trả nợ) -->
                             <div id="cb-creditor-wrap" style="display:none; background:#f0fdf4; padding:12px; border-radius:8px; margin-bottom:15px; border:1px solid var(--success);">
@@ -935,18 +941,15 @@
         
         // --- ĐOẠN CODE PHÂN QUYỀN Ô CHỌN SỔ QUỸ TỰ ĐỘNG ---
         let cbType = document.getElementById('cb-type');
-        if(cbType) {
-            cbType.options.length = 0; // Xóa sạch bộ nhớ cũ bị đơ
-            cbType.add(new Option('🔴 Chi Tiền (Điện, nước, ăn uống...)', 'chi'));
-            cbType.add(new Option('🟢 Thu Khác (Bán phế liệu...)', 'thu'));
-            
-            if(activeUser === 'ADMIN') {
+        if(cbType && activeUser === 'ADMIN') {
+            // Kiểm tra xem đã có tùy chọn vay mượn chưa, chưa có thì mới thêm vào
+            let hasVay = Array.from(cbType.options).some(opt => opt.value === 'vay_muon');
+            if(!hasVay) {
                 cbType.add(new Option('🔵 Nhận Tiền Vay / Mượn', 'vay_muon'));
                 cbType.add(new Option('🟣 Trả Nợ Vay', 'tra_no'));
             }
         }
         toggleCreditorField(); 
-        // ---------------------------------------------------
         // ---------------------------------------------------
 
         switchTab(activeUser==='ADMIN' ? 'dashboard' : 'pos');
