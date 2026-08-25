@@ -733,6 +733,13 @@
     
     let posCart = [], impCart = [], hoCart = [];
 
+    // HÀM NHẬN DIỆN ÔNG CHỦ (Tự động cấp quyền nếu tên có chữ Trí hoặc Admin)
+    function isBoss() { 
+        if(activeUser === 'ADMIN') return true; 
+        let s = staffs.find(x => x.id === activeUser); 
+        return s && (s.name.toLowerCase().includes('trí') || s.name.toLowerCase().includes('admin') || s.name.toLowerCase().includes('chủ')); 
+    }
+
     // HÀM PHỤ TRỢ
     function getVal(id) { let v = document.getElementById(id).value.replace(/[^0-9]/g, ''); return v ? parseInt(v, 10) : 0; }
     function setVal(id, val) { document.getElementById(id).value = val.toLocaleString('vi-VN'); }
@@ -788,7 +795,7 @@
 
     function switchTab(tab) {
         if(!activeUser) return;
-        if(activeUser !== 'ADMIN' && ['dashboard', 'reports', 'partners', 'admin'].includes(tab)) return uiAlert("Bạn không có quyền!");
+        if(!isBoss() && ['dashboard', 'reports', 'partners', 'admin'].includes(tab)) return uiAlert("Bạn không có quyền!");
         
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
@@ -804,7 +811,7 @@
         
         if(tab === 'cashbook') {
             let wrap = document.getElementById('cb-content-wrapper');
-            if(activeUser !== 'ADMIN') {
+            if(!isBoss()) {
                 wrap.innerHTML = `
                     <details class="card" style="border-top:4px solid var(--success); cursor:pointer;">
                         <summary style="font-weight:bold; font-size:1.1rem; color:var(--success);">🟢 XEM PHIẾU THU TRONG NGÀY (Bấm mở)</summary>
@@ -929,15 +936,14 @@
     
     function logout() { activeUser=null; localStorage.removeItem('lg_user'); location.reload(); }
     
-    // ĐÃ TÍCH HỢP TOÀN BỘ FIX MENU VÀ PHÂN QUYỀN SỔ QUỸ VÀO ĐÂY
     function initSession() {
         let s = staffs.find(x=>x.id===activeUser); 
         setTxt('top-user', s ? s.name : 'Vô danh');
         
-        // Phân quyền Menu & Giao diện (Đã fix lỗi nhảy dòng Menu)
-        document.querySelectorAll('.admin-only').forEach(el => el.style.display = activeUser==='ADMIN'?'flex':'none');
-        document.querySelectorAll('th.admin-only, td.admin-only').forEach(el => el.style.display = activeUser==='ADMIN'?'table-cell':'none');
-        document.querySelectorAll('.staff-only').forEach(el => el.style.display = activeUser!=='ADMIN'?'flex':'none');
+        // Phân quyền Menu & Giao diện sử dụng isBoss()
+        document.querySelectorAll('.admin-only').forEach(el => el.style.display = isBoss() ? 'flex' : 'none');
+        document.querySelectorAll('th.admin-only, td.admin-only').forEach(el => el.style.display = isBoss() ? 'table-cell' : 'none');
+        document.querySelectorAll('.staff-only').forEach(el => el.style.display = !isBoss() ? 'flex' : 'none');
         
         document.getElementById('dash-date').value = getToday(); 
         document.getElementById('cb-staff-date').value = getToday(); 
@@ -946,22 +952,19 @@
         // --- CHỐT DANH SÁCH LẬP PHIẾU THEO QUYỀN ---
         let cbType = document.getElementById('cb-type');
         if(cbType) {
-            cbType.options.length = 0; // Xóa sạch bộ nhớ đệm chống đơ Safari/Mobile
+            cbType.options.length = 0; 
             cbType.options.add(new Option('🔴 Chi Tiền (Điện, nước, nhập hàng...)', 'chi'));
             cbType.options.add(new Option('🟢 Thu Khác (Bán phế liệu, đồng nát...)', 'thu'));
             
-            // Nếu đúng là Sếp (ADMIN) thì mới bơm thêm 2 nút Vốn/Nợ vào
-            if(activeUser === 'ADMIN') {
+            if(isBoss()) {
                 cbType.options.add(new Option('🔵 Nhận Tiền Vay / Mượn', 'vay_muon'));
                 cbType.options.add(new Option('🟣 Trả Nợ Vay (Chọn chủ nợ để trả)', 'tra_no'));
             }
         }
         
-        // Gọi lệnh này để đảm bảo logic Trả Nợ xổ danh sách chủ nợ luôn hoạt động chuẩn
         toggleCreditorField(); 
-        // ---------------------------------------------
 
-        switchTab(activeUser==='ADMIN' ? 'dashboard' : 'pos');
+        switchTab(isBoss() ? 'dashboard' : 'pos');
     }
 
     /* ---------------- POS - BÁN HÀNG ---------------- */
@@ -1038,7 +1041,7 @@
         });
     }
 
-    /* ---------------- NHẬP KHO (ADMIN) ---------------- */
+    /* ---------------- NHẬP KHO ---------------- */
     function selectImpSup(s) { document.getElementById('imp-sup-input').value = `${s.name} - ${s.phone}`; document.getElementById('imp-sup-id').value = s.id; }
     function addProdToImp(p) { let ex = impCart.find(i => i.id === p.id); if(ex) ex.qty++; else impCart.push({ id: p.id, name: p.name, cost: p.cost||0, qty: 1 }); document.getElementById('imp-prod-input').value=''; renderImpCart(); }
     function updateImpQty(idx, v) { impCart[idx].qty = parseInt(v)||1; renderImpCart(); } 
@@ -1132,7 +1135,7 @@
         }); 
     }
     
-    // XỬ LÝ NÚT TÁC VỤ CHO MÁY VÀ LỊCH SỬ
+    // XỬ LÝ NÚT TÁC VỤ 
     function openSrvAction(id, isDone) {
         document.getElementById('srv-action-id').value = id;
         document.getElementById('srv-action-edit').style.display = isDone ? 'none' : 'block';
@@ -1162,7 +1165,7 @@
         setTimeout(() => deleteItemToBin(id, 'Giao Dịch', transactions, x => x.details), 300);
     }
 
-    /* ---------------- SỔ QUỸ (ĐÃ CẬP NHẬT TÍNH NĂNG VAY MƯỢN) ---------------- */
+    /* ---------------- SỔ QUỸ (VAY MƯỢN) ---------------- */
     function submitCashbook() { 
         let a = getVal('cb-amt'), t = document.getElementById('cb-type').value, r = document.getElementById('cb-reason').value.trim(); 
         let creditor = '';
@@ -1252,7 +1255,7 @@
     }
 
     function setCbDate(type) { 
-        if(activeUser === 'ADMIN') { 
+        if(isBoss()) { 
             if(type === 'today') { document.getElementById('cb-from').value = getToday(); document.getElementById('cb-to').value = getToday(); } 
             else if (type === 'month') { document.getElementById('cb-from').value = getToday().substring(0,8) + '01'; document.getElementById('cb-to').value = getToday(); } 
         } else { if(type === 'today') document.getElementById('cb-staff-date').value = getToday(); } 
@@ -1454,7 +1457,7 @@
 
     /* ---------------- RENDER ALL BẢNG ---------------- */
     function renderData() {
-        if(activeUser==='ADMIN') {
+        if(isBoss()) {
             if(document.getElementById('dash-date')) renderDashboard();
             document.getElementById('cfg-name').value = storeInfo.name || ''; document.getElementById('cfg-addr').value = storeInfo.address || ''; document.getElementById('cfg-phone').value = storeInfo.phone || ''; document.getElementById('cfg-logo').value = storeInfo.logoUrl || '';
             
@@ -1468,7 +1471,7 @@
             document.getElementById('recycle-bin-table').innerHTML = recycleBin.slice().reverse().map(rb => `<tr><td style="font-size:0.8rem;">${rb.deletedAt}</td><td><span class="badge" style="background:#f1f5f9; color:var(--text-muted);">${rb.type}</span></td><td><b style="font-size:0.85rem;">${rb.label}</b></td><td><button class="btn btn-info" style="padding:4px 8px; font-size:0.8rem; background:var(--info); color:#fff;" onclick="restoreBinItem('${rb.id}')">♻️ Khôi Phục</button></td></tr>`).join('') || `<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:20px;">Thùng rác sạch sẽ ✨</td></tr>`;
         }
 
-        let isAdmin = (activeUser === 'ADMIN');
+        let isAdmin = isBoss();
         document.getElementById('inv-tbl').innerHTML = inventory.map(i=>`
             <tr>
                 <td><b>${i.name}</b></td>
@@ -1498,8 +1501,8 @@
 
         renderHistoryTable();
 
-        let cbFrom = activeUser==='ADMIN' ? document.getElementById('cb-from').value : document.getElementById('cb-staff-date').value;
-        let cbTo = activeUser==='ADMIN' ? document.getElementById('cb-to').value : document.getElementById('cb-staff-date').value;
+        let cbFrom = isBoss() ? document.getElementById('cb-from').value : document.getElementById('cb-staff-date').value;
+        let cbTo = isBoss() ? document.getElementById('cb-to').value : document.getElementById('cb-staff-date').value;
         if(!cbFrom) cbFrom = getToday(); if(!cbTo) cbTo = getToday();
         
         let netStart = 0, inC = 0, outC = 0, cbArrIn = [], cbArrOut = [];
@@ -1514,9 +1517,8 @@
             } 
         });
         
-        // HỆ THỐNG VAY NỢ - TÍNH TOÁN DÒNG TIỀN TRONG KÉT
         cashflow.forEach(c=>{ 
-            let canDelete = (activeUser === 'ADMIN' || c.staffId === activeUser); 
+            let canDelete = (isBoss() || c.staffId === activeUser); 
             let sName = staffs.find(x=>x.id===c.staffId)?.name || '';
             if(c.type==='thu' || c.type==='vay_muon') { 
                 if(c.date < cbFrom) { netStart += c.amount; } 
@@ -1533,12 +1535,12 @@
             }
         });
         
-        if(activeUser === 'ADMIN') setTxt('cb-net', netStart + inC - outC);
+        if(isBoss()) setTxt('cb-net', netStart + inC - outC);
         
-        let inHtml = cbArrIn.sort((a,b)=>b.t.localeCompare(a.t)).map(c=>`<tr><td><small>${c.dt}</small></td>${activeUser==='ADMIN'?`<td>${c.staff}</td>`:''}<td>${c.note}</td><td style="text-align:right; font-weight:bold; color:var(--success);">+${c.amt.toLocaleString()}đ</td><td>${!c.isTx && c.canDel ? `<button class="btn btn-outline" style="padding:4px 8px; color:var(--danger); border:none;" onclick="deleteItemToBin('${c.id}', 'Sổ Quỹ', cashflow, x => x.reason)">🗑️</button>` : ''}</td></tr>`).join('');
-        document.getElementById('cb-tbl-in').innerHTML = inHtml || `<tr><td colspan="${activeUser==='ADMIN'?5:4}" style="text-align:center; color:var(--text-muted);">Không có phiếu thu</td></tr>`;
-        let outHtml = cbArrOut.sort((a,b)=>b.t.localeCompare(a.t)).map(c=>`<tr><td><small>${c.dt}</small></td>${activeUser==='ADMIN'?`<td>${c.staff}</td>`:''}<td>${c.note}</td><td style="text-align:right; font-weight:bold; color:var(--danger);">-${c.amt.toLocaleString()}đ</td><td>${!c.isTx && c.canDel ? `<button class="btn btn-outline" style="padding:4px 8px; color:var(--danger); border:none;" onclick="deleteItemToBin('${c.id}', 'Sổ Quỹ', cashflow, x => x.reason)">🗑️</button>` : ''}</td></tr>`).join('');
-        document.getElementById('cb-tbl-out').innerHTML = outHtml || `<tr><td colspan="${activeUser==='ADMIN'?5:4}" style="text-align:center; color:var(--text-muted);">Không có phiếu chi</td></tr>`;
+        let inHtml = cbArrIn.sort((a,b)=>b.t.localeCompare(a.t)).map(c=>`<tr><td><small>${c.dt}</small></td>${isBoss()?`<td>${c.staff}</td>`:''}<td>${c.note}</td><td style="text-align:right; font-weight:bold; color:var(--success);">+${c.amt.toLocaleString()}đ</td><td>${!c.isTx && c.canDel ? `<button class="btn btn-outline" style="padding:4px 8px; color:var(--danger); border:none;" onclick="deleteItemToBin('${c.id}', 'Sổ Quỹ', cashflow, x => x.reason)">🗑️</button>` : ''}</td></tr>`).join('');
+        document.getElementById('cb-tbl-in').innerHTML = inHtml || `<tr><td colspan="${isBoss()?5:4}" style="text-align:center; color:var(--text-muted);">Không có phiếu thu</td></tr>`;
+        let outHtml = cbArrOut.sort((a,b)=>b.t.localeCompare(a.t)).map(c=>`<tr><td><small>${c.dt}</small></td>${isBoss()?`<td>${c.staff}</td>`:''}<td>${c.note}</td><td style="text-align:right; font-weight:bold; color:var(--danger);">-${c.amt.toLocaleString()}đ</td><td>${!c.isTx && c.canDel ? `<button class="btn btn-outline" style="padding:4px 8px; color:var(--danger); border:none;" onclick="deleteItemToBin('${c.id}', 'Sổ Quỹ', cashflow, x => x.reason)">🗑️</button>` : ''}</td></tr>`).join('');
+        document.getElementById('cb-tbl-out').innerHTML = outHtml || `<tr><td colspan="${isBoss()?5:4}" style="text-align:center; color:var(--text-muted);">Không có phiếu chi</td></tr>`;
     }
 
     function renderHistoryTable() {
