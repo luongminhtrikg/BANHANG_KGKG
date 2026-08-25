@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Lương Gia KG - V21.0 (Bản Hoàn Chỉnh)</title>
+    <title>Lương Gia KG - V22.0 (Bản Siêu Hoàn Chỉnh)</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -74,6 +74,8 @@
         #print-area { display: none; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         #mobile-menu-btn { display: none; background: none; border: none; font-size: 1.5rem; cursor: pointer; }
+        
+        /* Phân quyền class */
         .staff-only { display: none; }
         .admin-only { display: none; }
         
@@ -113,7 +115,7 @@
     <div id="loginOverlay" style="position:fixed; inset:0; background:#1c252e; z-index:15000; display:flex; justify-content:center; align-items:center;">
         <div class="card" style="width: 90%; max-width: 400px; text-align: center; padding: 40px 20px;">
             <h2 style="color:var(--primary); margin-top:0;">LƯƠNG GIA KG</h2>
-            <p style="color:var(--text-muted); margin-bottom:10px;">Phần mềm quản lý V21.0</p>
+            <p style="color:var(--text-muted); margin-bottom:10px;">Phần mềm quản lý V22.0</p>
             <div id="net-status" style="font-size:0.8rem; color:var(--warning); margin-bottom:15px; min-height:15px;">Đang dò kết nối máy chủ...</div>
             <select id="login-user" class="form-control" style="margin-bottom:15px;"></select>
             <input type="password" id="login-pass" class="form-control" placeholder="Mật khẩu..." style="margin-bottom:20px;" onkeypress="if(event.key==='Enter') doLogin()">
@@ -359,13 +361,14 @@
                         <div class="card" style="background:#fff;">
                             <h3 class="card-title">📝 Lập Phiếu Thu/Chi</h3>
                             
+                            <!-- ĐÓNG ĐINH HTML ĐỂ CHỐNG ĐƠ SAFARI / ĐIỆN THOẠI -->
                             <div class="form-group">
-    <label>Loại Phiếu:</label>
-    <select id="cb-type" class="form-control" onchange="toggleCreditorField()">
-        <option value="chi">🔴 Chi Tiền (Điện, nước, nhập hàng...)</option>
-        <option value="thu">🟢 Thu Khác (Bán phế liệu...)</option>
-    </select>
-</div>
+                                <label>Loại Phiếu:</label>
+                                <select id="cb-type" class="form-control" onchange="toggleCreditorField()">
+                                    <option value="chi">🔴 Chi Tiền (Điện, nước, nhập hàng...)</option>
+                                    <option value="thu">🟢 Thu Khác (Bán phế liệu...)</option>
+                                </select>
+                            </div>
                             
                             <!-- KHUNG CHỦ NỢ (Mặc định ẩn, chỉ hiện khi mượn/trả nợ) -->
                             <div id="cb-creditor-wrap" style="display:none; background:#f0fdf4; padding:12px; border-radius:8px; margin-bottom:15px; border:1px solid var(--success);">
@@ -926,11 +929,12 @@
     
     function logout() { activeUser=null; localStorage.removeItem('lg_user'); location.reload(); }
     
-function initSession() {
+    // ĐÃ TÍCH HỢP TOÀN BỘ FIX MENU VÀ PHÂN QUYỀN SỔ QUỸ VÀO ĐÂY
+    function initSession() {
         let s = staffs.find(x=>x.id===activeUser); 
         setTxt('top-user', s ? s.name : 'Vô danh');
         
-        // Phân quyền ẩn/hiện giao diện
+        // Phân quyền Menu & Giao diện (Đã fix lỗi nhảy dòng Menu)
         document.querySelectorAll('.admin-only').forEach(el => el.style.display = activeUser==='ADMIN'?'flex':'none');
         document.querySelectorAll('th.admin-only, td.admin-only').forEach(el => el.style.display = activeUser==='ADMIN'?'table-cell':'none');
         document.querySelectorAll('.staff-only').forEach(el => el.style.display = activeUser!=='ADMIN'?'flex':'none');
@@ -942,7 +946,7 @@ function initSession() {
         // --- CHỐT DANH SÁCH LẬP PHIẾU THEO QUYỀN ---
         let cbType = document.getElementById('cb-type');
         if(cbType) {
-            cbType.options.length = 0; // Xóa sạch bộ nhớ đệm chống đơ
+            cbType.options.length = 0; // Xóa sạch bộ nhớ đệm chống đơ Safari/Mobile
             cbType.options.add(new Option('🔴 Chi Tiền (Điện, nước, nhập hàng...)', 'chi'));
             cbType.options.add(new Option('🟢 Thu Khác (Bán phế liệu, đồng nát...)', 'thu'));
             
@@ -1171,8 +1175,8 @@ function initSession() {
             if (!r && t === 'vay_muon') r = `Mượn tiền của ${creditor}`;
             if (!r && t === 'tra_no') r = `Trả nợ vay cho ${creditor}`;
             
-            if (t === 'tra_no' && window.tempDebts && a > window.tempDebts[creditor]) {
-                return uiAlert(`❌ Không được trả lố! Bạn chỉ đang nợ ${window.tempDebts[creditor].toLocaleString()}đ`);
+            if (t === 'tra_no' && window.tempDebts && a > (window.tempDebts[creditor]||0)) {
+                return uiAlert(`❌ Không được trả lố! Bạn chỉ đang nợ ${(window.tempDebts[creditor]||0).toLocaleString()}đ`);
             }
         }
         
@@ -1395,6 +1399,7 @@ function initSession() {
                 let s = t.staffId || 'ADMIN'; if(!staffStats[s]) staffStats[s] = {r:0, c:0}; staffStats[s].r += amt; staffStats[s].c += (t.totalCost||0);
             }
         });
+        // SỔ NỢ: Không cộng phần vay_muon hoặc tra_no vào Lợi nhuận
         cashflow.forEach(c => { 
             if(c.date >= from && c.date <= to) { 
                 if(c.type === 'thu') inOther += c.amount; 
