@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Lương Gia KG - V20.0 (Giao diện Tối Ưu)</title>
+    <title>Lương Gia KG - V21.0 (Bản Hoàn Chỉnh)</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -113,7 +113,7 @@
     <div id="loginOverlay" style="position:fixed; inset:0; background:#1c252e; z-index:15000; display:flex; justify-content:center; align-items:center;">
         <div class="card" style="width: 90%; max-width: 400px; text-align: center; padding: 40px 20px;">
             <h2 style="color:var(--primary); margin-top:0;">LƯƠNG GIA KG</h2>
-            <p style="color:var(--text-muted); margin-bottom:10px;">Phần mềm quản lý V20.0</p>
+            <p style="color:var(--text-muted); margin-bottom:10px;">Phần mềm quản lý V21.0</p>
             <div id="net-status" style="font-size:0.8rem; color:var(--warning); margin-bottom:15px; min-height:15px;">Đang dò kết nối máy chủ...</div>
             <select id="login-user" class="form-control" style="margin-bottom:15px;"></select>
             <input type="password" id="login-pass" class="form-control" placeholder="Mật khẩu..." style="margin-bottom:20px;" onkeypress="if(event.key==='Enter') doLogin()">
@@ -130,10 +130,7 @@
             <div class="nav-item" onclick="switchTab('service')">🛠️ Tiếp Nhận & Trả Máy</div>
             <div class="nav-item" onclick="switchTab('cashbook')">💰 Sổ Quỹ Két</div>
             <div class="nav-item" onclick="switchTab('inventory')">📦 Kho & Nhập Hàng</div>
-            
-            <!-- Chỗ này hôm trước bro bị rớt thẻ đóng </div> nè -->
             <div class="nav-item admin-only" onclick="switchTab('partners')">👥 Đối Tác (Khách/NCC)</div>
-            
             <div class="nav-item admin-only" onclick="switchTab('reports')">📈 Báo Cáo KQKD</div>
             <div class="nav-item" onclick="switchTab('history')">📜 Lịch Sử Hóa Đơn</div>
             <div class="nav-item admin-only" onclick="switchTab('admin')">⚙️ Cài Đặt HT</div>
@@ -225,7 +222,6 @@
                         <div class="card">
                             <div class="card-header" style="flex-wrap:wrap; gap:10px;">
                                 <h3 class="card-title">📦 Danh Mục Hàng Hóa</h3>
-                                <!-- THÊM NÚT THÊM HÀNG CHO TẤT CẢ MỌI NGƯỜI (GIAO DIỆN MỚI) -->
                                 <button class="btn btn-primary" onclick="openModal('quickAddModal')">➕ Thêm Hàng</button>
                             </div>
                             <input type="text" id="search-inv" class="form-control" placeholder="Lọc hàng hóa..." onkeyup="filterTable('inv-tbl', this.value)" style="margin-bottom:15px;">
@@ -245,7 +241,6 @@
                             </div>
                         </div>
                     </div>
-                    <!-- Khung nhập hàng chỉ dành cho Admin -->
                     <div class="col admin-only" style="flex:1;">
                         <div class="card" style="border-color: var(--success); background:#f8fafc;">
                             <div class="card-header"><h3 class="card-title" style="color:var(--success);">📥 Lập Phiếu Nhập Lô</h3></div>
@@ -277,7 +272,6 @@
                         <div class="card">
                             <h3 class="card-title" style="margin-bottom:15px;">📋 Máy Đang Nằm Viện</h3>
                             <div class="table-wrap">
-                                <!-- GIAO DIỆN BẢNG NHẬN MÁY MỚI -->
                                 <table>
                                     <thead>
                                         <tr>
@@ -364,10 +358,19 @@
                     <div class="col" style="flex:1;">
                         <div class="card" style="background:#fff;">
                             <h3 class="card-title">📝 Lập Phiếu Thu/Chi</h3>
-                            <div class="form-group"><label>Loại Phiếu:</label><select id="cb-type" class="form-control"><option value="chi">🔴 Chi Tiền (Điện, nước, nhập hàng...)</option><option value="thu">🟢 Thu Khác (Bán phế liệu, đồng nát...)</option><option value="vay_muon">🔵 Nhận Tiền Vay / Mượn (Không cộng lợi nhuận)</option><option value="tra_no">🟣 Trả Nợ Vay (Trừ quỹ, không trừ lợi nhuận)</option></select></div>
-                            <div class="form-group"><label>Số tiền:</label><input type="text" inputmode="numeric" id="cb-amt" class="form-control" value="0" oninput="formatNum(this)" style="font-weight:bold; font-size:1.1rem;"></div>
-                            <div class="form-group"><label>Lý do / Diễn giải:</label><input type="text" id="cb-reason" class="form-control"></div>
-                            <button class="btn btn-primary" style="width:100%;" onclick="submitCashbook()">LƯU SỔ QUỸ</button>
+                            
+                            <div class="form-group"><label>Loại Phiếu:</label><select id="cb-type" class="form-control" onchange="toggleCreditorField()"></select></div>
+                            
+                            <!-- KHUNG CHỦ NỢ (Mặc định ẩn, chỉ hiện khi mượn/trả nợ) -->
+                            <div id="cb-creditor-wrap" style="display:none; background:#f0fdf4; padding:12px; border-radius:8px; margin-bottom:15px; border:1px solid var(--success);">
+                                <label id="cb-creditor-label" style="color:var(--success); margin-bottom:5px; font-weight:700;">Chủ Nợ / Ngân Hàng:</label>
+                                <div id="cb-creditor-input-area"></div>
+                                <div id="cb-creditor-debt-info" style="display:none; font-size:0.95rem; margin-top:8px; color:var(--danger); font-weight:bold;"></div>
+                            </div>
+
+                            <div class="form-group"><label>Số tiền (đ):</label><input type="text" inputmode="numeric" id="cb-amt" class="form-control" value="0" oninput="formatNum(this)" style="font-weight:bold; font-size:1.2rem; color:var(--primary);"></div>
+                            <div class="form-group"><label>Lý do / Diễn giải:</label><input type="text" id="cb-reason" class="form-control" placeholder="Ghi chú thêm..."></div>
+                            <button class="btn btn-primary" style="width:100%; padding:12px; font-size:1rem;" onclick="submitCashbook()">LƯU SỔ QUỸ</button>
                         </div>
                     </div>
                 </div>
@@ -400,7 +403,7 @@
                 </div>
             </div>
 
-            <!-- BÁO CÁO (ĐÃ CẬP NHẬT GIAO DIỆN CHỌN NGÀY SIÊU MỎNG) -->
+            <!-- BÁO CÁO KẾT QUẢ KINH DOANH -->
             <div id="reports" class="tab-content">
                 <div class="card" style="padding: 12px 15px;">
                     <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;">
@@ -453,7 +456,6 @@
                     <div class="col card" style="padding:15px; border-top:4px solid var(--primary);">
                         <h4 style="text-align:center; color:var(--primary); margin-top:0;">🛒 LỊCH SỬ BÁN HÀNG & DỊCH VỤ</h4>
                         <div class="table-wrap">
-                            <!-- BẢNG LỊCH SỬ MỚI GỌN GÀNG HƠN -->
                             <table>
                                 <thead>
                                     <tr>
@@ -528,7 +530,6 @@
 
     <!-- CÁC HỘP THOẠI MODALS -->
     
-    <!-- MODAL MENU NÚT SỬA (MỚI THÊM) -->
     <div id="srvActionModal" class="modal-overlay">
         <div class="modal-box" style="max-width: 320px; text-align:center; padding: 25px;">
             <h3 class="modal-title" style="margin-top:0;">Tùy Chọn Phiếu Máy</h3>
@@ -919,6 +920,7 @@
     
     function logout() { activeUser=null; localStorage.removeItem('lg_user'); location.reload(); }
     
+    // ĐÃ TÍCH HỢP TOÀN BỘ FIX MENU VÀ PHÂN QUYỀN SỔ QUỸ VÀO ĐÂY
     function initSession() {
         let s = staffs.find(x=>x.id===activeUser); 
         setTxt('top-user', s ? s.name : 'Vô danh');
@@ -931,6 +933,17 @@
         document.getElementById('cb-staff-date').value = getToday(); 
         setCbDate('today');
         
+        // --- ĐOẠN CODE PHÂN QUYỀN Ô CHỌN SỔ QUỸ TỰ ĐỘNG ---
+        let cbType = document.getElementById('cb-type');
+        if(cbType) {
+            cbType.innerHTML = `<option value="chi">🔴 Chi Tiền (Điện, nước, nhập hàng, ăn uống...)</option><option value="thu">🟢 Thu Khác (Bán phế liệu, đồng nát...)</option>`;
+            if(activeUser === 'ADMIN') {
+                cbType.innerHTML += `<option value="vay_muon">🔵 Nhận Tiền Vay / Mượn</option><option value="tra_no">🟣 Trả Nợ Vay</option>`;
+            }
+        }
+        toggleCreditorField(); // Khởi động lại giao diện cho chắc
+        // ---------------------------------------------------
+
         switchTab(activeUser==='ADMIN' ? 'dashboard' : 'pos');
     }
 
@@ -1132,16 +1145,95 @@
         setTimeout(() => deleteItemToBin(id, 'Giao Dịch', transactions, x => x.details), 300);
     }
 
-    /* ---------------- SỔ QUỸ & ĐỐI TÁC ---------------- */
+    /* ---------------- SỔ QUỸ (ĐÃ CẬP NHẬT TÍNH NĂNG VAY MƯỢN) ---------------- */
     function submitCashbook() { 
         let a = getVal('cb-amt'), t = document.getElementById('cb-type').value, r = document.getElementById('cb-reason').value.trim(); 
+        let creditor = '';
+        
+        if (t === 'vay_muon' || t === 'tra_no') {
+            let credEl = document.getElementById('cb-creditor-name');
+            creditor = credEl ? credEl.value.trim() : '';
+            if (!creditor) return uiAlert('❌ Vui lòng nhập hoặc chọn Tên chủ nợ!');
+            
+            if (!r && t === 'vay_muon') r = `Mượn tiền của ${creditor}`;
+            if (!r && t === 'tra_no') r = `Trả nợ vay cho ${creditor}`;
+            
+            if (t === 'tra_no' && window.tempDebts && a > window.tempDebts[creditor]) {
+                return uiAlert(`❌ Không được trả lố! Bạn chỉ đang nợ ${window.tempDebts[creditor].toLocaleString()}đ`);
+            }
+        }
+        
         if(a<=0 || !r) return uiAlert('Nhập đủ số tiền và lý do!'); 
-        uiConfirm("Lưu vào sổ quỹ?", () => { 
-            cashflow.push({id: genId('CF'), date: getToday(), time: getTime(), type: t, amount: a, reason: r, staffId: activeUser}); 
-            pushDB(); setVal('cb-amt',0); document.getElementById('cb-reason').value=''; 
-            renderData(); setTimeout(()=>uiAlert('Lưu sổ quỹ OK!'),200); 
+        
+        uiConfirm("Lưu phiếu vào Sổ Quỹ?", () => { 
+            let newFlow = {id: genId('CF'), date: getToday(), time: getTime(), type: t, amount: a, reason: r, staffId: activeUser};
+            if(creditor) newFlow.creditor = creditor; 
+            
+            cashflow.push(newFlow); 
+            pushDB(); 
+            setVal('cb-amt',0); document.getElementById('cb-reason').value=''; 
+            
+            if(t === 'vay_muon' || t === 'tra_no') toggleCreditorField(); 
+            
+            renderData(); setTimeout(()=>uiAlert('✅ Lưu sổ quỹ thành công!'), 200); 
         }); 
     }
+
+    function toggleCreditorField() {
+        let cbType = document.getElementById('cb-type');
+        if(!cbType) return;
+        let t = cbType.value;
+        let wrap = document.getElementById('cb-creditor-wrap');
+        let inpArea = document.getElementById('cb-creditor-input-area');
+        let info = document.getElementById('cb-creditor-debt-info');
+        
+        if (t === 'vay_muon') {
+            wrap.style.display = 'block';
+            document.getElementById('cb-creditor-label').innerText = 'Mượn của ai (Tên Chủ nợ / Ngân hàng):';
+            inpArea.innerHTML = `<input type="text" id="cb-creditor-name" class="form-control" placeholder="Ví dụ: Anh Ba, Sacombank..." style="border-color:var(--success);">`;
+            info.style.display = 'none';
+            setVal('cb-amt', 0); document.getElementById('cb-reason').value = '';
+        } else if (t === 'tra_no') {
+            wrap.style.display = 'block';
+            document.getElementById('cb-creditor-label').innerText = 'Chọn chủ nợ để trả:';
+            
+            let debts = {};
+            cashflow.forEach(c => {
+                if (c.type === 'vay_muon' && c.creditor) debts[c.creditor] = (debts[c.creditor] || 0) + c.amount;
+                else if (c.type === 'tra_no' && c.creditor) debts[c.creditor] = (debts[c.creditor] || 0) - c.amount;
+            });
+            
+            let options = '<option value="" disabled selected>-- Chọn chủ nợ đang thiếu --</option>';
+            let hasDebt = false;
+            for (let k in debts) {
+                if (debts[k] > 0) {
+                    options += `<option value="${k}">${k} (Đang thiếu: ${debts[k].toLocaleString()}đ)</option>`;
+                    hasDebt = true;
+                }
+            }
+            if(!hasDebt) options = '<option value="" disabled selected>-- Hiện không nợ ai cả! --</option>';
+            
+            inpArea.innerHTML = `<select id="cb-creditor-name" class="form-control" style="border-color:var(--success); font-weight:bold;" onchange="showCreditorDebt(this.value)">${options}</select>`;
+            info.style.display = 'none';
+            window.tempDebts = debts;
+            setVal('cb-amt', 0); document.getElementById('cb-reason').value = '';
+        } else {
+            if(wrap) wrap.style.display = 'none';
+        }
+    }
+    
+    function showCreditorDebt(name) {
+        let info = document.getElementById('cb-creditor-debt-info');
+        if(name && window.tempDebts && window.tempDebts[name]) {
+            info.innerText = `⚠️ Còn nợ: ${window.tempDebts[name].toLocaleString()} đ`;
+            info.style.display = 'block';
+            setVal('cb-amt', window.tempDebts[name]); 
+        } else {
+            info.style.display = 'none';
+            setVal('cb-amt', 0);
+        }
+    }
+
     function setCbDate(type) { 
         if(activeUser === 'ADMIN') { 
             if(type === 'today') { document.getElementById('cb-from').value = getToday(); document.getElementById('cb-to').value = getToday(); } 
@@ -1150,6 +1242,7 @@
         renderData(); 
     }
     
+    /* ---------------- ĐỐI TÁC VÀ HÀNG HÓA ---------------- */
     function saveProduct() { let id = document.getElementById('qa-id').value.trim(); if(!id) id = genId('SP'); let name = document.getElementById('qa-name').value.trim(), cost = getVal('qa-cost'), price = getVal('qa-price'), stock = getVal('qa-stock'), minStock = getVal('qa-minstock'); if(!name) return uiAlert('Nhập Tên hàng!'); if(inventory.find(x=>x.name.toLowerCase()===name.toLowerCase())) return uiAlert('Tên hàng này đã có trong kho!'); inventory.push({id, name, cost, price, stock, minStock}); pushDB(); closeModal('quickAddModal'); document.getElementById('qa-id').value=''; document.getElementById('qa-name').value=''; setVal('qa-cost',0); setVal('qa-price',0); setVal('qa-stock',0); setVal('qa-minstock',0); renderData(); setTimeout(()=>uiAlert('✅ Đã thêm mặt hàng!'),200); }
     function saveCustomer() { let name=document.getElementById('qc-name').value.trim(), phone=document.getElementById('qc-phone').value.trim(), isMonthly = document.getElementById('qc-monthly').checked; if(!name) return uiAlert('Nhập tên!'); let id = genId('KH'); customers.push({id, name, phone, isMonthlyDebt: isMonthly}); pushDB(); closeModal('quickAddCusModal'); document.getElementById('qc-name').value=''; document.getElementById('qc-phone').value=''; document.getElementById('qc-monthly').checked=false; renderData(); setTimeout(()=>uiAlert('Lưu Khách OK!'),200); }
     function saveSupplier() { let name=document.getElementById('qs-name').value.trim(), phone=document.getElementById('qs-phone').value.trim(); if(!name) return uiAlert('Nhập tên!'); let id = genId('NCC'); suppliers.push({id, name, phone}); pushDB(); closeModal('addSupModal'); document.getElementById('qs-name').value=''; document.getElementById('qs-phone').value=''; renderData(); setTimeout(()=>uiAlert('Lưu NCC OK!'),200); }
@@ -1289,7 +1382,12 @@
                 let s = t.staffId || 'ADMIN'; if(!staffStats[s]) staffStats[s] = {r:0, c:0}; staffStats[s].r += amt; staffStats[s].c += (t.totalCost||0);
             }
         });
-        cashflow.forEach(c => { if(c.date >= from && c.date <= to) { if(c.type === 'thu') inOther += c.amount; else if(c.type === 'chi' || c.type === 'chi_ncc') outOther += c.amount; } });
+        cashflow.forEach(c => { 
+            if(c.date >= from && c.date <= to) { 
+                if(c.type === 'thu') inOther += c.amount; 
+                else if(c.type === 'chi' || c.type === 'chi_ncc') outOther += c.amount; 
+            } 
+        });
         let totalProfit = (rev - cost) + srv + inOther - outOther;
         
         document.getElementById('rp-cards').innerHTML = `
@@ -1352,7 +1450,6 @@
             document.getElementById('recycle-bin-table').innerHTML = recycleBin.slice().reverse().map(rb => `<tr><td style="font-size:0.8rem;">${rb.deletedAt}</td><td><span class="badge" style="background:#f1f5f9; color:var(--text-muted);">${rb.type}</span></td><td><b style="font-size:0.85rem;">${rb.label}</b></td><td><button class="btn btn-info" style="padding:4px 8px; font-size:0.8rem; background:var(--info); color:#fff;" onclick="restoreBinItem('${rb.id}')">♻️ Khôi Phục</button></td></tr>`).join('') || `<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:20px;">Thùng rác sạch sẽ ✨</td></tr>`;
         }
 
-        // BẢNG KHO HÀNG (MỚI TỐI ƯU GIAO DIỆN)
         let isAdmin = (activeUser === 'ADMIN');
         document.getElementById('inv-tbl').innerHTML = inventory.map(i=>`
             <tr>
@@ -1368,7 +1465,6 @@
         serviceOrders.slice().forEach(o => { if(o.status.includes('Đã trả') || o.status.includes('Đã giao')) doneSrv.push(o); else activeSrv.push(o); });
         doneSrv.sort((a, b) => ((b.receiveDate||'')+(b.receiveTime||'')).localeCompare((a.receiveDate||'')+(a.receiveTime||'')));
         
-        // BẢNG TIẾP NHẬN MÁY (MỚI TỐI ƯU GIAO DIỆN)
         let mapSrv = (o, isDone) => { 
             let c=customers.find(x=>x.id===o.customerId); 
             let statHtml = isDone ? `<span class="badge" style="background:#f4f6f8; color:${o.status==='Đã trả khách'?'var(--success)':'var(--text-muted)'};">${o.status}</span>` : `<select style="width:100%; padding:6px; border-radius:6px; border:1px solid #ccc; font-size:0.85rem;" onchange="changeSrvStatus('${o.id}', this.value, this)"><option value="${o.status}" selected disabled>${o.status}</option><option value="Đang sửa">Đang sửa</option><option value="Chờ linh kiện">Chờ LK</option><option value="Chờ khách lấy">Chờ khách lấy</option><option value="Không sửa được (Chờ trả)">Không sửa được (Chờ trả)</option><option value="Không sửa được (Đã trả)">Đã trả (Không sửa được)</option><option value="Đã trả khách">Đã giao (Thu tiền)</option></select>`; 
@@ -1399,18 +1495,22 @@
                 } 
             } 
         });
+        
+        // HỆ THỐNG VAY NỢ - TÍNH TOÁN DÒNG TIỀN TRONG KÉT
         cashflow.forEach(c=>{ 
             let canDelete = (activeUser === 'ADMIN' || c.staffId === activeUser); 
             let sName = staffs.find(x=>x.id===c.staffId)?.name || '';
-           if(c.type==='thu' || c.type==='vay_muon') { 
-                if(c.date < cbFrom) { netStart += c.amount; }
+            if(c.type==='thu' || c.type==='vay_muon') { 
+                if(c.date < cbFrom) { netStart += c.amount; } 
                 else if(c.date >= cbFrom && c.date <= cbTo) { 
-                    inC += c.amount; cbArrIn.push({dt: `${formatD(c.date)}<br>${c.time||''}`, t: c.date+(c.time||''), note:c.reason, amt:c.amount, id:c.id, isTx:false, canDel: canDelete, staff: sName}); 
+                    inC += c.amount; 
+                    cbArrIn.push({dt: `${formatD(c.date)}<br>${c.time||''}`, t: c.date+(c.time||''), note:c.reason, amt:c.amount, id:c.id, isTx:false, canDel: canDelete, staff: sName}); 
                 } 
-            } else { 
+            } else if (c.type==='chi' || c.type==='chi_ncc' || c.type==='tra_no') { 
                 if(c.date < cbFrom) { netStart -= c.amount; } 
                 else if(c.date >= cbFrom && c.date <= cbTo) { 
-                    outC += c.amount; cbArrOut.push({dt: `${formatD(c.date)}<br>${c.time||''}`, t: c.date+(c.time||''), note:c.reason, amt:c.amount, id:c.id, isTx:false, canDel: canDelete, staff: sName}); 
+                    outC += c.amount; 
+                    cbArrOut.push({dt: `${formatD(c.date)}<br>${c.time||''}`, t: c.date+(c.time||''), note:c.reason, amt:c.amount, id:c.id, isTx:false, canDel: canDelete, staff: sName}); 
                 } 
             }
         });
@@ -1423,7 +1523,6 @@
         document.getElementById('cb-tbl-out').innerHTML = outHtml || `<tr><td colspan="${activeUser==='ADMIN'?5:4}" style="text-align:center; color:var(--text-muted);">Không có phiếu chi</td></tr>`;
     }
 
-    // BẢNG LỊCH SỬ GIAO DỊCH (MỚI TỐI ƯU GIAO DIỆN)
     function renderHistoryTable() {
         let exactCusId = document.getElementById('hist-exact-cusid').value;
         let histSales = [], histPay = [];
