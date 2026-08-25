@@ -364,7 +364,7 @@
                     <div class="col" style="flex:1;">
                         <div class="card" style="background:#fff;">
                             <h3 class="card-title">📝 Lập Phiếu Thu/Chi</h3>
-                            <div class="form-group"><label>Loại Phiếu:</label><select id="cb-type" class="form-control"><option value="chi">🔴 Chi Tiền (Điện, nước, nhập hàng...)</option><option value="thu">🟢 Thu Khác (Bán phế liệu, đồng nát...)</option><option value="vay_muon">🔵 Nhận Tiền Vay / Mượn (Không cộng vào lợi nhuận)</option></select></div>
+                            <div class="form-group"><label>Loại Phiếu:</label><select id="cb-type" class="form-control"><option value="chi">🔴 Chi Tiền (Điện, nước, nhập hàng...)</option><option value="thu">🟢 Thu Khác (Bán phế liệu, đồng nát...)</option><option value="vay_muon">🔵 Nhận Tiền Vay / Mượn (Không cộng lợi nhuận)</option><option value="tra_no">🟣 Trả Nợ Vay (Trừ quỹ, không trừ lợi nhuận)</option></select></div>
                             <div class="form-group"><label>Số tiền:</label><input type="text" inputmode="numeric" id="cb-amt" class="form-control" value="0" oninput="formatNum(this)" style="font-weight:bold; font-size:1.1rem;"></div>
                             <div class="form-group"><label>Lý do / Diễn giải:</label><input type="text" id="cb-reason" class="form-control"></div>
                             <button class="btn btn-primary" style="width:100%;" onclick="submitCashbook()">LƯU SỔ QUỸ</button>
