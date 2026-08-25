@@ -926,11 +926,11 @@
     
     function logout() { activeUser=null; localStorage.removeItem('lg_user'); location.reload(); }
     
-    // ĐÃ TÍCH HỢP TOÀN BỘ FIX MENU VÀ PHÂN QUYỀN SỔ QUỸ VÀO ĐÂY
-    function initSession() {
+function initSession() {
         let s = staffs.find(x=>x.id===activeUser); 
         setTxt('top-user', s ? s.name : 'Vô danh');
         
+        // Phân quyền ẩn/hiện giao diện
         document.querySelectorAll('.admin-only').forEach(el => el.style.display = activeUser==='ADMIN'?'flex':'none');
         document.querySelectorAll('th.admin-only, td.admin-only').forEach(el => el.style.display = activeUser==='ADMIN'?'table-cell':'none');
         document.querySelectorAll('.staff-only').forEach(el => el.style.display = activeUser!=='ADMIN'?'flex':'none');
@@ -939,18 +939,23 @@
         document.getElementById('cb-staff-date').value = getToday(); 
         setCbDate('today');
         
-        // --- ĐOẠN CODE PHÂN QUYỀN Ô CHỌN SỔ QUỸ TỰ ĐỘNG ---
+        // --- CHỐT DANH SÁCH LẬP PHIẾU THEO QUYỀN ---
         let cbType = document.getElementById('cb-type');
-        if(cbType && activeUser === 'ADMIN') {
-            // Kiểm tra xem đã có tùy chọn vay mượn chưa, chưa có thì mới thêm vào
-            let hasVay = Array.from(cbType.options).some(opt => opt.value === 'vay_muon');
-            if(!hasVay) {
-                cbType.add(new Option('🔵 Nhận Tiền Vay / Mượn', 'vay_muon'));
-                cbType.add(new Option('🟣 Trả Nợ Vay', 'tra_no'));
+        if(cbType) {
+            cbType.options.length = 0; // Xóa sạch bộ nhớ đệm chống đơ
+            cbType.options.add(new Option('🔴 Chi Tiền (Điện, nước, nhập hàng...)', 'chi'));
+            cbType.options.add(new Option('🟢 Thu Khác (Bán phế liệu, đồng nát...)', 'thu'));
+            
+            // Nếu đúng là Sếp (ADMIN) thì mới bơm thêm 2 nút Vốn/Nợ vào
+            if(activeUser === 'ADMIN') {
+                cbType.options.add(new Option('🔵 Nhận Tiền Vay / Mượn', 'vay_muon'));
+                cbType.options.add(new Option('🟣 Trả Nợ Vay (Chọn chủ nợ để trả)', 'tra_no'));
             }
         }
+        
+        // Gọi lệnh này để đảm bảo logic Trả Nợ xổ danh sách chủ nợ luôn hoạt động chuẩn
         toggleCreditorField(); 
-        // ---------------------------------------------------
+        // ---------------------------------------------
 
         switchTab(activeUser==='ADMIN' ? 'dashboard' : 'pos');
     }
