@@ -364,7 +364,7 @@
                     <div class="col" style="flex:1;">
                         <div class="card" style="background:#fff;">
                             <h3 class="card-title">📝 Lập Phiếu Thu/Chi</h3>
-                            <div class="form-group"><label>Loại Phiếu:</label><select id="cb-type" class="form-control"><option value="chi">🔴 Chi Tiền (Điện, nước, ăn uống...)</option><option value="thu">🟢 Thu Khác (Mượn tiền, bán phế liệu...)</option></select></div>
+                            <div class="form-group"><label>Loại Phiếu:</label><select id="cb-type" class="form-control"><option value="chi">🔴 Chi Tiền (Điện, nước, nhập hàng...)</option><option value="thu">🟢 Thu Khác (Bán phế liệu, đồng nát...)</option><option value="vay_muon">🔵 Nhận Tiền Vay / Mượn (Không cộng vào lợi nhuận)</option></select></div>
                             <div class="form-group"><label>Số tiền:</label><input type="text" inputmode="numeric" id="cb-amt" class="form-control" value="0" oninput="formatNum(this)" style="font-weight:bold; font-size:1.1rem;"></div>
                             <div class="form-group"><label>Lý do / Diễn giải:</label><input type="text" id="cb-reason" class="form-control"></div>
                             <button class="btn btn-primary" style="width:100%;" onclick="submitCashbook()">LƯU SỔ QUỸ</button>
@@ -1402,8 +1402,8 @@
         cashflow.forEach(c=>{ 
             let canDelete = (activeUser === 'ADMIN' || c.staffId === activeUser); 
             let sName = staffs.find(x=>x.id===c.staffId)?.name || '';
-            if(c.type==='thu') { 
-                if(c.date < cbFrom) { netStart += c.amount; } 
+           if(c.type==='thu' || c.type==='vay_muon') { 
+                if(c.date < cbFrom) { netStart += c.amount; }
                 else if(c.date >= cbFrom && c.date <= cbTo) { 
                     inC += c.amount; cbArrIn.push({dt: `${formatD(c.date)}<br>${c.time||''}`, t: c.date+(c.time||''), note:c.reason, amt:c.amount, id:c.id, isTx:false, canDel: canDelete, staff: sName}); 
                 } 
