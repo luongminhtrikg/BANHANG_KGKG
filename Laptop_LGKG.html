@@ -711,12 +711,10 @@
         el.addEventListener('mousedown', function(e) { if(e.target === this) this.style.display = 'none'; });
     });
 
-    // CẤU HÌNH FIREBASE
     const firebaseConfig = { databaseURL: "https://luonggiakg-default-rtdb.asia-southeast1.firebasedatabase.app/" };
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // KHAI BÁO BIẾN
     let staffs=[], inventory=[], customers=[], suppliers=[], transactions=[], serviceOrders=[], importReceipts=[], cashflow=[], recycleBin=[], activityLogs=[];
     let storeInfo = { name: 'LƯƠNG GIA KG', address: '37 ấp 5, An Biên, Kiên Giang', phone: '0941.113.411', logoUrl: '' };
     
@@ -724,57 +722,52 @@
     let editingTxDate = null, editingTxTime = null; 
     let posCart = [], impCart = [], hoCart = [];
 
-    // 1. HÀM NHẬN DIỆN ÔNG CHỦ (MẠNH NHẤT - CHỐNG MẤT QUYỀN)
+    // HÀM NHẬN DIỆN ÔNG CHỦ (ĐÃ FIX LỖI 100%)
     function isBoss() { 
         if (!activeUser) return false;
-        if (String(activeUser).toUpperCase() === 'ADMIN') return true; 
+        if (activeUser === 'ADMIN') return true; 
         
         let s = staffs.find(x => String(x.id) === String(activeUser)); 
-        
-        // Gộp cả ID đăng nhập và Tên để quét
-        let checkStr = String(activeUser).toLowerCase();
-        if (s && s.name) checkStr += " " + String(s.name).toLowerCase();
-        
-        // Xóa sạch dấu tiếng Việt (trí -> tri, lương -> luong)
-        checkStr = checkStr.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-        
-        return checkStr.includes('tri') || checkStr.includes('admin') || checkStr.includes('chu') || checkStr.includes('boss') || checkStr.includes('luong'); 
+        if (!s) return false;
+
+        let n = (s.name || '').toLowerCase();
+        let i = (s.id || '').toLowerCase();
+
+        // Chỉ cần có chữ "tri" hoặc "trí" là mặc định làm Sếp
+        return n.includes('tri') || n.includes('trí') || n.includes('chu') || n.includes('chủ') || n.includes('boss') || n.includes('luong') ||
+               i.includes('tri') || i.includes('trí') || i.includes('admin');
     }
 
-    // 2. HÀM ÉP CẬP NHẬT QUYỀN VÀ SỔ QUỸ
+    // HÀM ÉP CẬP NHẬT QUYỀN
     function updatePermissions() {
         if(!activeUser) return;
+        let isAd = isBoss();
         
-        let bossStatus = isBoss();
-
-        // Ẩn/Hiện giao diện theo quyền
-        document.querySelectorAll('.admin-only').forEach(el => el.style.display = bossStatus ? 'flex' : 'none');
-        document.querySelectorAll('th.admin-only, td.admin-only').forEach(el => el.style.display = bossStatus ? 'table-cell' : 'none');
-        document.querySelectorAll('.staff-only').forEach(el => el.style.display = !bossStatus ? 'flex' : 'none');
+        document.querySelectorAll('.admin-only').forEach(el => el.style.display = isAd ? 'flex' : 'none');
+        document.querySelectorAll('th.admin-only, td.admin-only').forEach(el => el.style.display = isAd ? 'table-cell' : 'none');
+        document.querySelectorAll('.staff-only').forEach(el => el.style.display = !isAd ? 'flex' : 'none');
         
-        // Cập nhật Select Sổ Quỹ
         let cbType = document.getElementById('cb-type');
         if(cbType) {
             let currentVal = cbType.value; 
-            cbType.innerHTML = ''; 
+            cbType.options.length = 0; 
             cbType.add(new Option('🔴 Chi Tiền (Điện, nước, nhập hàng...)', 'chi'));
             cbType.add(new Option('🟢 Thu Khác (Bán phế liệu, đồng nát...)', 'thu'));
             
-            if(bossStatus) {
+            if(isAd) {
                 cbType.add(new Option('🔵 Nhận Tiền Vay / Mượn', 'vay_muon'));
                 cbType.add(new Option('🟣 Trả Nợ Vay (Chọn chủ nợ để trả)', 'tra_no'));
             }
             
-            // Khôi phục giá trị đang chọn nếu có
             let exists = Array.from(cbType.options).some(o => o.value === currentVal);
-            if(exists) { cbType.value = currentVal; }
-            else { cbType.selectedIndex = 0; }
+            if(exists) cbType.value = currentVal;
+            else if(cbType.options.length > 0) cbType.selectedIndex = 0;
             
             toggleCreditorField(); 
         }
     }
 
-    // 3. HÀM PHỤ TRỢ TIỆN ÍCH
+    // HÀM PHỤ TRỢ
     function getVal(id) { let v = document.getElementById(id).value.replace(/[^0-9]/g, ''); return v ? parseInt(v, 10) : 0; }
     function setVal(id, val) { document.getElementById(id).value = val.toLocaleString('vi-VN'); }
     function setTxt(id, val) { let el = document.getElementById(id); if(el) el.innerText = typeof val==='number' ? val.toLocaleString('vi-VN') : val; }
@@ -785,7 +778,7 @@
     function genId(prefix) { return prefix + '_' + Date.now().toString().slice(-5); }
 
     function logAction(action, detail) { 
-        let s = staffs.find(x=>x.id===activeUser); let sName = s ? s.name : 'Hệ thống';
+        let s = staffs.find(x=>x.id===activeUser); let sName = s ? s.name : (activeUser==='ADMIN'?'Boss':'Hệ thống');
         activityLogs.push({ id: 'LOG_'+Date.now(), time: formatD(getToday()) + ' ' + getTime(), staff: sName, action: action, detail: detail }); 
         if(activityLogs.length > 200) activityLogs.shift(); 
     }
@@ -879,6 +872,23 @@
         for(let r of rows) r.style.display = r.innerText.toLowerCase().includes(f) ? '' : 'none';
     }
 
+    function closeAllAutocomplete() { document.querySelectorAll('.autocomplete-items').forEach(el => el.style.display='none'); }
+    function handleSearch(prefix, dataArr, clickCb) {
+        let listEl = document.getElementById(prefix + '-autocomplete'); listEl.innerHTML=''; listEl.style.display='none';
+        let val = document.getElementById(prefix + '-input').value.toLowerCase();
+        if(!val) return;
+        let matches = dataArr.filter(i => (i.name||'').toLowerCase().includes(val) || (i.phone||'').includes(val) || (i.id||'').toLowerCase().includes(val)).slice(0, 8);
+        if(matches.length > 0) {
+            matches.forEach(item => {
+                let div = document.createElement('div');
+                div.innerHTML = `<b>${item.name}</b> ${item.phone ? ' - '+item.phone : ''} ${item.price ? ' - <span style="color:var(--danger)">'+item.price.toLocaleString()+'đ</span> (Tồn: '+item.stock+')' : ''}`;
+                div.onclick = (e) => { e.stopPropagation(); clickCb(item); listEl.style.display='none'; };
+                listEl.appendChild(div);
+            });
+            listEl.style.display='block';
+        }
+    }
+
     function handleHistAutocomplete() {
         let val = document.getElementById('hist-search-input').value.toLowerCase();
         let listEl = document.getElementById('hist-search-autocomplete');
@@ -905,7 +915,7 @@
         renderHistoryTable(); 
     }
 
-    // 4. KẾT NỐI FIREBASE & ĐĂNG NHẬP
+    // FIREBASE
     db.ref('.info/connected').on('value', function(snap) {
         let el = document.getElementById('net-status'); if(!el) return;
         if (snap.val() === true) { el.innerText = '✅ Đã kết nối máy chủ.'; el.style.color = 'var(--success)'; } 
@@ -924,7 +934,12 @@
         if(d.storeInfo) storeInfo = d.storeInfo;
         
         let lSel = document.getElementById('login-user');
-        if(lSel) lSel.innerHTML = staffs.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+        if(lSel) {
+            // TẠO TÀI KHOẢN CỨU HỘ VÀO DANH SÁCH MẶC ĐỊNH
+            let htmlOptions = staffs.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+            htmlOptions += `<option value="ADMIN" style="color:red; font-weight:bold;">👑 ADMIN (Tài khoản cứu hộ)</option>`;
+            lSel.innerHTML = htmlOptions;
+        }
         
         let saved = localStorage.getItem('lg_user');
         if(saved && !activeUser) { 
@@ -933,7 +948,6 @@
             initSession(); 
         }
         
-        // Khi tải xong dữ liệu, bắt buộc nạp lại quyền
         if(activeUser) {
             updatePermissions();
             renderData();
@@ -947,10 +961,26 @@
         });
     }
 
+    // ĐĂNG NHẬP VỚI CƠ CHẾ CỨU HỘ
     function doLogin() {
-        let u = document.getElementById('login-user').value, p = document.getElementById('login-pass').value;
-        if(!u) return uiAlert('Chưa có danh sách nhân viên. Chờ chút...');
-        
+        let u = document.getElementById('login-user').value;
+        let p = document.getElementById('login-pass').value;
+        if(!u) return uiAlert('Chưa tải xong dữ liệu. Chờ chút...');
+
+        // KIỂM TRA NẾU CHỌN TÀI KHOẢN CỨU HỘ
+        if (u === 'ADMIN') {
+            if (p === 'admin' || p === '123456') { // Mật khẩu dự phòng là admin hoặc 123456
+                activeUser = 'ADMIN'; 
+                localStorage.setItem('lg_user', 'ADMIN'); 
+                document.getElementById('loginOverlay').style.display='none'; 
+                initSession(); 
+                return;
+            } else {
+                return uiAlert('Sai mật khẩu tài khoản Cứu hộ! (Thử: admin hoặc 123456)');
+            }
+        }
+
+        // ĐĂNG NHẬP BÌNH THƯỜNG CHO TRÍ VÀ HIẾU
         let s = staffs.find(x => String(x.id) === String(u));
         if(s && (s.pass === p || s.password === p)) { 
             activeUser=u; localStorage.setItem('lg_user',u); 
@@ -965,12 +995,13 @@
     
     function initSession() {
         let s = staffs.find(x=>String(x.id)===String(activeUser)); 
-        setTxt('top-user', s ? s.name : (activeUser === 'ADMIN' ? 'Boss' : 'Vô danh'));
+        setTxt('top-user', s ? s.name : (activeUser === 'ADMIN' ? '👑 BOSS' : 'Vô danh'));
         document.getElementById('dash-date').value = getToday(); 
         document.getElementById('cb-staff-date').value = getToday(); 
         setCbDate('today');
         
         updatePermissions(); 
+
         switchTab(isBoss() ? 'dashboard' : 'pos');
     }
 
@@ -1014,6 +1045,7 @@
         }
         
         uiConfirm(`Chốt đơn ${paymentType==='cash'?'TIỀN MẶT':'CÔNG NỢ'}?\n- Tổng: ${fin.toLocaleString()}đ\n- Thu: ${paid.toLocaleString()}đ`, () => {
+            
             let finalDate = editingTxId ? editingTxDate : getToday();
             let finalTime = editingTxId ? editingTxTime : getTime();
             
@@ -1039,12 +1071,37 @@
             if(editingTxId) { 
                 editingTxId = null; editingTxDate = null; editingTxTime = null; 
                 setTxt('top-title', 'BÁN HÀNG'); 
-                uiAlert('✅ Đã sửa và lưu đè!'); 
+                uiAlert('✅ Đã sửa và lưu đè (Vẫn giữ nguyên ngày giờ cũ)!'); 
                 switchTab('history'); 
             } else { 
                 renderPosCart(); setTimeout(() => uiAlert('✅ Chốt đơn thành công!'), 200); renderData(); 
             }
         });
+    }
+
+    /* ---------------- NHẬP KHO ---------------- */
+    function selectImpSup(s) { document.getElementById('imp-sup-input').value = `${s.name} - ${s.phone}`; document.getElementById('imp-sup-id').value = s.id; }
+    function addProdToImp(p) { let ex = impCart.find(i => i.id === p.id); if(ex) ex.qty++; else impCart.push({ id: p.id, name: p.name, cost: p.cost||0, qty: 1 }); document.getElementById('imp-prod-input').value=''; renderImpCart(); }
+    function updateImpQty(idx, v) { impCart[idx].qty = parseInt(v)||1; renderImpCart(); } 
+    function updateImpCost(idx, v) { impCart[idx].cost = parseInt(v.replace(/[^0-9]/g, ''))||0; renderImpCart(); } 
+    function removeImp(idx) { impCart.splice(idx,1); renderImpCart(); }
+    function renderImpCart() { 
+        let sum = 0; 
+        document.getElementById('imp-cart').innerHTML = impCart.map((c,i) => { sum += c.cost * c.qty; return `<li class="cart-item"><div style="flex:1;"><b style="color:var(--text-main); font-size:0.9rem;">${c.name}</b></div><div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;"><input type="number" value="${c.qty}" style="width:60px; padding:6px; border:1px solid var(--border); border-radius:6px;" onchange="updateImpQty(${i}, this.value)"><input type="text" inputmode="numeric" value="${c.cost.toLocaleString()}" style="width:90px; padding:6px; border:1px solid var(--border); border-radius:6px; text-align:right; font-weight:bold; color:var(--danger);" oninput="formatNum(this)" onchange="updateImpCost(${i}, this.value)"><button class="btn btn-outline" style="padding:6px; color:var(--danger); border:none;" onclick="removeImp(${i})">✕</button></div></li>`; }).join('') || '<li style="padding:20px; text-align:center;">Phiếu trống</li>'; 
+        setTxt('imp-total-txt', sum.toLocaleString() + ' đ'); 
+    }
+    function submitImport() { 
+        if(impCart.length===0) return uiAlert("Chưa có hàng!"); 
+        let sId = document.getElementById('imp-sup-id').value; if(!sId) return uiAlert("Chọn NCC!"); 
+        let sum = impCart.reduce((s,i) => s + (i.cost * i.qty), 0), paid = getVal('imp-paid'); 
+        uiConfirm(`Xác nhận nhập kho?\n- Tổng: ${sum.toLocaleString()} đ\n- Trả NCC: ${paid.toLocaleString()} đ`, () => { 
+            let rId = genId('PN'); 
+            importReceipts.push({ id: rId, supId: sId, date: getToday(), time: getTime(), total: sum, paid: paid, items: JSON.parse(JSON.stringify(impCart)), staffId: activeUser }); 
+            impCart.forEach(c => { let inv = inventory.find(x=>x.id===c.id); if(inv) { inv.stock += c.qty; inv.cost = c.cost; } }); 
+            if(paid > 0) cashflow.push({ id: genId('CF'), date: getToday(), time: getTime(), type: 'chi', amount: paid, reason: `Thanh toán nhập hàng ${rId}`, staffId: activeUser }); 
+            pushDB(); impCart=[]; document.getElementById('imp-sup-input').value=''; document.getElementById('imp-sup-id').value=''; document.getElementById('imp-paid').value='0'; 
+            renderImpCart(); renderData(); setTimeout(() => uiAlert("✅ Nhập hàng thành công!"), 200); 
+        }); 
     }
 
     /* ---------------- DỊCH VỤ SỬA CHỮA ---------------- */
@@ -1055,7 +1112,7 @@
         uiConfirm("Lưu phiếu nhận máy?", () => { 
             if(editingSrvId) { 
                 let o = serviceOrders.find(x=>x.id===editingSrvId); 
-                if(o) { o.customerId=cId; o.model=mod; o.condition=cond; o.quote=quo; } 
+                if(o) { o.customerId=cId; o.model=mod; o.condition=cond; o.quote=quo; logAction('Sửa Nhận Máy', editingSrvId); } 
                 editingSrvId = null; document.getElementById('srv-title-txt').innerHTML = '🛠️ Lập Phiếu Nhận Máy'; document.getElementById('srv-btn').innerText = 'LƯU PHIẾU NHẬN'; 
                 setTimeout(()=>uiAlert('✅ Cập nhật thành công!'), 200); 
             } else { 
@@ -1117,18 +1174,28 @@
     }
     
     // TÁC VỤ CƠ BẢN
-    function openSrvAction(id, isDone) { document.getElementById('srv-action-id').value = id; document.getElementById('srv-action-edit').style.display = isDone ? 'none' : 'block'; document.getElementById('srv-action-revert').style.display = isDone ? 'block' : 'none'; openModal('srvActionModal'); }
+    function openSrvAction(id, isDone) {
+        document.getElementById('srv-action-id').value = id;
+        document.getElementById('srv-action-edit').style.display = isDone ? 'none' : 'block';
+        document.getElementById('srv-action-revert').style.display = isDone ? 'block' : 'none';
+        openModal('srvActionModal');
+    }
     function actionSrvPrint() { printBill(document.getElementById('srv-action-id').value, 'service'); closeModal('srvActionModal'); }
     function actionSrvEdit() { editServiceOrder(document.getElementById('srv-action-id').value); closeModal('srvActionModal'); switchTab('service'); }
     function actionSrvRevert() { revertHandover(document.getElementById('srv-action-id').value); closeModal('srvActionModal'); }
     function actionSrvDel() { let id = document.getElementById('srv-action-id').value; closeModal('srvActionModal'); setTimeout(() => deleteItemToBin(id, 'Phiếu Nhận Máy', serviceOrders, x => x.model), 300); }
     
-    function openHistAction(id, type) { document.getElementById('hist-action-id').value = id; document.getElementById('hist-action-type').value = type; document.getElementById('hist-action-edit').style.display = type === 'sales' ? 'block' : 'none'; openModal('histActionModal'); }
+    function openHistAction(id, type) {
+        document.getElementById('hist-action-id').value = id;
+        document.getElementById('hist-action-type').value = type;
+        document.getElementById('hist-action-edit').style.display = type === 'sales' ? 'block' : 'none';
+        openModal('histActionModal');
+    }
     function actionHistPrint() { printBill(document.getElementById('hist-action-id').value, 'sales'); closeModal('histActionModal'); }
     function actionHistEdit() { editFullTransaction(document.getElementById('hist-action-id').value); closeModal('histActionModal'); }
     function actionHistDel() { let id = document.getElementById('hist-action-id').value; closeModal('histActionModal'); setTimeout(() => deleteItemToBin(id, 'Giao Dịch', transactions, x => x.details), 300); }
 
-    /* ---------------- SỔ QUỸ (ĐÃ CỐ ĐỊNH CHUẨN) ---------------- */
+    /* ---------------- SỔ QUỸ VÀ CHỦ NỢ ---------------- */
     function submitCashbook() { 
         let a = getVal('cb-amt'), t = document.getElementById('cb-type').value, r = document.getElementById('cb-reason').value.trim(); 
         let creditor = '';
@@ -1236,6 +1303,10 @@
     function saveEditCus() { let id = document.getElementById('ec-id').value; let c = customers.find(x => String(x.id) === String(id)); if(!c) return; c.name = document.getElementById('ec-name').value.trim(); c.phone = document.getElementById('ec-phone').value.trim(); c.isMonthlyDebt = document.getElementById('ec-monthly').checked; pushDB(); renderData(); closeModal('editCusModal'); setTimeout(() => uiAlert('✅ Đã cập nhật Khách hàng thành công!'), 300); }
     function deleteCusBtn() { let id = document.getElementById('ec-id').value; closeModal('editCusModal'); setTimeout(() => deleteItemToBin(id, 'Khách Hàng', customers, x => x.name), 300); }
 
+    function openEditSup(id) { let s = suppliers.find(x => String(x.id) === String(id)); if(!s) return; document.getElementById('es-id').value = s.id; document.getElementById('es-name').value = s.name; document.getElementById('es-phone').value = s.phone || ''; openModal('editSupModal'); }
+    function saveEditSup() { let id = document.getElementById('es-id').value; let s = suppliers.find(x => String(x.id) === String(id)); if(!s) return; s.name = document.getElementById('es-name').value.trim(); s.phone = document.getElementById('es-phone').value.trim(); pushDB(); renderData(); closeModal('editSupModal'); setTimeout(() => uiAlert('✅ Đã cập nhật Nhà cung cấp thành công!'), 300); }
+    function deleteSupBtn() { let id = document.getElementById('es-id').value; closeModal('editSupModal'); setTimeout(() => deleteItemToBin(id, 'Nhà Cung Cấp', suppliers, x => x.name), 300); }
+
     function openStatement(id, name) { document.getElementById('stmt-cus-id').value = id; document.getElementById('stmt-cus-name').innerText = name; let today = getToday(); document.getElementById('stmt-from').value = today.substring(0,8) + '01'; document.getElementById('stmt-to').value = today; viewStatement(); openModal('stmtModal'); }
     function viewStatement() { let cId = document.getElementById('stmt-cus-id').value, from = document.getElementById('stmt-from').value, to = document.getElementById('stmt-to').value; if(!cId || !from || !to) return; let noCu = 0, phatSinh = 0, daTra = 0, html = ''; transactions.forEach(t => { if(t.customerId === cId) { if(t.date < from) { if(t.type === 'debt') noCu += (t.amount + (t.partsRevenue||0)); else if(t.type === 'pay') noCu -= t.amount; } else if (t.date >= from && t.date <= to) { if (t.type === 'debt') { let amt = t.amount + (t.partsRevenue || 0); phatSinh += amt; html += `<tr><td><small>${formatD(t.date)}</small></td><td><small>${t.id}</small></td><td>${t.details}</td><td style="text-align:right; color:var(--danger);">+${amt.toLocaleString()}đ</td></tr>`; } else if (t.type === 'pay') { daTra += t.amount; html += `<tr><td><small>${formatD(t.date)}</small></td><td><small>${t.id}</small></td><td><span style="color:var(--success);">[Thu]</span> ${t.details}</td><td style="text-align:right; color:var(--success);">-${t.amount.toLocaleString()}đ</td></tr>`; } } } }); let noCuoi = noCu + phatSinh - daTra; setTxt('stmt-nocu', noCu.toLocaleString() + ' đ'); setTxt('stmt-phatsinh', phatSinh.toLocaleString() + ' đ'); setTxt('stmt-datra', daTra.toLocaleString() + ' đ'); setTxt('stmt-nocuoi', noCuoi.toLocaleString() + ' đ'); document.getElementById('stmt-tbody').innerHTML = html || `<tr><td colspan="4" style="text-align:center;">Không phát sinh trong kỳ</td></tr>`; }
     function payStatement() { let noCuoi = parseInt(document.getElementById('stmt-nocuoi').innerText.replace(/[^0-9]/g, '')) || 0; if (noCuoi <= 0) return uiAlert("Khách không có nợ trong bảng kê này!"); let cId = document.getElementById('stmt-cus-id').value, cName = document.getElementById('stmt-cus-name').innerText; closeModal('stmtModal'); document.getElementById('debt-cus-id').value = cId; document.getElementById('debt-cus-name').innerText = cName; document.getElementById('debt-cus-amount').innerText = noCuoi.toLocaleString() + ' đ'; document.getElementById('debt-pay-amount').value = noCuoi.toLocaleString(); document.getElementById('debt-note').value = `Thanh toán Bảng Kê`; openModal('debtModal'); }
@@ -1245,6 +1316,8 @@
     
     function openPaySupModal(id, name, debt) { document.getElementById('paysup-id').value = id; document.getElementById('paysup-name').innerText = name; document.getElementById('paysup-debt').innerText = debt.toLocaleString() + ' đ'; document.getElementById('paysup-amount').value = debt.toLocaleString(); document.getElementById('paysup-note').value = 'Trả nợ tiền hàng NCC ' + name; openModal('paySupModal'); }
     function submitPaySup() { let sId = document.getElementById('paysup-id').value, amt = getVal('paysup-amount'), note = document.getElementById('paysup-note').value.trim(); if(amt <= 0) return uiAlert('Nhập số tiền hợp lệ!'); uiConfirm(`Xác nhận chi trả: ${amt.toLocaleString()} đ?`, () => { cashflow.push({ id: genId('CF'), date: getToday(), time: getTime(), type: 'chi_ncc', amount: amt, reason: note, staffId: activeUser, supId: sId }); pushDB(); closeModal('paySupModal'); renderData(); setTimeout(()=>uiAlert('✅ Đã chi trả NCC!'), 200); }); }
+    
+    function showMonthlyDebtModal() { let html = ''; customers.forEach(c => { if(c.isMonthlyDebt) { let debt = getCusDebt(c.id); html += `<tr><td><b>${c.name}</b><br><small>${c.phone}</small></td><td><b style="color:${debt>0?'var(--danger)':'var(--text-main)'};">${debt.toLocaleString()} đ</b></td><td><button class="btn btn-info" style="padding:4px 8px; font-size:0.8rem;" onclick="closeModal('monthlyDebtModal'); openStatement('${c.id}', '${c.name}')">📝 Lập Bảng Kê</button></td></tr>`; } }); document.getElementById('monthly-debt-tbl').innerHTML = html || `<tr><td colspan="3" style="text-align:center;">Trống.</td></tr>`; openModal('monthlyDebtModal'); }
 
     /* ---------------- DASHBOARD & BÁO CÁO ---------------- */
     function renderDashboard() {
@@ -1500,7 +1573,7 @@
         }
     }
 
-    // 5. IN ẤN & BẢNG KÊ
+    // IN ẤN
     function printStatement() { 
         let cId = document.getElementById('stmt-cus-id').value, cName = document.getElementById('stmt-cus-name').innerText;
         let from = document.getElementById('stmt-from').value, to = document.getElementById('stmt-to').value;
