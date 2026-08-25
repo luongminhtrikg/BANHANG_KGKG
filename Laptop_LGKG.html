@@ -714,7 +714,6 @@
     </div>
     
     <div id="print-area"></div>
-
 <script>
     // Đóng Modal khi bấm ra ngoài
     document.querySelectorAll('.modal-overlay').forEach(el => {
@@ -733,26 +732,30 @@
     
     let posCart = [], impCart = [], hoCart = [];
 
-    // HÀM NHẬN DIỆN ÔNG CHỦ 
+    // HÀM NHẬN DIỆN ÔNG CHỦ MẠNH NHẤT (BẤT CHẤP CÓ DẤU HAY KHÔNG DẤU)
     function isBoss() { 
         if(activeUser === 'ADMIN') return true; 
         let s = staffs.find(x => x.id === activeUser); 
-        return s && (s.name.toLowerCase().includes('trí') || s.name.toLowerCase().includes('admin') || s.name.toLowerCase().includes('chủ')); 
+        if(!s) return false;
+        let n = s.name || ''; let i = s.id || '';
+        // Cạo sạch dấu tiếng Việt để kiểm tra, đảm bảo "luong minh tri" hay "Lương Minh Trí" đều tính là Sếp
+        let checkStr = (n + " " + i).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        return checkStr.includes('tri') || checkStr.includes('admin') || checkStr.includes('chu') || checkStr.includes('boss'); 
     }
 
-    // HÀM ÉP CẬP NHẬT QUYỀN (CHỐNG LỖI MẠNG CHẬM)
+    // HÀM ÉP CẬP NHẬT QUYỀN GIAO DIỆN
     function updatePermissions() {
         if(!activeUser) return;
         
-        // Phân quyền Ẩn/Hiện thẻ HTML
+        // Phân quyền Ẩn/Hiện thẻ
         document.querySelectorAll('.admin-only').forEach(el => el.style.display = isBoss() ? 'flex' : 'none');
         document.querySelectorAll('th.admin-only, td.admin-only').forEach(el => el.style.display = isBoss() ? 'table-cell' : 'none');
         document.querySelectorAll('.staff-only').forEach(el => el.style.display = !isBoss() ? 'flex' : 'none');
         
-        // Sửa lỗi Dropdown bị mất mục Vay/Trả
+        // Cài đặt ô chọn Sổ quỹ
         let cbType = document.getElementById('cb-type');
         if(cbType) {
-            let currentVal = cbType.value; // Nhớ lựa chọn hiện tại
+            let currentVal = cbType.value; 
             cbType.options.length = 0; 
             cbType.add(new Option('🔴 Chi Tiền (Điện, nước, nhập hàng...)', 'chi'));
             cbType.add(new Option('🟢 Thu Khác (Bán phế liệu, đồng nát...)', 'thu'));
@@ -762,7 +765,6 @@
                 cbType.add(new Option('🟣 Trả Nợ Vay (Chọn chủ nợ để trả)', 'tra_no'));
             }
             
-            // Khôi phục lựa chọn nếu còn tồn tại, tránh bị giật giao diện
             let exists = Array.from(cbType.options).some(o => o.value === currentVal);
             if(exists) cbType.value = currentVal;
             
@@ -918,7 +920,7 @@
         renderHistoryTable(); 
     }
 
-    // FIREBASE - QUAN TRỌNG: CẬP NHẬT LẠI GIAO DIỆN SAU KHI LOAD XONG MẠNG
+    // FIREBASE
     db.ref('.info/connected').on('value', function(snap) {
         let el = document.getElementById('net-status'); if(!el) return;
         if (snap.val() === true) { el.innerText = '✅ Đã kết nối máy chủ.'; el.style.color = 'var(--success)'; } 
@@ -946,7 +948,6 @@
             initSession(); 
         }
         
-        // KHI MẠNG TẢI XONG (CÓ DANH SÁCH NHÂN VIÊN) -> ÉP NHẬN DIỆN LẠI SẾP
         if(activeUser) {
             updatePermissions();
             renderData();
@@ -982,7 +983,7 @@
         document.getElementById('cb-staff-date').value = getToday(); 
         setCbDate('today');
         
-        updatePermissions(); // Gọi luôn phân quyền
+        updatePermissions(); 
 
         switchTab(isBoss() ? 'dashboard' : 'pos');
     }
@@ -1185,7 +1186,7 @@
         setTimeout(() => deleteItemToBin(id, 'Giao Dịch', transactions, x => x.details), 300);
     }
 
-    /* ---------------- SỔ QUỸ (VAY MƯỢN) ---------------- */
+    /* ---------------- SỔ QUỸ (VAY MƯỢN ĐÃ FIX HOÀN TOÀN) ---------------- */
     function submitCashbook() { 
         let a = getVal('cb-amt'), t = document.getElementById('cb-type').value, r = document.getElementById('cb-reason').value.trim(); 
         let creditor = '';
@@ -1211,15 +1212,15 @@
             
             cashflow.push(newFlow); 
             pushDB(); 
-            setVal('cb-amt',0); document.getElementById('cb-reason').value=''; 
             
-            if(t === 'vay_muon' || t === 'tra_no') toggleCreditorField(); 
+            if(t === 'vay_muon' || t === 'tra_no') toggleCreditorField(); // Chạy lại logic xổ chủ nợ
+            else { setVal('cb-amt',0); document.getElementById('cb-reason').value=''; }
             
             renderData(); setTimeout(()=>uiAlert('✅ Lưu sổ quỹ thành công!'), 200); 
         }); 
     }
 
-    // ĐÃ FIX LỖI ẨN/MẤT Ô CHỦ NỢ
+    // ĐÃ FIX 100% LỖI MẤT Ô CHỦ NỢ
     function toggleCreditorField() {
         let cbType = document.getElementById('cb-type');
         if(!cbType) return;
@@ -1233,6 +1234,7 @@
             document.getElementById('cb-creditor-label').innerText = 'Mượn của ai (Tên Chủ nợ / Ngân hàng):';
             inpArea.innerHTML = `<input type="text" id="cb-creditor-name" class="form-control" placeholder="Ví dụ: Anh Ba, Sacombank..." style="border-color:var(--success);">`;
             info.style.display = 'none';
+            setVal('cb-amt', 0); document.getElementById('cb-reason').value = '';
         } else if (t === 'tra_no') {
             wrap.style.display = 'block';
             document.getElementById('cb-creditor-label').innerText = 'Chọn chủ nợ để trả:';
@@ -1256,6 +1258,7 @@
             inpArea.innerHTML = `<select id="cb-creditor-name" class="form-control" style="border-color:var(--success); font-weight:bold;" onchange="showCreditorDebt(this.value)">${options}</select>`;
             info.style.display = 'none';
             window.tempDebts = debts;
+            setVal('cb-amt', 0); document.getElementById('cb-reason').value = '';
         } else {
             if(wrap) wrap.style.display = 'none';
         }
