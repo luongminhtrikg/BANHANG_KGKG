@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Lương Gia KG - V20.1 (Fix Giao diện & Vay Nợ)</title>
+    <title>Lương Gia KG - V21 (Tách Dòng Tiền & Fix UI)</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -39,8 +39,9 @@
         
         .sidebar { width: var(--sidebar-w); background: #1c252e; color: #fff; display: flex; flex-direction: column; transition: transform 0.3s; z-index: 1000; }
         .sidebar-brand { height: var(--header-h); display: flex; align-items: center; padding: 0 20px; font-weight: 800; font-size: 1.2rem; border-bottom: 1px solid rgba(255,255,255,0.1); color: var(--primary); }
-        .nav-menu { padding: 10px; overflow-y: auto; flex: 1; }
-        .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 15px; color: #919eab; text-decoration: none; border-radius: 8px; margin-bottom: 4px; font-weight: 500; cursor: pointer; transition: 0.2s; }
+        /* FIX LỖI MENU NHẢY NGANG: display:flex + flex-direction:column */
+        .nav-menu { padding: 10px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; width: 100%; }
+        .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 15px; color: #919eab; text-decoration: none; border-radius: 8px; margin-bottom: 4px; font-weight: 500; cursor: pointer; transition: 0.2s; width: 100%; box-sizing: border-box; }
         .nav-item:hover, .nav-item.active { background: rgba(0, 112, 243, 0.1); color: #fff; } 
         .nav-item.active { color: var(--primary); font-weight: 700; }
         
@@ -113,7 +114,7 @@
     <div id="loginOverlay" style="position:fixed; inset:0; background:#1c252e; z-index:15000; display:flex; justify-content:center; align-items:center;">
         <div class="card" style="width: 90%; max-width: 400px; text-align: center; padding: 40px 20px;">
             <h2 style="color:var(--primary); margin-top:0;">LƯƠNG GIA KG</h2>
-            <p style="color:var(--text-muted); margin-bottom:10px;">Phần mềm quản lý V20.1</p>
+            <p style="color:var(--text-muted); margin-bottom:10px;">Phần mềm quản lý V21</p>
             <div id="net-status" style="font-size:0.8rem; color:var(--warning); margin-bottom:15px; min-height:15px;">Đang dò kết nối máy chủ...</div>
             <select id="login-user" class="form-control" style="margin-bottom:15px;"></select>
             <input type="password" id="login-pass" class="form-control" placeholder="Mật khẩu..." style="margin-bottom:20px;" onkeypress="if(event.key==='Enter') doLogin()">
@@ -121,7 +122,7 @@
         </div>
     </div>
 
-    <!-- Thanh Menu Trái (Sidebar) CHUẨN DATA-TAB CHỐNG LỖI -->
+    <!-- Thanh Menu Trái (Sidebar) -->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-brand">LƯƠNG GIA KG</div>
         <div class="nav-menu">
@@ -320,7 +321,7 @@
                 </div>
             </div>
             
-            <!-- SỔ QUỸ KÉT VÀ VAY NỢ (THÊM YÊU CẦU MỚI) -->
+            <!-- SỔ QUỸ KÉT VÀ VAY NỢ -->
             <div id="cashbook" class="tab-content">
                 <div class="card" style="background:#f8fafc;">
                     <div class="admin-only row" style="align-items:flex-end;">
@@ -347,7 +348,7 @@
                     </div>
 
                     <div class="form-group" style="margin-top:15px;">
-                        <input type="text" id="cb-search" class="form-control" placeholder="🔍 Gõ lý do thu/chi/vay nợ để lọc nhanh..." onkeyup="filterTable('cb-tbl-in', this.value); filterTable('cb-tbl-out', this.value);">
+                        <input type="text" id="cb-search" class="form-control" placeholder="🔍 Gõ lý do chi (vd: chợ, sữa) để lọc và gom vào Chi Cá Nhân..." onkeyup="filterTable('cb-tbl-in', this.value); filterTable('cb-tbl-out', this.value);">
                     </div>
                 </div>
                 
@@ -358,7 +359,14 @@
                     <div class="col" style="flex:1;">
                         <div class="card" style="background:#fff;">
                             <h3 class="card-title">📝 Lập Phiếu Thu/Chi</h3>
-                            <div class="form-group"><label>Loại Phiếu:</label><select id="cb-type" class="form-control"><option value="chi">🔴 Chi Tiền (Điện, nước, ăn uống...)</option><option value="thu">🟢 Thu Khác (Bán phế liệu, ve chai...)</option></select></div>
+                            <div class="form-group">
+                                <label>Loại Phiếu:</label>
+                                <select id="cb-type" class="form-control">
+                                    <option value="chi">🔴 Chi Tiền Tiệm (Điện, mặt bằng, ăn uống nv...)</option>
+                                    <option value="chi_nha">🏠 Chi Cá Nhân (Tiền nhà, đi chợ, cá nhân...)</option>
+                                    <option value="thu">🟢 Thu Khác (Bán phế liệu, ve chai...)</option>
+                                </select>
+                            </div>
                             <div class="form-group"><label>Số tiền:</label><input type="text" inputmode="numeric" id="cb-amt" class="form-control" value="0" oninput="formatNum(this)" style="font-weight:bold; font-size:1.1rem;"></div>
                             <div class="form-group"><label>Lý do / Diễn giải:</label><input type="text" id="cb-reason" class="form-control"></div>
                             <button class="btn btn-primary" style="width:100%;" onclick="submitCashbook()">LƯU SỔ QUỸ</button>
@@ -377,7 +385,7 @@
                 </div>
             </div>
 
-            <!-- KHÁCH HÀNG / NCC (FIX LỖI XUỐNG HÀNG) -->
+            <!-- KHÁCH HÀNG / NCC -->
             <div id="partners" class="tab-content">
                 <div style="display:flex; flex-direction:column; gap:20px;">
                     <details class="card" style="border-top:4px solid var(--info); margin:0;" open>
@@ -431,7 +439,7 @@
                     <div class="table-wrap">
                         <table>
                             <thead>
-                                <tr><th>Nhân Viên</th><th style="text-align:right;">Tổng Doanh Thu (+)</th><th style="text-align:right;">Giá Vốn & Chi Phí (-)</th><th style="text-align:right;">Lợi Nhuận Thực</th></tr>
+                                <tr><th>Nhân Viên</th><th style="text-align:right;">Tổng Doanh Thu (+)</th><th style="text-align:right;">Giá Vốn & Chi Phí Tiệm (-)</th><th style="text-align:right;">Lợi Nhuận Thực</th></tr>
                             </thead>
                             <tbody id="rp-staff-tbl"></tbody>
                         </table>
@@ -528,7 +536,7 @@
 
     <!-- CÁC HỘP THOẠI MODALS -->
     
-    <!-- MODAL VAY NỢ - TRẢ NỢ (TÍNH NĂNG MỚI YÊU CẦU) -->
+    <!-- MODAL VAY NỢ - TRẢ NỢ -->
     <div id="loanModal" class="modal-overlay">
         <div class="modal-box" style="max-width:400px;">
             <h3 class="modal-title" id="loan-title" style="color:var(--warning);">🤝 Ghi Nhận Mượn / Vay Nợ</h3>
@@ -548,7 +556,7 @@
             </div>
             <div class="form-group">
                 <label>Ghi chú / Diễn giải:</label>
-                <input type="text" id="loan-note" class="form-control" placeholder="Ví dụ: Mượn xoay vòng vốn...">
+                <input type="text" id="loan-note" class="form-control" placeholder="Ví dụ: Mượn vốn kinh doanh tiệm...">
             </div>
             <button class="btn btn-warning" style="width:100%; color:#000; padding:15px; font-size:1.1rem;" onclick="submitLoan()">LƯU GIAO DỊCH</button>
             <button class="btn btn-outline" style="width:100%; margin-top:10px; background:#f4f6f8;" onclick="closeModal('loanModal')">Hủy / Đóng</button>
@@ -750,7 +758,6 @@
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // THÊM CHỦ NỢ (CREDITORS) VÀO DATA CORE
     let staffs=[], inventory=[], customers=[], suppliers=[], creditors=[], transactions=[], serviceOrders=[], importReceipts=[], cashflow=[], recycleBin=[], activityLogs=[];
     let storeInfo = { name: 'LƯƠNG GIA KG', address: '37 ấp 5, An Biên, Kiên Giang', phone: '0941.113.411', logoUrl: '' };
     
@@ -812,7 +819,6 @@
     function closeConfirm(isYes) { closeModal('uiConfirm'); if(isYes && confirmCb) confirmCb(); confirmCb=null; }
     function uiAlert(msg) { document.getElementById('alert-msg').innerHTML=msg; openModal('uiAlert'); }
 
-    // SỬA LỖI TAB BẰNG LOGIC DATA-TAB ĐỂ KHÔNG BAO GIỜ BỊ NHẢY LUNG TUNG
     function switchTab(tab) {
         if(!activeUser) return;
         if(activeUser !== 'ADMIN' && ['dashboard', 'reports', 'partners', 'admin'].includes(tab)) return uiAlert("Bạn không có quyền truy cập khu vực này!");
@@ -842,7 +848,7 @@
                     </details>
                     <details class="card" style="border-top:4px solid var(--danger); cursor:pointer;">
                         <summary style="font-weight:bold; font-size:1.1rem; color:var(--danger);">🔴 XEM PHIẾU CHI TRONG NGÀY (Bấm mở)</summary>
-                        <div class="table-wrap" style="margin-top:15px; cursor:default;"><table><thead><tr><th>Giờ</th><th>Diễn giải</th><th style="text-align:right;">Tiền</th><th>Xóa</th></tr></thead><tbody id="cb-tbl-out"></tbody></table></div>
+                        <div class="table-wrap" style="margin-top:15px; cursor:default;"><table><thead><tr><th>Giờ</th><th>Diễn giải</th><th style="text-align:right;">Tiền</th><th>Tác vụ</th></tr></thead><tbody id="cb-tbl-out"></tbody></table></div>
                     </details>
                 `;
             } else {
@@ -853,8 +859,8 @@
                             <div class="table-wrap"><table><thead><tr><th>Ngày-Giờ</th><th>Nhân Viên</th><th>Diễn giải</th><th style="text-align:right;">Tiền</th><th>Thao tác</th></tr></thead><tbody id="cb-tbl-in"></tbody></table></div>
                         </div>
                         <div class="col card" style="padding:15px; border-top:4px solid var(--danger);">
-                            <h4 style="text-align:center; color:var(--danger); margin-top:0;">🔴 PHIẾU CHI / TRẢ NỢ (-)</h4>
-                            <div class="table-wrap"><table><thead><tr><th>Ngày-Giờ</th><th>Nhân Viên</th><th>Diễn giải</th><th style="text-align:right;">Tiền</th><th>Thao tác</th></tr></thead><tbody id="cb-tbl-out"></tbody></table></div>
+                            <h4 style="text-align:center; color:var(--danger); margin-top:0;">🔴 PHIẾU CHI / TRẢ NỢ / CHI NHÀ (-)</h4>
+                            <div class="table-wrap"><table><thead><tr><th>Ngày-Giờ</th><th>Nhân Viên</th><th>Diễn giải</th><th style="text-align:right;">Tiền</th><th>Tác vụ</th></tr></thead><tbody id="cb-tbl-out"></tbody></table></div>
                         </div>
                     </div>
                 `;
@@ -1067,7 +1073,7 @@
             let rId = genId('PN'); 
             importReceipts.push({ id: rId, supId: sId, date: getToday(), time: getTime(), total: sum, paid: paid, items: JSON.parse(JSON.stringify(impCart)), staffId: activeUser }); 
             impCart.forEach(c => { let inv = inventory.find(x=>x.id===c.id); if(inv) { inv.stock += c.qty; inv.cost = c.cost; } }); 
-            if(paid > 0) cashflow.push({ id: genId('CF'), date: getToday(), time: getTime(), type: 'chi', amount: paid, reason: `Thanh toán nhập hàng ${rId}`, staffId: activeUser }); 
+            if(paid > 0) cashflow.push({ id: genId('CF'), date: getToday(), time: getTime(), type: 'chi_ncc', amount: paid, reason: `Thanh toán nhập hàng ${rId}`, staffId: activeUser }); 
             pushDB(); impCart=[]; document.getElementById('imp-sup-input').value=''; document.getElementById('imp-sup-id').value=''; document.getElementById('imp-paid').value='0'; 
             renderImpCart(); renderData(); setTimeout(() => uiAlert("✅ Nhập hàng thành công!"), 200); 
         }); 
@@ -1172,7 +1178,7 @@
         setTimeout(() => deleteItemToBin(id, 'Giao Dịch', transactions, x => x.details), 300);
     }
 
-    /* ---------------- SỔ QUỸ & VAY NỢ & ĐỐI TÁC ---------------- */
+    /* ---------------- SỔ QUỸ & VAY NỢ & CHUYỂN ĐỔI CHI PHÍ ---------------- */
     function submitCashbook() { 
         let a = getVal('cb-amt'), t = document.getElementById('cb-type').value, r = document.getElementById('cb-reason').value.trim(); 
         if(a<=0 || !r) return uiAlert('Nhập đủ số tiền và lý do!'); 
@@ -1189,8 +1195,23 @@
         } else { if(type === 'today') document.getElementById('cb-staff-date').value = getToday(); } 
         renderData(); 
     }
+
+    function convertCashflowType(id, newType) {
+        let msg = newType === 'chi_nha' 
+            ? "Chuyển khoản này thành CHI CÁ NHÂN (Loại bỏ khỏi Báo cáo Lợi nhuận của Tiệm)?" 
+            : "Chuyển lại khoản này thành CHI PHÍ TIỆM (Sẽ bị trừ vào Báo cáo Lợi nhuận)?";
+        uiConfirm(msg, () => {
+            let cf = cashflow.find(x => x.id === id);
+            if(cf) {
+                cf.type = newType;
+                pushDB();
+                renderData();
+                uiAlert("✅ Đã chuyển đổi dòng tiền thành công!");
+            }
+        });
+    }
     
-    // TÍNH NĂNG VAY NỢ MỚI
+    // TÍNH NĂNG VAY NỢ
     function selectLoanCred(c) { document.getElementById('loan-cred-input').value = `${c.name} - ${c.phone}`; document.getElementById('loan-cred-id').value = c.id; }
     
     function openLoanModal(type) {
@@ -1303,7 +1324,10 @@
             }
         });
         serviceOrders.forEach(o => { if(!o.status.includes('Đã trả') && !o.status.includes('Đã giao')) repairs++; });
-        cashflow.forEach(c => { if(c.date === target && (c.type === 'chi' || c.type === 'chi_ncc')) expenses += c.amount; });
+        cashflow.forEach(c => { 
+            // CHI NHÀ KHÔNG TÍNH VÀO DASHBOARD CHI PHÍ
+            if(c.date === target && (c.type === 'chi' || c.type === 'chi_ncc')) expenses += c.amount; 
+        });
 
         document.getElementById('dash-cards').innerHTML = `
             <div class="col card dash-card" style="border-left:4px solid var(--primary);" onclick="showDashDetail('sales')">
@@ -1321,7 +1345,7 @@
                 <h4 style="margin:0 0 10px 0; color:var(--text-muted);">🛠️ Máy Đang Nằm Viện</h4><h2 style="margin:0; color:var(--warning);">${repairs}</h2>
             </div>
             <div class="col card dash-card" style="border-left:4px solid var(--danger);" onclick="showDashDetail('expenses')">
-                <h4 style="margin:0 0 10px 0; color:var(--text-muted);">🔴 Chi Phí Hôm Nay</h4><h2 style="margin:0; color:var(--danger);">${expenses.toLocaleString()} đ</h2>
+                <h4 style="margin:0 0 10px 0; color:var(--text-muted);">🔴 Chi Phí Của Tiệm</h4><h2 style="margin:0; color:var(--danger);">${expenses.toLocaleString()} đ</h2>
             </div>
         `;
     }
@@ -1377,11 +1401,12 @@
             }
         });
         
-        // CÁC KHOẢN VAY NỢ BỊ LOẠI TRỪ KHỎI BÁO CÁO Ở ĐÂY
+        // CÁC KHOẢN CHI NHÀ / VAY NỢ BỊ LOẠI TRỪ KHỎI BÁO CÁO Ở ĐÂY
         cashflow.forEach(c => { 
             if(c.date >= from && c.date <= to) { 
                 if(c.type === 'thu') inOther += c.amount; 
                 else if(c.type === 'chi' || c.type === 'chi_ncc') outOther += c.amount; 
+                // Không cộng `chi_nha`, `vay`, `tra_no` vào outOther/inOther để bảo vệ Báo Cáo KQKD
             } 
         });
         
@@ -1419,7 +1444,7 @@
         else if (type === 'cost') { document.getElementById('dd-title').innerText = 'Chi Tiết Giá Vốn Hàng Bán'; transactions.forEach(t => { if(t.date >= from && t.date <= to && (t.type==='cash' || t.type==='debt') && t.totalCost > 0) html += `<tr><td>${formatD(t.date)}</td><td>${t.id}</td><td>${t.details}</td><td style="text-align:right; font-weight:bold; color:var(--warning);">${t.totalCost.toLocaleString()}</td></tr>`; }); }
         else if (type === 'srv') { document.getElementById('dd-title').innerText = 'Chi Tiết Tiền Công Sửa Chữa'; transactions.forEach(t => { if(t.date >= from && t.date <= to && (t.type==='cash' || t.type==='debt')) { let isSrv = t.note && t.note.includes('Từ phiếu'); if(isSrv && t.amount > 0) html += `<tr><td>${formatD(t.date)}</td><td>${t.id}</td><td>${t.details}</td><td style="text-align:right; font-weight:bold; color:var(--success);">${t.amount.toLocaleString()}</td></tr>`; } }); }
         else if (type === 'in') { document.getElementById('dd-title').innerText = 'Chi Tiết Thu Khác'; cashflow.forEach(c => { if(c.date >= from && c.date <= to && c.type === 'thu') html += `<tr><td>${formatD(c.date)}</td><td>${c.id}</td><td>${c.reason}</td><td style="text-align:right; font-weight:bold; color:var(--success);">${c.amount.toLocaleString()}</td></tr>`; }); }
-        else if (type === 'out') { document.getElementById('dd-title').innerText = 'Chi Phí Khác'; cashflow.forEach(c => { if(c.date >= from && c.date <= to && (c.type === 'chi' || c.type === 'chi_ncc')) html += `<tr><td>${formatD(c.date)}</td><td>${c.id}</td><td>${c.reason}</td><td style="text-align:right; font-weight:bold; color:var(--danger);">${c.amount.toLocaleString()}</td></tr>`; }); }
+        else if (type === 'out') { document.getElementById('dd-title').innerText = 'Chi Phí Khác Của Tiệm'; cashflow.forEach(c => { if(c.date >= from && c.date <= to && (c.type === 'chi' || c.type === 'chi_ncc')) html += `<tr><td>${formatD(c.date)}</td><td>${c.id}</td><td>${c.reason}</td><td style="text-align:right; font-weight:bold; color:var(--danger);">${c.amount.toLocaleString()}</td></tr>`; }); }
         document.getElementById('dd-body').innerHTML = html || `<tr><td colspan="4" style="text-align:center;">Chưa có dữ liệu</td></tr>`; openModal('dashDetailModal');
     }
 
@@ -1477,7 +1502,7 @@
 
         renderHistoryTable();
 
-        // TÍNH TOÁN VÀ ĐỔ DỮ LIỆU SỔ QUỸ (BAO GỒM VAY NỢ)
+        // TÍNH TOÁN VÀ ĐỔ DỮ LIỆU SỔ QUỸ (BAO GỒM TÍNH NĂNG CHUYỂN ĐỔI CHI NHÀ)
         let cbFrom = activeUser==='ADMIN' ? document.getElementById('cb-from').value : document.getElementById('cb-staff-date').value;
         let cbTo = activeUser==='ADMIN' ? document.getElementById('cb-to').value : document.getElementById('cb-staff-date').value;
         if(!cbFrom) cbFrom = getToday(); if(!cbTo) cbTo = getToday();
@@ -1506,12 +1531,15 @@
                     let displayNote = c.type === 'vay' ? `<span style="color:#d97706; font-weight:bold;">[MƯỢN NỢ]</span> ${c.reason}` : c.reason;
                     cbArrIn.push({dt: `${formatD(c.date)}<br>${c.time||''}`, t: c.date+(c.time||''), note: displayNote, amt:c.amount, id:c.id, isTx:false, canDel: canDelete, staff: sName}); 
                 } 
-            } else if (c.type==='chi' || c.type==='chi_ncc' || c.type==='tra_no') { 
+            } else if (c.type==='chi' || c.type==='chi_ncc' || c.type==='tra_no' || c.type==='chi_nha') { 
                 if(c.date < cbFrom) { netStart -= c.amount; } 
                 else if(c.date >= cbFrom && c.date <= cbTo) { 
                     outC += c.amount; 
-                    let displayNote = c.type === 'tra_no' ? `<span style="color:#0ea5e9; font-weight:bold;">[TRẢ NỢ]</span> ${c.reason}` : c.reason;
-                    cbArrOut.push({dt: `${formatD(c.date)}<br>${c.time||''}`, t: c.date+(c.time||''), note: displayNote, amt:c.amount, id:c.id, isTx:false, canDel: canDelete, staff: sName}); 
+                    let displayNote = c.reason;
+                    if(c.type === 'tra_no') displayNote = `<span style="color:#0ea5e9; font-weight:bold;">[TRẢ NỢ]</span> ${c.reason}`;
+                    if(c.type === 'chi_nha') displayNote = `<span style="color:#8b5cf6; font-weight:bold;">[CHI NHÀ]</span> ${c.reason}`;
+                    
+                    cbArrOut.push({dt: `${formatD(c.date)}<br>${c.time||''}`, t: c.date+(c.time||''), note: displayNote, amt:c.amount, id:c.id, isTx:false, canDel: canDelete, staff: sName, type: c.type}); 
                 } 
             }
         });
@@ -1521,7 +1549,15 @@
         let inHtml = cbArrIn.sort((a,b)=>b.t.localeCompare(a.t)).map(c=>`<tr><td><small>${c.dt}</small></td>${activeUser==='ADMIN'?`<td>${c.staff}</td>`:''}<td>${c.note}</td><td style="text-align:right; font-weight:bold; color:var(--success);">+${c.amt.toLocaleString()}đ</td><td>${!c.isTx && c.canDel ? `<button class="btn btn-outline" style="padding:4px 8px; color:var(--danger); border:none;" onclick="deleteItemToBin('${c.id}', 'Sổ Quỹ', cashflow, x => x.reason)">🗑️</button>` : ''}</td></tr>`).join('');
         document.getElementById('cb-tbl-in').innerHTML = inHtml || `<tr><td colspan="${activeUser==='ADMIN'?5:4}" style="text-align:center; color:var(--text-muted);">Không có phiếu thu</td></tr>`;
         
-        let outHtml = cbArrOut.sort((a,b)=>b.t.localeCompare(a.t)).map(c=>`<tr><td><small>${c.dt}</small></td>${activeUser==='ADMIN'?`<td>${c.staff}</td>`:''}<td>${c.note}</td><td style="text-align:right; font-weight:bold; color:var(--danger);">-${c.amt.toLocaleString()}đ</td><td>${!c.isTx && c.canDel ? `<button class="btn btn-outline" style="padding:4px 8px; color:var(--danger); border:none;" onclick="deleteItemToBin('${c.id}', 'Sổ Quỹ', cashflow, x => x.reason)">🗑️</button>` : ''}</td></tr>`).join('');
+        let outHtml = cbArrOut.sort((a,b)=>b.t.localeCompare(a.t)).map(c=>{
+            let convertBtn = '';
+            if (activeUser === 'ADMIN' && c.type === 'chi') {
+                convertBtn = `<button class="btn btn-outline" style="padding:4px; font-size:0.75rem; margin-right:5px;" onclick="convertCashflowType('${c.id}', 'chi_nha')" title="Chuyển sang Chi Cá Nhân (Nhà)">➡️ 🏠 Tách ra</button>`;
+            } else if (activeUser === 'ADMIN' && c.type === 'chi_nha') {
+                convertBtn = `<button class="btn btn-outline" style="padding:4px; font-size:0.75rem; margin-right:5px;" onclick="convertCashflowType('${c.id}', 'chi')" title="Chuyển lại về Chi phí Tiệm">➡️ 🏪 Trả lại</button>`;
+            }
+            return `<tr><td><small>${c.dt}</small></td>${activeUser==='ADMIN'?`<td>${c.staff}</td>`:''}<td>${c.note}</td><td style="text-align:right; font-weight:bold; color:var(--danger);">-${c.amt.toLocaleString()}đ</td><td style="display:flex; justify-content:center; align-items:center;">${convertBtn}${!c.isTx && c.canDel ? `<button class="btn btn-outline" style="padding:4px 8px; color:var(--danger); border:none;" onclick="deleteItemToBin('${c.id}', 'Sổ Quỹ', cashflow, x => x.reason)">🗑️</button>` : ''}</td></tr>`;
+        }).join('');
         document.getElementById('cb-tbl-out').innerHTML = outHtml || `<tr><td colspan="${activeUser==='ADMIN'?5:4}" style="text-align:center; color:var(--text-muted);">Không có phiếu chi</td></tr>`;
     }
 
