@@ -936,12 +936,17 @@
         // --- ĐOẠN CODE PHÂN QUYỀN Ô CHỌN SỔ QUỸ TỰ ĐỘNG ---
         let cbType = document.getElementById('cb-type');
         if(cbType) {
-            cbType.innerHTML = `<option value="chi">🔴 Chi Tiền (Điện, nước, nhập hàng, ăn uống...)</option><option value="thu">🟢 Thu Khác (Bán phế liệu, đồng nát...)</option>`;
+            cbType.options.length = 0; // Xóa sạch bộ nhớ cũ bị đơ
+            cbType.add(new Option('🔴 Chi Tiền (Điện, nước, ăn uống...)', 'chi'));
+            cbType.add(new Option('🟢 Thu Khác (Bán phế liệu...)', 'thu'));
+            
             if(activeUser === 'ADMIN') {
-                cbType.innerHTML += `<option value="vay_muon">🔵 Nhận Tiền Vay / Mượn</option><option value="tra_no">🟣 Trả Nợ Vay</option>`;
+                cbType.add(new Option('🔵 Nhận Tiền Vay / Mượn', 'vay_muon'));
+                cbType.add(new Option('🟣 Trả Nợ Vay', 'tra_no'));
             }
         }
-        toggleCreditorField(); // Khởi động lại giao diện cho chắc
+        toggleCreditorField(); 
+        // ---------------------------------------------------
         // ---------------------------------------------------
 
         switchTab(activeUser==='ADMIN' ? 'dashboard' : 'pos');
