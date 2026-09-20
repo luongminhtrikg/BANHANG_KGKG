@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Lương Gia KG - V23 (Smart Search & Quản Lý Công Nợ)</title>
+    <title>Lương Gia KG - V24 (Smart Search, Cảnh Báo Tồn Kho & Smooth Edit)</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -113,7 +113,7 @@
     <div id="loginOverlay" style="position:fixed; inset:0; background:#1c252e; z-index:15000; display:flex; justify-content:center; align-items:center;">
         <div class="card" style="width: 90%; max-width: 400px; text-align: center; padding: 40px 20px;">
             <h2 style="color:var(--primary); margin-top:0;">LƯƠNG GIA KG</h2>
-            <p style="color:var(--text-muted); margin-bottom:10px;">Phần mềm quản lý V23</p>
+            <p style="color:var(--text-muted); margin-bottom:10px;">Phần mềm quản lý V24</p>
             <div id="net-status" style="font-size:0.8rem; color:var(--warning); margin-bottom:15px; min-height:15px;">Đang dò kết nối máy chủ...</div>
             <select id="login-user" class="form-control" style="margin-bottom:15px;"></select>
             <input type="password" id="login-pass" class="form-control" placeholder="Mật khẩu..." style="margin-bottom:20px;" onkeypress="if(event.key==='Enter') doLogin()">
@@ -667,7 +667,7 @@
         </div>
     </div>
 
-    <!-- BẢNG KÊ CÔNG NỢ NHÀ CUNG CẤP (MỚI V23) -->
+    <!-- BẢNG KÊ CÔNG NỢ NHÀ CUNG CẤP -->
     <div id="supStmtModal" class="modal-overlay">
         <div class="modal-box" style="max-width:800px;">
             <h3 class="modal-title" style="color:var(--warning);">Bảng Kê Công Nợ NCC: <b id="sup-stmt-name" style="color:var(--primary);"></b></h3>
@@ -715,7 +715,7 @@
         </div>
     </div>
 
-    <!-- Modal sửa hàng/khách (Cập nhật V23 Nút Xem Nợ) -->
+    <!-- Modal sửa hàng/khách -->
     <div id="editProdModal" class="modal-overlay">
         <div class="modal-box">
             <h3 class="modal-title">Sửa Hàng Hóa</h3><input type="hidden" id="ep-id">
@@ -838,7 +838,6 @@
     function formatD(str) { if(!str)return''; let d=new Date(str); return `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear()}`; }
     function genId(prefix) { return prefix + '_' + Date.now().toString().slice(-5); }
 
-    // MỚI V23: HÀM LOẠI BỎ DẤU TIẾNG VIỆT (PHỤC VỤ SMART SEARCH)
     function removeAccents(str) {
         if(!str) return '';
         return str.toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
@@ -937,7 +936,6 @@
         renderData();
     }
 
-    // Cập nhật V23: Bộ lọc Tìm kiếm Bảng biểu sử dụng Smart Search
     function filterTable(tbodyId, filterVal) {
         let f = removeAccents(filterVal); 
         let rows = document.getElementById(tbodyId).getElementsByTagName('tr');
@@ -946,7 +944,6 @@
 
     function closeAllAutocomplete() { document.querySelectorAll('.autocomplete-items').forEach(el => el.style.display='none'); }
     
-    // Cập nhật V23: Bộ lọc Autocomplete thông minh (Không dấu, có dấu, viết hoa thường)
     function handleSearch(prefix, dataArr, clickCb) {
         let listEl = document.getElementById(prefix + '-autocomplete'); listEl.innerHTML=''; listEl.style.display='none';
         let val = removeAccents(document.getElementById(prefix + '-input').value);
@@ -961,7 +958,8 @@
         if(matches.length > 0) {
             matches.forEach(item => {
                 let div = document.createElement('div');
-                div.innerHTML = `<b>${item.name}</b> ${item.phone ? ' - '+item.phone : ''} ${item.price ? ' - <span style="color:var(--danger)">'+item.price.toLocaleString()+'đ</span> (Tồn: '+item.stock+')' : ''}`;
+                let stockTxt = item.stock !== undefined ? ` (Tồn: ${item.stock})` : '';
+                div.innerHTML = `<b>${item.name}</b> ${item.phone ? ' - '+item.phone : ''} ${item.price ? ' - <span style="color:var(--danger)">'+item.price.toLocaleString()+'đ</span>' + stockTxt : ''}`;
                 div.onclick = (e) => { e.stopPropagation(); clickCb(item); listEl.style.display='none'; };
                 listEl.appendChild(div);
             });
@@ -1059,13 +1057,26 @@
         switchTab(activeUser==='ADMIN' ? 'dashboard' : 'pos');
     }
 
-    /* ---------------- POS - BÁN HÀNG (Cập nhật Sửa Giá V23 - Fix Lỗi Auto Tính Tổng) ---------------- */
+    /* ---------------- POS - BÁN HÀNG (Cập nhật V24 Cảnh Báo Tồn Kho + Fix Lỗi Gõ Số) ---------------- */
     function selectPosCus(c) { document.getElementById('pos-cus-input').value = `${c.name} - ${c.phone}`; document.getElementById('pos-cus-id').value = c.id; }
     function clearPosCus() { document.getElementById('pos-cus-input').value = ''; document.getElementById('pos-cus-id').value = ''; }
-    function addProdToCart(p) { let ex = posCart.find(i => i.id === p.id); if(ex) ex.qty++; else posCart.push({ id: p.id, name: p.name, price: p.price, cost: p.cost||0, qty: 1 }); document.getElementById('pos-prod-input').value=''; renderPosCart(); }
     
-    // Cập nhật V23: updateCartQty & updateCartPrice được gọi real-time từ sự kiện oninput
-    function updateCartQty(idx, v) { posCart[idx].qty = parseInt(v)||1; calcPos(); }
+    // MỚI V24: Kiểm tra tồn kho và phát cảnh báo khi chọn mặt hàng đã hết
+    function addProdToCart(p) { 
+        if (p.stock !== undefined && p.stock <= 0) {
+            uiAlert(`⚠️ Mặt hàng <b style="color:var(--danger);">${p.name}</b> hiện đã <b style="color:var(--danger);">HẾT HÀNG</b> trong kho (Tồn: ${p.stock})!`);
+        }
+        
+        let ex = posCart.find(i => i.id === p.id); 
+        if(ex) ex.qty++; 
+        else posCart.push({ id: p.id, name: p.name, price: p.price, cost: p.cost||0, qty: 1 }); 
+        
+        document.getElementById('pos-prod-input').value=''; 
+        renderPosCart(); 
+    }
+    
+    // MỚI V24: Cập nhật biến dữ liệu mượt mà, không render lại HTML danh sách để không văng con trỏ
+    function updateCartQty(idx, v) { posCart[idx].qty = parseInt(v)||0; calcPos(); }
     function updateCartPrice(idx, v) { posCart[idx].price = parseInt(v.replace(/[^0-9]/g, ''))||0; calcPos(); } 
     function removeCart(idx) { posCart.splice(idx,1); renderPosCart(); }
     
@@ -1074,9 +1085,7 @@
             <li class="cart-item">
                 <div style="flex:1;"><b style="color:var(--primary); font-size:0.95rem;">${c.name}</b></div>
                 <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                    <!-- Sửa lỗi tính tiền: Thay onchange = oninput cho quantity -->
                     <input type="number" value="${c.qty}" style="width:55px; padding:6px; border:1px solid var(--border); border-radius:6px; text-align:center;" oninput="updateCartQty(${i}, this.value)" title="Số lượng"> x 
-                    <!-- Sửa lỗi tính tiền: Thay onchange = oninput cho price để real-time ngay khi đang gõ -->
                     <input type="text" inputmode="numeric" value="${c.price.toLocaleString()}" style="width:95px; padding:6px; border:1px solid var(--primary); border-radius:6px; text-align:right; font-weight:bold;" oninput="formatNum(this); updateCartPrice(${i}, this.value)" title="Sửa giá bán"> đ 
                     <button class="btn btn-outline" style="padding:6px; color:var(--danger); border:none;" onclick="removeCart(${i})">✕</button>
                 </div>
@@ -1151,17 +1160,25 @@
         });
     }
 
-    /* ---------------- NHẬP KHO (ADMIN) ---------------- */
+    /* ---------------- NHẬP KHO (ADMIN - Cập nhật V24 Fix Lỗi Gõ Số Giá Nhập) ---------------- */
     function selectImpSup(s) { document.getElementById('imp-sup-input').value = `${s.name} - ${s.phone}`; document.getElementById('imp-sup-id').value = s.id; }
     function addProdToImp(p) { let ex = impCart.find(i => i.id === p.id); if(ex) ex.qty++; else impCart.push({ id: p.id, name: p.name, cost: p.cost||0, qty: 1 }); document.getElementById('imp-prod-input').value=''; renderImpCart(); }
-    function updateImpQty(idx, v) { impCart[idx].qty = parseInt(v)||1; renderImpCart(); } 
-    function updateImpCost(idx, v) { impCart[idx].cost = parseInt(v.replace(/[^0-9]/g, ''))||0; renderImpCart(); } 
+    
+    // MỚI V24: Cập nhật biến dữ liệu mượt mà không văng con trỏ
+    function updateImpQty(idx, v) { impCart[idx].qty = parseInt(v)||0; calcImpTotal(); } 
+    function updateImpCost(idx, v) { impCart[idx].cost = parseInt(v.replace(/[^0-9]/g, ''))||0; calcImpTotal(); } 
     function removeImp(idx) { impCart.splice(idx,1); renderImpCart(); }
-    function renderImpCart() { 
-        let sum = 0; 
-        document.getElementById('imp-cart').innerHTML = impCart.map((c,i) => { sum += c.cost * c.qty; return `<li class="cart-item"><div style="flex:1;"><b style="color:var(--text-main); font-size:0.9rem;">${c.name}</b></div><div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;"><input type="number" value="${c.qty}" style="width:60px; padding:6px; border:1px solid var(--border); border-radius:6px;" oninput="updateImpQty(${i}, this.value)"><input type="text" inputmode="numeric" value="${c.cost.toLocaleString()}" style="width:90px; padding:6px; border:1px solid var(--border); border-radius:6px; text-align:right; font-weight:bold; color:var(--danger);" oninput="formatNum(this); updateImpCost(${i}, this.value)"><button class="btn btn-outline" style="padding:6px; color:var(--danger); border:none;" onclick="removeImp(${i})">✕</button></div></li>`; }).join('') || '<li style="padding:20px; text-align:center;">Phiếu trống</li>'; 
-        setTxt('imp-total-txt', sum.toLocaleString() + ' đ'); 
+    
+    function calcImpTotal() {
+        let sum = impCart.reduce((s,i) => s + (i.cost * i.qty), 0);
+        setTxt('imp-total-txt', sum.toLocaleString() + ' đ');
     }
+
+    function renderImpCart() { 
+        document.getElementById('imp-cart').innerHTML = impCart.map((c,i) => { return `<li class="cart-item"><div style="flex:1;"><b style="color:var(--text-main); font-size:0.9rem;">${c.name}</b></div><div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;"><input type="number" value="${c.qty}" style="width:60px; padding:6px; border:1px solid var(--border); border-radius:6px;" oninput="updateImpQty(${i}, this.value)"><input type="text" inputmode="numeric" value="${c.cost.toLocaleString()}" style="width:90px; padding:6px; border:1px solid var(--border); border-radius:6px; text-align:right; font-weight:bold; color:var(--danger);" oninput="formatNum(this); updateImpCost(${i}, this.value)"><button class="btn btn-outline" style="padding:6px; color:var(--danger); border:none;" onclick="removeImp(${i})">✕</button></div></li>`; }).join('') || '<li style="padding:20px; text-align:center;">Phiếu trống</li>'; 
+        calcImpTotal(); 
+    }
+    
     function submitImport() { 
         if(impCart.length===0) return uiAlert("Chưa có hàng!"); 
         let sId = document.getElementById('imp-sup-id').value; if(!sId) return uiAlert("Chọn NCC!"); 
@@ -1170,7 +1187,7 @@
             let rId = genId('PN'); 
             importReceipts.push({ id: rId, supId: sId, date: getToday(), time: getTime(), total: sum, paid: paid, items: JSON.parse(JSON.stringify(impCart)), staffId: activeUser }); 
             impCart.forEach(c => { let inv = inventory.find(x=>x.id===c.id); if(inv) { inv.stock += c.qty; inv.cost = c.cost; } }); 
-            if(paid > 0) cashflow.push({ id: genId('CF'), date: getToday(), time: getTime(), type: 'chi_ncc', amount: paid, reason: `Thanh toán nhập hàng ${rId}`, staffId: activeUser, importId: rId, supId: sId }); // Fix thêm supId V23
+            if(paid > 0) cashflow.push({ id: genId('CF'), date: getToday(), time: getTime(), type: 'chi_ncc', amount: paid, reason: `Thanh toán nhập hàng ${rId}`, staffId: activeUser, importId: rId, supId: sId });
             pushDB(); impCart=[]; document.getElementById('imp-sup-input').value=''; document.getElementById('imp-sup-id').value=''; document.getElementById('imp-paid').value='0'; 
             renderImpCart(); renderData(); setTimeout(() => uiAlert("✅ Nhập hàng thành công!"), 200); 
         }); 
@@ -1262,7 +1279,7 @@
     }
     
     function addProdToHo(p) { let ex = hoCart.find(i=>i.id===p.id); if(ex) ex.qty++; else hoCart.push({id:p.id, name:p.name, price:p.price, cost:p.cost||0, qty:1}); document.getElementById('ho-prod-input').value=''; renderHoCart(); }
-    function updateHoQty(idx,v) { hoCart[idx].qty=parseInt(v)||1; calcHoTotal(); } 
+    function updateHoQty(idx,v) { hoCart[idx].qty=parseInt(v)||0; calcHoTotal(); } 
     function updateHoPrice(idx,v) { hoCart[idx].price=parseInt(v.replace(/[^0-9]/g, ''))||0; calcHoTotal(); } 
     function removeHo(idx) { hoCart.splice(idx,1); renderHoCart(); }
     
@@ -1392,8 +1409,6 @@
     function deleteProductBtn() { let id = document.getElementById('ep-id').value; closeModal('editProdModal'); setTimeout(() => deleteItemToBin(id, 'Sản Phẩm', inventory, x => x.name), 300); }
 
     function openEditCus(id) { let c = customers.find(x => String(x.id) === String(id)); if(!c) return; document.getElementById('ec-id').value = c.id; document.getElementById('ec-name').value = c.name; document.getElementById('ec-phone').value = c.phone || ''; document.getElementById('ec-monthly').checked = c.isMonthlyDebt ? true : false; openModal('editCusModal'); }
-    
-    // MỚI V23: Nút Xem Chi tiết Nợ trong Cây Viết Khách Hàng
     function openStatementFromEditCus() { let id = document.getElementById('ec-id').value; let name = document.getElementById('ec-name').value; closeModal('editCusModal'); openStatement(id, name); }
 
     function saveEditCus() { 
@@ -1405,8 +1420,6 @@
     function deleteCusBtn() { let id = document.getElementById('ec-id').value; closeModal('editCusModal'); setTimeout(() => deleteItemToBin(id, 'Khách Hàng', customers, x => x.name), 300); }
 
     function openEditSup(id) { let s = suppliers.find(x => String(x.id) === String(id)); if(!s) return; document.getElementById('es-id').value = s.id; document.getElementById('es-name').value = s.name; document.getElementById('es-phone').value = s.phone || ''; openModal('editSupModal'); }
-    
-    // MỚI V23: Nút Xem Chi tiết Nợ trong Cây Viết Nhà Cung Cấp
     function openSupStatementFromEditSup() { let id = document.getElementById('es-id').value; let name = document.getElementById('es-name').value; closeModal('editSupModal'); openSupStatement(id, name); }
 
     function saveEditSup() { 
@@ -1417,7 +1430,7 @@
     }
     function deleteSupBtn() { let id = document.getElementById('es-id').value; closeModal('editSupModal'); setTimeout(() => deleteItemToBin(id, 'Nhà Cung Cấp', suppliers, x => x.name), 300); }
 
-    /* ---------------- CHI TIẾT CÔNG NỢ ĐỐI TÁC (V23 Nâng Cấp) ---------------- */
+    /* ---------------- CHI TIẾT CÔNG NỢ ĐỐI TÁC ---------------- */
     function openStatement(id, name) { document.getElementById('stmt-cus-id').value = id; document.getElementById('stmt-cus-name').innerText = name; let today = getToday(); document.getElementById('stmt-from').value = today.substring(0,8) + '01'; document.getElementById('stmt-to').value = today; viewStatement(); openModal('stmtModal'); }
     function viewStatement() { 
         let cId = document.getElementById('stmt-cus-id').value, from = document.getElementById('stmt-from').value, to = document.getElementById('stmt-to').value; if(!cId || !from || !to) return; 
@@ -1456,7 +1469,6 @@
     
     function payStatement() { let noCuoi = parseInt(document.getElementById('stmt-nocuoi').innerText.replace(/[^0-9]/g, '')) || 0; if (noCuoi <= 0) return uiAlert("Khách không có nợ trong bảng kê này!"); let cId = document.getElementById('stmt-cus-id').value, cName = document.getElementById('stmt-cus-name').innerText; closeModal('stmtModal'); document.getElementById('debt-cus-id').value = cId; document.getElementById('debt-cus-name').innerText = cName; document.getElementById('debt-cus-amount').innerText = noCuoi.toLocaleString() + ' đ'; document.getElementById('debt-pay-amount').value = noCuoi.toLocaleString(); document.getElementById('debt-note').value = `Thanh toán Bảng Kê`; openModal('debtModal'); }
     
-    // MỚI V23: Hàm Mở Bảng Kê Nhà Cung Cấp
     function openSupStatement(id, name) {
         document.getElementById('sup-stmt-id').value = id;
         document.getElementById('sup-stmt-name').innerText = name;
@@ -1467,7 +1479,6 @@
         openModal('supStmtModal');
     }
     
-    // MỚI V23: Tính toán Bảng Kê NCC
     function viewSupStatement() {
         let sId = document.getElementById('sup-stmt-id').value;
         let from = document.getElementById('sup-stmt-from').value;
@@ -1499,7 +1510,6 @@
                 if(c.date < from) {
                     noCu -= c.amount;
                 } else if(c.date >= from && c.date <= to) {
-                    // Tránh cộng dồn nếu phiếu chi_ncc này đã được ghi nhận chung ở lúc nhập hàng có r.paid (Tùy logic V22, ở V22 phiếu tạo từ Import có importId nhưng SupId cũng có thể có, ta cần check không trùng lặp)
                     if (!c.importId || (c.importId && c.amount !== importReceipts.find(x=>x.id===c.importId)?.paid)) {
                         daTra += c.amount;
                         records.push({ date: c.date, time: c.time||'', id: c.id, note: `[Chi trả NCC] ${c.reason}`, amount: c.amount, isAdd: false });
