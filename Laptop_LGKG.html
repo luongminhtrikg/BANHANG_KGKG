@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Lương Gia KG - V25 (Hoàn Chỉnh)</title>
+    <title>Lương Gia KG - V26 (Cảnh Báo Kho, Gộp Trùng, Fix Bill, Xuất Excel A4)</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -113,7 +113,7 @@
     <div id="loginOverlay" style="position:fixed; inset:0; background:#1c252e; z-index:15000; display:flex; justify-content:center; align-items:center;">
         <div class="card" style="width: 90%; max-width: 400px; text-align: center; padding: 40px 20px;">
             <h2 style="color:var(--primary); margin-top:0;">LƯƠNG GIA KG</h2>
-            <p style="color:var(--text-muted); margin-bottom:10px;">Phần mềm quản lý V25</p>
+            <p style="color:var(--text-muted); margin-bottom:10px;">Phần mềm quản lý V26</p>
             <div id="net-status" style="font-size:0.8rem; color:var(--warning); margin-bottom:15px; min-height:15px;">Đang dò kết nối máy chủ...</div>
             <select id="login-user" class="form-control" style="margin-bottom:15px;"></select>
             <input type="password" id="login-pass" class="form-control" placeholder="Mật khẩu..." style="margin-bottom:20px;" onkeypress="if(event.key==='Enter') doLogin()">
@@ -222,7 +222,13 @@
                         <div class="card">
                             <div class="card-header" style="flex-wrap:wrap; gap:10px;">
                                 <h3 class="card-title">📦 Danh Mục Hàng Hóa</h3>
-                                <button class="btn btn-primary" onclick="openModal('quickAddModal')">➕ Thêm Hàng</button>
+                                <div style="display:flex; gap:5px;">
+                                    <button class="btn btn-warning admin-only" onclick="openMergeModal('prod')" title="Gộp các SP trùng tên">🔍 Lọc Trùng & Gộp</button>
+                                    <button class="btn btn-primary" onclick="openModal('quickAddModal')">➕ Thêm Hàng</button>
+                                </div>
+                            </div>
+                            <div id="inv-stats" style="font-weight:bold; color:var(--primary); margin-bottom:15px; background:#f0fdf4; padding:10px; border-radius:8px; border:1px solid var(--success);">
+                                <!-- Sẽ được render tự động -->
                             </div>
                             <input type="text" id="search-inv" class="form-control" placeholder="Lọc hàng hóa..." onkeyup="filterTable('inv-tbl', this.value)" style="margin-bottom:15px;">
                             <div class="table-wrap">
@@ -391,6 +397,7 @@
                             👥 Khách Hàng 
                             <button class="btn btn-success btn-icon" style="padding:2px 8px; font-size:0.8rem; margin-left:10px; border:none; display:inline-flex;" onclick="openModal('quickAddCusModal'); event.preventDefault();" title="Thêm khách hàng">➕</button>
                             <button class="btn btn-warning btn-icon" style="padding:2px 8px; font-size:0.8rem; margin-left:5px; border:none; float:right; display:inline-flex;" onclick="showMonthlyDebtModal(); event.preventDefault();" title="Lọc khách nợ tháng">📅 Nợ Tháng</button>
+                            <button class="btn btn-outline btn-icon" style="padding:2px 8px; font-size:0.8rem; margin-left:5px; border:none; float:right; display:inline-flex;" onclick="openMergeModal('cus'); event.preventDefault();" title="Gộp Khách Hàng Trùng Tên">🔍 Lọc Trùng</button>
                         </summary>
                         <input type="text" class="form-control" placeholder="Tìm khách..." onkeyup="filterTable('cus-tbl', this.value)" style="margin-bottom:15px;">
                         <div class="table-wrap"><table><thead><tr><th>Tên & SĐT</th><th>Tổng Nợ</th><th>Thao Tác</th></tr></thead><tbody id="cus-tbl"></tbody></table></div>
@@ -496,13 +503,16 @@
             <!-- CÀI ĐẶT -->
             <div id="admin" class="tab-content">
                 <div class="card" style="border-left: 4px solid var(--primary);">
-                    <h3 class="card-title">🏪 Thông Tin Cửa Hàng (In Lên Bill)</h3>
+                    <h3 class="card-title">🏪 Thông Tin Cửa Hàng (In Lên Bill & Excel)</h3>
                     <div class="row">
                         <div class="form-group col"><label>Tên Tiệm / Cửa Hàng</label><input type="text" id="cfg-name" class="form-control" placeholder="LƯƠNG GIA KG"></div>
                         <div class="form-group col"><label>Số điện thoại</label><input type="text" id="cfg-phone" class="form-control"></div>
                     </div>
                     <div class="form-group"><label>Địa chỉ</label><input type="text" id="cfg-addr" class="form-control"></div>
-                    <div class="form-group"><label>Link Ảnh Logo</label><input type="text" id="cfg-logo" class="form-control" placeholder="https://i.imgur.com/abc.png"></div>
+                    <div class="form-group">
+                        <label>Link Ảnh Logo (Sử dụng URL ảnh trực tiếp, VD: OneDrive, Imgur)</label>
+                        <input type="text" id="cfg-logo" class="form-control" placeholder="https://1drv.ms/i/... (Hoặc link ảnh đuôi .png/.jpg)">
+                    </div>
                     <button class="btn btn-primary" onclick="saveStoreInfo()">LƯU THÔNG TIN TIỆM</button>
                 </div>
 
@@ -519,12 +529,12 @@
                 </div>
                 
                 <details class="card" style="background:#fef2f2; border-color:#fca5a5; margin-bottom: 20px;">
-                    <summary style="font-size: 1.1rem; font-weight: 700; color: var(--danger); cursor: pointer; outline: none; list-style: none;">🗑️ Thùng Rác (Bấm để mở rộng)</summary>
+                    <summary style="font-size: 1.1rem; font-weight: 700; color: var(--danger); cursor: pointer; outline: none; list-style: none;">🗑️️ Thùng Rác (Bấm để mở rộng)</summary>
                     <div class="table-wrap" style="margin-top:15px;"><table style="background:transparent;"><thead><tr><th>Lúc Xóa</th><th>Phân Loại</th><th>Chi Tiết</th><th>Thao Tác</th></tr></thead><tbody id="recycle-bin-table"></tbody></table></div>
                 </details>
 
                 <details class="card" style="margin-bottom: 20px;">
-                    <summary style="font-size: 1.1rem; font-weight: 700; cursor: pointer; outline: none; list-style: none;">🕵️ Nhật Ký Hoạt Động</summary>
+                    <summary style="font-size: 1.1rem; font-weight: 700; cursor: pointer; outline: none; list-style: none;">🕵️️ Nhật Ký Hoạt Động</summary>
                     <div class="table-wrap" style="margin-top:15px;"><table><thead><tr><th>Thời Gian</th><th>Nhân Viên</th><th>Thao Tác</th><th>Chi Tiết</th></tr></thead><tbody id="activity-log-table"></tbody></table></div>
                 </details>
             </div>
@@ -534,6 +544,37 @@
 
     <!-- CÁC HỘP THOẠI MODALS -->
     
+    <!-- MODAL DASHBOARD HẾT HÀNG KHO (V26) -->
+    <div id="oosModal" class="modal-overlay">
+        <div class="modal-box" style="max-width:600px;">
+            <h3 class="modal-title" style="color:var(--danger);">⚠️ Danh Sách Hàng Sắp Hết / Đã Hết</h3>
+            <p style="font-size:0.9rem; color:var(--text-muted); margin-top:0;">Chỉ hiển thị các mặt hàng có bật "Báo động tồn dưới".</p>
+            <div class="table-wrap" style="max-height: 400px; overflow-y: auto;">
+                <table>
+                    <thead><tr><th>Mặt Hàng</th><th style="text-align:center;">Tồn Kho Hiện Tại</th><th style="text-align:center;">Mức Báo Động</th><th>Thao Tác</th></tr></thead>
+                    <tbody id="oos-tbody"></tbody>
+                </table>
+            </div>
+            <button class="btn btn-outline" style="width:100%; margin-top:15px; background:#f4f6f8;" onclick="closeModal('oosModal')">Đóng</button>
+        </div>
+    </div>
+
+    <!-- MODAL GỘP DỮ LIỆU TRÙNG LẶP (V26) -->
+    <div id="mergeModal" class="modal-overlay">
+        <div class="modal-box" style="max-width:700px;">
+            <h3 class="modal-title" style="color:var(--warning);">🔍 Danh Sách Phát Hiện Trùng Lặp</h3>
+            <p style="font-size:0.9rem; color:var(--text-muted); margin-top:0;">Hệ thống tự động quét các tên giống nhau. Bấm "Gộp" để dồn toàn bộ số liệu (tồn kho, công nợ) về dòng chính (Dòng 1) và xóa các dòng phụ.</p>
+            <input type="hidden" id="merge-type">
+            <div class="table-wrap" style="max-height: 400px; overflow-y: auto;">
+                <table>
+                    <thead><tr><th>Dòng Chính (Được giữ lại)</th><th>Các Dòng Phụ (Sẽ bị xóa sau khi dồn)</th><th>Thao Tác</th></tr></thead>
+                    <tbody id="merge-tbody"></tbody>
+                </table>
+            </div>
+            <button class="btn btn-outline" style="width:100%; margin-top:15px; background:#f4f6f8;" onclick="closeModal('mergeModal')">Đóng</button>
+        </div>
+    </div>
+
     <!-- MODAL DASHBOARD CÔNG NỢ NCC -->
     <div id="dashSupDebtModal" class="modal-overlay">
         <div class="modal-box" style="max-width:500px;">
@@ -654,7 +695,7 @@
         </div>
     </div>
 
-    <!-- BẢNG KÊ CÔNG NỢ KHÁCH HÀNG (V25 Thêm nút Xuất Excel) -->
+    <!-- BẢNG KÊ CÔNG NỢ KHÁCH HÀNG (V26) -->
     <div id="stmtModal" class="modal-overlay">
         <div class="modal-box" style="max-width:800px;">
             <h3 class="modal-title">Bảng Kê Công Nợ Khách Hàng: <b id="stmt-cus-name" style="color:var(--primary);"></b></h3>
@@ -949,9 +990,7 @@
         for(let r of rows) r.style.display = removeAccents(r.innerText).includes(f) ? '' : 'none'; 
     }
     
-    function closeAllAutocomplete() { 
-        document.querySelectorAll('.autocomplete-items').forEach(el => el.style.display='none'); 
-    }
+    function closeAllAutocomplete() { document.querySelectorAll('.autocomplete-items').forEach(el => el.style.display='none'); }
     
     function handleSearch(prefix, dataArr, clickCb) {
         let listEl = document.getElementById(prefix + '-autocomplete'); 
@@ -1434,13 +1473,14 @@
     }
     
     // =====================================
-    // MỚI V25: HÀM XUẤT EXCEL BẢNG KÊ KHÁCH
+    // V26: XUẤT EXCEL BẢNG KÊ KHÁCH (Cân lề A4 + Logo)
     // =====================================
     function exportExcelStatement() {
         let cId = document.getElementById('stmt-cus-id').value;
         let cName = document.getElementById('stmt-cus-name').innerText;
         let from = document.getElementById('stmt-from').value;
         let to = document.getElementById('stmt-to').value;
+        let phone = customers.find(x => x.id === cId)?.phone || '';
         
         let noCu = 0, phatSinh = 0, daTra = 0, rowsHtml = '', stt = 1;
 
@@ -1453,22 +1493,22 @@
                         let amt = t.amount + (t.partsRevenue || 0); phatSinh += amt;
                         let extraNote = (t.note && !t.details.includes(t.note)) ? ` (${t.note})` : '';
                         rowsHtml += `<tr>
-                            <td style="border:1px solid #000; text-align:center;">${stt++}</td>
-                            <td style="border:1px solid #000; text-align:center;">${formatD(t.date)}</td>
-                            <td style="border:1px solid #000; text-align:center;">${t.id}</td>
-                            <td style="border:1px solid #000;">${t.details}${extraNote}</td>
-                            <td style="border:1px solid #000; text-align:right;">${amt}</td>
-                            <td style="border:1px solid #000; text-align:center;">0</td>
+                            <td style="border:1px solid #000; text-align:center; vertical-align:middle;">${stt++}</td>
+                            <td style="border:1px solid #000; text-align:center; vertical-align:middle;">${formatD(t.date)}</td>
+                            <td style="border:1px solid #000; text-align:center; vertical-align:middle;">${t.id}</td>
+                            <td style="border:1px solid #000; text-align:left; vertical-align:middle; mso-number-format:'\\@';">${t.details}${extraNote}</td>
+                            <td style="border:1px solid #000; text-align:right; vertical-align:middle; color:#d97706;">${amt}</td>
+                            <td style="border:1px solid #000; text-align:center; vertical-align:middle;">-</td>
                         </tr>`;
                     } else if (t.type === 'pay') {
                         daTra += t.amount;
                         rowsHtml += `<tr>
-                            <td style="border:1px solid #000; text-align:center;">${stt++}</td>
-                            <td style="border:1px solid #000; text-align:center;">${formatD(t.date)}</td>
-                            <td style="border:1px solid #000; text-align:center;">${t.id}</td>
-                            <td style="border:1px solid #000;">Thanh toán nợ: ${t.details}</td>
-                            <td style="border:1px solid #000; text-align:center;">0</td>
-                            <td style="border:1px solid #000; text-align:right;">${t.amount}</td>
+                            <td style="border:1px solid #000; text-align:center; vertical-align:middle;">${stt++}</td>
+                            <td style="border:1px solid #000; text-align:center; vertical-align:middle;">${formatD(t.date)}</td>
+                            <td style="border:1px solid #000; text-align:center; vertical-align:middle;">${t.id}</td>
+                            <td style="border:1px solid #000; text-align:left; vertical-align:middle;">Thanh toán nợ: ${t.details}</td>
+                            <td style="border:1px solid #000; text-align:center; vertical-align:middle;">-</td>
+                            <td style="border:1px solid #000; text-align:right; vertical-align:middle; color:#059669;">${t.amount}</td>
                         </tr>`;
                     }
                 }
@@ -1476,26 +1516,122 @@
         });
 
         let noCuoi = noCu + phatSinh - daTra;
+        let logoHtml = storeInfo.logoUrl ? `<img src="${storeInfo.logoUrl}" height="60" style="vertical-align:middle;">` : '';
 
         let html = `
         <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-        <head><meta charset="utf-8"></head>
+        <head>
+            <meta charset="utf-8">
+            <!--[if gte mso 9]>
+            <xml>
+                <x:ExcelWorkbook>
+                    <x:ExcelWorksheets>
+                        <x:ExcelWorksheet>
+                            <x:Name>BangKeCongNo</x:Name>
+                            <x:WorksheetOptions>
+                                <x:Print>
+                                    <x:ValidPrinterInfo/>
+                                    <x:PaperSizeIndex>9</x:PaperSizeIndex> <!-- A4 Size -->
+                                    <x:HorizontalResolution>600</x:HorizontalResolution>
+                                    <x:VerticalResolution>600</x:VerticalResolution>
+                                    <x:FitWidth>1</x:FitWidth>
+                                    <x:FitHeight>0</x:FitHeight>
+                                </x:Print>
+                                <x:Selected/>
+                                <x:Panes></x:Panes>
+                            </x:WorksheetOptions>
+                        </x:ExcelWorksheet>
+                    </x:ExcelWorksheets>
+                </x:ExcelWorkbook>
+            </xml>
+            <![endif]-->
+            <style>
+                body { font-family: 'Times New Roman', serif; font-size: 13pt; }
+                table { border-collapse: collapse; table-layout: fixed; width: 100%; }
+                td, th { padding: 6px; word-wrap: break-word; }
+            </style>
+        </head>
         <body>
-            <h2 style="text-align:center;">BẢNG KÊ CHI TIẾT CÔNG NỢ</h2>
-            <p><b>Khách hàng:</b> ${cName}</p>
-            <p><b>Từ ngày:</b> ${formatD(from)} <b>Đến ngày:</b> ${formatD(to)}</p>
-            <table style="border-collapse: collapse; width: 100%; border: 1px solid #000;">
+            <table style="width:100%;">
+                <col width="50">  <!-- STT -->
+                <col width="90">  <!-- Ngày -->
+                <col width="100"> <!-- Chứng từ -->
+                <col width="320"> <!-- Diễn giải -->
+                <col width="120"> <!-- Nợ -->
+                <col width="120"> <!-- Có -->
+
+                <!-- Header Cửa Hàng -->
+                <tr>
+                    <td colspan="3" style="text-align:left; vertical-align:middle;">${logoHtml}</td>
+                    <td colspan="3" style="text-align:right; vertical-align:middle;">
+                        <b style="font-size:16pt; color:#000;">${storeInfo.name}</b><br>
+                        <span style="font-size:10pt;">ĐC: ${storeInfo.address}</span><br>
+                        <span style="font-size:10pt;">ĐT: ${storeInfo.phone}</span>
+                    </td>
+                </tr>
+                <tr><td colspan="6" style="height:10px;"></td></tr>
+
+                <!-- Tiêu đề Bảng Kê -->
+                <tr>
+                    <td colspan="6" style="text-align:center; font-size:18pt; font-weight:bold; text-transform:uppercase;">BẢNG KÊ CHI TIẾT CÔNG NỢ</td>
+                </tr>
+                <tr>
+                    <td colspan="6" style="text-align:center; font-style:italic; font-size:11pt;">(Từ ngày ${formatD(from)} đến ngày ${formatD(to)})</td>
+                </tr>
+                <tr><td colspan="6" style="height:10px;"></td></tr>
+
+                <!-- Thông tin khách hàng -->
+                <tr>
+                    <td colspan="6" style="text-align:left;"><b>Khách hàng:</b> ${cName}</td>
+                </tr>
+                <tr>
+                    <td colspan="6" style="text-align:left;"><b>Điện thoại:</b> ${phone}</td>
+                </tr>
+                <tr>
+                    <td colspan="6" style="text-align:right; font-style:italic; font-size:10pt;">Đơn vị tính: VNĐ</td>
+                </tr>
+
+                <!-- Bảng Dữ Liệu -->
                 <thead>
-                    <tr style="background-color: #f0f0f0;">
-                        <th style="border:1px solid #000;">STT</th><th style="border:1px solid #000;">Ngày</th><th style="border:1px solid #000;">Chứng từ</th><th style="border:1px solid #000;">Diễn giải</th><th style="border:1px solid #000;">Phát sinh (Nợ)</th><th style="border:1px solid #000;">Thanh toán (Có)</th>
+                    <tr style="background-color: #e5e7eb; font-weight:bold; text-align:center;">
+                        <th style="border:1px solid #000;">STT</th>
+                        <th style="border:1px solid #000;">Ngày</th>
+                        <th style="border:1px solid #000;">Chứng từ</th>
+                        <th style="border:1px solid #000;">Diễn giải</th>
+                        <th style="border:1px solid #000;">Phát sinh (Nợ)</th>
+                        <th style="border:1px solid #000;">Thanh toán (Có)</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr><td colspan="4" style="border:1px solid #000; text-align:right; font-weight:bold;">Số dư nợ đầu kỳ:</td><td style="border:1px solid #000; text-align:right; font-weight:bold;">${noCu}</td><td style="border:1px solid #000; text-align:center;">-</td></tr>
-                    ${rowsHtml || `<tr><td colspan="6" style="border:1px solid #000; text-align:center;">Không có phát sinh trong kỳ</td></tr>`}
-                    <tr><td colspan="4" style="border:1px solid #000; text-align:right; font-weight:bold;">Cộng phát sinh trong kỳ:</td><td style="border:1px solid #000; text-align:right; font-weight:bold;">${phatSinh}</td><td style="border:1px solid #000; text-align:right; font-weight:bold;">${daTra}</td></tr>
-                    <tr><td colspan="4" style="border:1px solid #000; text-align:right; font-weight:bold; font-size:16px;">SỐ DƯ NỢ CUỐI KỲ (KHÁCH CÒN NỢ):</td><td colspan="2" style="border:1px solid #000; text-align:center; font-weight:bold; font-size:16px; color:red;">${noCuoi}</td></tr>
+                    <tr>
+                        <td colspan="4" style="border:1px solid #000; font-weight:bold; text-align:right;">Số dư nợ đầu kỳ:</td>
+                        <td style="border:1px solid #000; font-weight:bold; text-align:right;">${noCu > 0 ? noCu : 0}</td>
+                        <td style="border:1px solid #000; text-align:center;">-</td>
+                    </tr>
+                    ${rowsHtml || `<tr><td colspan="6" style="border:1px solid #000; text-align:center; font-style:italic;">Không có phát sinh trong kỳ</td></tr>`}
+                    <tr>
+                        <td colspan="4" style="border:1px solid #000; font-weight:bold; text-align:right;">Cộng phát sinh trong kỳ:</td>
+                        <td style="border:1px solid #000; font-weight:bold; text-align:right;">${phatSinh}</td>
+                        <td style="border:1px solid #000; font-weight:bold; text-align:right;">${daTra}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="4" style="border:1px solid #000; font-weight:bold; text-align:right; font-size:14pt;">SỐ DƯ NỢ CUỐI KỲ (KHÁCH CÒN NỢ):</td>
+                        <td colspan="2" style="border:1px solid #000; font-weight:bold; text-align:center; font-size:16pt; color:red;">${noCuoi}</td>
+                    </tr>
                 </tbody>
+
+                <!-- Chữ ký xác nhận -->
+                <tr><td colspan="6" style="height:30px;"></td></tr>
+                <tr>
+                    <td colspan="3" style="text-align:center; vertical-align:top;">
+                        <b>Người mua hàng</b><br>
+                        <i style="font-size:10pt;">(Ký, ghi rõ họ tên)</i>
+                    </td>
+                    <td colspan="3" style="text-align:center; vertical-align:top;">
+                        <b>Đại diện cửa hàng</b><br>
+                        <i style="font-size:10pt;">(Ký, ghi rõ họ tên)</i>
+                    </td>
+                </tr>
             </table>
         </body>
         </html>`;
@@ -1504,7 +1640,7 @@
         let url = URL.createObjectURL(blob);
         let a = document.createElement('a');
         a.href = url;
-        a.download = `BangKeCongNo_${removeAccents(cName).replace(/\\s+/g, '_')}_${getToday()}.xls`;
+        a.download = `BangKeCongNo_${removeAccents(cName).replace(/\s+/g, '_')}_${getToday()}.xls`;
         a.click();
     }
     
@@ -1589,8 +1725,91 @@
     function showMonthlyDebtModal() { let html = ''; customers.forEach(c => { if(c.isMonthlyDebt) { let debt = getCusDebt(c.id); html += `<tr><td><b>${c.name}</b><br><small>${c.phone}</small></td><td><b style="color:${debt>0?'var(--danger)':'var(--text-main)'};">${debt.toLocaleString()} đ</b></td><td><button class="btn btn-info" style="padding:4px 8px; font-size:0.8rem;" onclick="closeModal('monthlyDebtModal'); openStatement('${c.id}', '${c.name}')">📝 Lập Bảng Kê</button></td></tr>`; } }); document.getElementById('monthly-debt-tbl').innerHTML = html || `<tr><td colspan="3" style="text-align:center;">Trống.</td></tr>`; openModal('monthlyDebtModal'); }
 
     // =====================================
-    // MỚI V25: MODAL TỔNG QUAN NỢ NCC
+    // V26: MODAL QUÉT VÀ GỘP TRÙNG LẶP
     // =====================================
+    function openMergeModal(type) {
+        let groups = {};
+        let data = (type === 'prod') ? inventory : customers;
+        
+        data.forEach(item => {
+            let key = removeAccents(item.name).replace(/\s+/g, '').toLowerCase();
+            if(!groups[key]) groups[key] = [];
+            groups[key].push(item);
+        });
+        
+        let html = '';
+        for(let key in groups) {
+            if(groups[key].length > 1) {
+                let main = groups[key][0];
+                let others = groups[key].slice(1);
+                let othersTxt = others.map(o => `<b>${o.name}</b> ${type === 'prod' ? `(Tồn: ${o.stock||0})` : ''}`).join('<br>');
+                let mainTxt = `<b>${main.name}</b> ${type === 'prod' ? `(Tồn: ${main.stock||0})` : ''}`;
+                
+                html += `<tr>
+                    <td style="color:var(--primary);">${mainTxt}</td>
+                    <td style="color:var(--text-muted);">${othersTxt}</td>
+                    <td><button class="btn btn-warning" style="color:#000;" onclick="executeMerge('${type}', '${key}')">Gộp Dữ Liệu</button></td>
+                </tr>`;
+            }
+        }
+        
+        document.getElementById('merge-tbody').innerHTML = html || '<tr><td colspan="3" style="text-align:center; padding:20px;">Tuyệt vời, kho lưu trữ sạch sẽ, không có dữ liệu trùng lặp!</td></tr>';
+        document.getElementById('merge-type').value = type;
+        openModal('mergeModal');
+    }
+
+    function executeMerge(type, key) {
+        uiConfirm("⚠️ BẠN CHẮC CHẮN MUỐN GỘP?\nHệ thống sẽ dồn số liệu vào dòng chính và XÓA các dòng phụ. Hành động này không thể hoàn tác!", () => {
+            let groups = {};
+            let data = (type === 'prod') ? inventory : customers;
+            data.forEach(item => {
+                let k = removeAccents(item.name).replace(/\s+/g, '').toLowerCase();
+                if(!groups[k]) groups[k] = [];
+                groups[k].push(item);
+            });
+            
+            let itemsToMerge = groups[key];
+            if(!itemsToMerge || itemsToMerge.length < 2) return;
+            
+            let main = itemsToMerge[0];
+            let others = itemsToMerge.slice(1);
+            let otherIds = others.map(o => o.id);
+            
+            if (type === 'prod') {
+                others.forEach(o => { main.stock += (o.stock || 0); });
+                inventory = inventory.filter(i => !otherIds.includes(i.id));
+            } else if (type === 'cus') {
+                transactions.forEach(t => { if(otherIds.includes(t.customerId)) t.customerId = main.id; });
+                serviceOrders.forEach(o => { if(otherIds.includes(o.customerId)) o.customerId = main.id; });
+                customers = customers.filter(c => !otherIds.includes(c.id));
+            }
+            
+            pushDB();
+            renderData();
+            openMergeModal(type);
+            setTimeout(() => uiAlert('✅ Gộp và dọn dẹp thành công!'), 200);
+        });
+    }
+
+    // =====================================
+    // V26: MODAL TỔNG QUAN HẾT HÀNG / NỢ NCC
+    // =====================================
+    function showOosModal() {
+        let html = '';
+        inventory.forEach(i => {
+            if(i.minStock > 0 && (i.stock || 0) <= i.minStock) {
+                html += `<tr>
+                    <td><b>${i.name}</b></td>
+                    <td style="text-align:center; color:var(--danger); font-weight:bold; font-size:1.1rem;">${i.stock||0}</td>
+                    <td style="text-align:center;">${i.minStock}</td>
+                    <td style="text-align:center;"><button class="btn btn-outline" style="padding:4px 8px; font-size:0.85rem;" onclick="closeModal('oosModal'); openEditProd('${i.id}')">Sửa / Nhập</button></td>
+                </tr>`;
+            }
+        });
+        document.getElementById('oos-tbody').innerHTML = html || `<tr><td colspan="4" style="text-align:center; padding:20px;">Tất cả mặt hàng đều dồi dào!</td></tr>`;
+        openModal('oosModal');
+    }
+
     function showDashSupDebt() {
         let html = '';
         let list = suppliers.map(s => ({...s, debt: getSupDebt(s.id)})).filter(s => s.debt > 0).sort((a,b) => b.debt - a.debt);
@@ -1626,6 +1845,12 @@
             if(debt > 0) { supDebtTotal += debt; supDebtCount++; }
         });
 
+        // V26 Đếm số hàng sắp hết
+        let oosCount = 0;
+        inventory.forEach(i => {
+            if(i.minStock > 0 && (i.stock || 0) <= i.minStock) oosCount++;
+        });
+
         document.getElementById('dash-cards').innerHTML = `
             <div class="col card dash-card" style="border-left:4px solid var(--primary);" onclick="showDashDetail('sales')">
                 <h4 style="margin:0 0 10px 0; color:var(--text-muted);">💰 Doanh Thu Hôm Nay</h4>
@@ -1650,6 +1875,11 @@
                 <div style="font-size:0.85rem; margin-top:8px;">
                     Đang nợ: <b style="color:var(--danger);">${supDebtCount} NCC</b>
                 </div>
+            </div>
+            <div class="col card dash-card" style="border-left:4px solid var(--danger); background:#fff1f2;" onclick="showOosModal()">
+                <h4 style="margin:0 0 10px 0; color:var(--danger);">⚠️ Sắp Hết Hàng (Cảnh báo)</h4>
+                <h2 style="margin:0; color:var(--danger);">${oosCount} Món</h2>
+                <div style="font-size:0.85rem; margin-top:8px; color:var(--text-muted);">Chạm mốc báo động.</div>
             </div>
         `;
     }
@@ -1781,8 +2011,11 @@
         document.getElementById('preview-content').innerHTML = h; document.getElementById('print-area').innerHTML = h; openModal('previewModal');
     }
 
+    // =====================================
+    // V26: FIX MẪU IN BILL BỊ TRÀN CHỮ
+    // =====================================
     function printBill(id, type) {
-        let h = '', logoHtml = storeInfo.logoUrl ? `<img src="${storeInfo.logoUrl}" style="max-width:120px; max-height:60px; object-fit:contain; margin:0 auto 5px auto; display:block;">` : '';
+        let h = '', logoHtml = storeInfo.logoUrl ? `<img src="${storeInfo.logoUrl}" style="max-width:100%; max-height:60px; object-fit:contain; margin:0 auto 5px auto; display:block;">` : '';
         if(type==='sales') {
             let t = transactions.find(x=>x.id===id); if(!t) return;
             let c = customers.find(x=>x.id===t.customerId) || {name:'Khách lẻ', phone:''}, trs = ''; 
@@ -1791,7 +2024,7 @@
             } else { 
                 trs=`<tr><td style="padding:6px 0; border-bottom:1px dashed #ccc;">${t.details}</td><td style="text-align:right; font-weight:bold; vertical-align:bottom; padding:6px 0; border-bottom:1px dashed #ccc;">${(t.amount+(t.partsRevenue||0)).toLocaleString()}</td></tr>`; 
             }
-            h = `<div style="width:78mm; margin:0 auto; font-family:sans-serif; color:#000; text-align:left; background:#fff;"><div style="text-align:center;">${logoHtml}<h2 style="margin:0; font-size:18px;">${storeInfo.name}</h2><p style="margin:5px 0; font-size:12px;">ĐC: ${storeInfo.address}<br>ĐT: ${storeInfo.phone}</p></div><h3 style="text-align:center; background:#000 !important; color:#fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; padding:6px; margin:15px 0 10px 0; font-size:14px; border-radius:4px;">${t.type==='pay'?'PHIẾU THU NỢ':'HÓA ĐƠN BÁN HÀNG'}</h3><div style="font-size:13px; margin-bottom:10px; display:flex; justify-content:space-between;"><div>Số: <b>${t.id}</b></div><div>Ngày: <b>${formatD(t.date)} ${t.time||''}</b></div></div><div style="font-size:13px; margin-bottom:10px;">Khách hàng: <b>${c.name}</b></div><table style="width:100%; font-size:13px; border-collapse:collapse; margin-bottom:10px;"><thead><tr style="border-bottom:2px solid #000;"><th style="text-align:left; padding-bottom:5px;">${t.type==='pay'?'Chi tiết':'Mặt hàng'}</th><th style="text-align:right; padding-bottom:5px;">Thành tiền</th></tr></thead><tbody>${trs}</tbody></table><div style="text-align:right; font-size:16px; margin:15px 0; font-weight:bold;">TỔNG CỘNG: ${(t.amount+(t.partsRevenue||0)).toLocaleString()} đ</div><div style="text-align:center; font-size:12px; font-style:italic; border-top:1px dashed #000; padding-top:10px;">Cảm ơn quý khách đã ủng hộ!</div></div>`;
+            h = `<div style="width:78mm; margin:0 auto; font-family:sans-serif; color:#000; text-align:left; background:#fff;"><div style="text-align:center;">${logoHtml}<h2 style="margin:0; font-size:18px;">${storeInfo.name}</h2><p style="margin:5px 0; font-size:12px;">ĐC: ${storeInfo.address}<br>ĐT: ${storeInfo.phone}</p></div><h3 style="text-align:center; background:#000 !important; color:#fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; padding:6px; margin:15px 0 10px 0; font-size:14px; border-radius:4px;">${t.type==='pay'?'PHIẾU THU NỢ':'HÓA ĐƠN BÁN HÀNG'}</h3><div style="font-size:13px; margin-bottom:10px; display:flex; justify-content:space-between;"><div>Số: <b>${t.id}</b></div><div>Ngày: <b>${formatD(t.date)} ${t.time||''}</b></div></div><div style="font-size:13px; margin-bottom:10px;">Khách hàng: <b>${c.name}</b></div><table style="width:100%; font-size:13px; border-collapse:collapse; margin-bottom:10px; table-layout:fixed; word-wrap:break-word;"><thead><tr style="border-bottom:2px solid #000;"><th style="text-align:left; padding-bottom:5px; width:65%;">Mặt hàng</th><th style="text-align:right; padding-bottom:5px; width:35%;">Thành tiền</th></tr></thead><tbody>${trs}</tbody></table><div style="text-align:right; font-size:16px; margin:15px 0; font-weight:bold;">TỔNG CỘNG: ${(t.amount+(t.partsRevenue||0)).toLocaleString()} đ</div><div style="text-align:center; font-size:12px; font-style:italic; border-top:1px dashed #000; padding-top:10px;">Cảm ơn quý khách đã ủng hộ!</div></div>`;
         } else if(type==='service') {
             let o = serviceOrders.find(x=>x.id===id); if(!o) return;
             let c = customers.find(x=>x.id===o.customerId) || {name:'Khách', phone:''};
@@ -1818,12 +2051,17 @@
         }
 
         let isAdmin = (activeUser === 'ADMIN');
+        
+        // V26: Thống kê số lượng kho hàng
+        let totalItems = inventory.reduce((s,i) => s + (i.stock || 0), 0);
+        document.getElementById('inv-stats').innerHTML = `📊 Tổng số mặt hàng: <b>${inventory.length} mã</b> &nbsp;|&nbsp; Tổng tồn kho thực tế: <b>${totalItems.toLocaleString()} cái/bộ</b>`;
+
         document.getElementById('inv-tbl').innerHTML = inventory.map(i=>`
             <tr>
                 <td><b>${i.name}</b></td>
                 ${isAdmin ? `<td><span style="color:var(--warning); font-weight:bold;">${(i.cost||0).toLocaleString()}đ</span></td>` : ''}
                 <td><span style="color:var(--primary); font-weight:bold;">${i.price.toLocaleString()}đ</span></td>
-                <td style="text-align:center;"><span style="font-weight:bold; font-size:1.1rem; ${i.minStock>0 && i.stock<=i.minStock ? 'color:var(--danger);' : ''}">${i.stock !== undefined ? i.stock : 0}</span></td>
+                <td style="text-align:center;"><span style="font-weight:bold; font-size:1.1rem; ${i.minStock>0 && (i.stock||0)<=i.minStock ? 'color:var(--danger);' : ''}">${i.stock !== undefined ? i.stock : 0}</span></td>
                 <td style="text-align:center;"><button class="btn btn-icon" style="color:var(--primary); margin:0 auto;" onclick="openEditProd('${i.id}')">✏️</button></td>
             </tr>
         `).join('');
