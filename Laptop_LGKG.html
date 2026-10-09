@@ -1524,7 +1524,7 @@
         document.getElementById('stmt-tbody').innerHTML = html || `<tr><td colspan="4" style="text-align:center;">Không phát sinh trong kỳ</td></tr>`; 
     }
     
-    // MỚI: XUẤT EXCEL TÁCH TỪNG MÓN RA TỪNG DÒNG CHI TIẾT
+    // CẬP NHẬT: HÀM XUẤT EXCEL TÁCH TỪNG MÓN RA TỪNG DÒNG CHI TIẾT
     function exportExcelStatement() {
         let cId = document.getElementById('stmt-cus-id').value;
         let cName = document.getElementById('stmt-cus-name').innerText;
@@ -1539,31 +1539,37 @@
                 if(t.date < from) {
                     if(t.type === 'debt') noCu += (t.amount + (t.partsRevenue||0)); else if(t.type === 'pay') noCu -= t.amount;
                 } else if (t.date >= from && t.date <= to) {
+                    
                     if (t.type === 'debt') {
+                        // Gom nội dung chung: Tên máy, tình trạng, người kêu sửa (Ghi chú)
+                        let chung = [];
+                        if (t.details) chung.push(t.details);
+                        if (t.note && !t.details.includes(t.note)) chung.push(t.note);
+                        let extraNote = chung.join(' - ');
+
                         if (t.itemsRaw && t.itemsRaw.length > 0) {
-                            // Tách từng món linh kiện / hàng hóa ra 1 dòng
+                            // 1. Tách từng món linh kiện / hàng hóa
                             t.itemsRaw.forEach(item => {
                                 let rowTotal = item.qty * item.price;
                                 phatSinh += rowTotal;
                                 rowsHtml += `<tr>
                                     <td class="b-c">${stt++}</td>
                                     <td class="b-c">${formatD(t.date)}</td>
-                                    <td class="b-c">${t.id}</td>
-                                    <td class="b-l">${item.name}</td>
+                                    <td class="b-l"><b>${item.name}</b><br><i style="color:#444; font-size:10pt;">(Thuộc: ${extraNote})</i></td>
                                     <td class="b-c">${item.qty}</td>
                                     <td class="b-r">${item.price}</td>
                                     <td class="b-r text-danger">${rowTotal}</td>
                                     <td class="b-c">-</td>
                                 </tr>`;
                             });
-                            // Thêm dòng Tiền công (nếu có)
+                            
+                            // 2. Tách riêng phần tiền công sửa chữa (nếu có)
                             if (t.amount > 0) {
                                 phatSinh += t.amount;
                                 rowsHtml += `<tr>
                                     <td class="b-c">${stt++}</td>
                                     <td class="b-c">${formatD(t.date)}</td>
-                                    <td class="b-c">${t.id}</td>
-                                    <td class="b-l">Tiền công dịch vụ / Khác</td>
+                                    <td class="b-l"><b>Tiền công / Dịch vụ</b><br><i style="color:#444; font-size:10pt;">(Thuộc: ${extraNote})</i></td>
                                     <td class="b-c">1</td>
                                     <td class="b-r">${t.amount}</td>
                                     <td class="b-r text-danger">${t.amount}</td>
@@ -1571,17 +1577,15 @@
                                 </tr>`;
                             }
                         } else {
-                            // Không có itemsRaw thì ghi 1 dòng tổng quát
+                            // Không có món lẻ (Ví dụ: bán nguyên con máy không tạo list giỏ hàng)
                             let amt = t.amount + (t.partsRevenue || 0);
                             phatSinh += amt;
-                            let extraNote = (t.note && !t.details.includes(t.note)) ? ` (${t.note})` : '';
                             rowsHtml += `<tr>
                                 <td class="b-c">${stt++}</td>
                                 <td class="b-c">${formatD(t.date)}</td>
-                                <td class="b-c">${t.id}</td>
-                                <td class="b-l" style="mso-number-format:'\\@';">${t.details}${extraNote}</td>
-                                <td class="b-c">-</td>
-                                <td class="b-c">-</td>
+                                <td class="b-l"><b>${t.details}</b>${t.note ? '<br><i style="color:#444; font-size:10pt;">(Ghi chú: '+t.note+')</i>' : ''}</td>
+                                <td class="b-c">1</td>
+                                <td class="b-r">${amt}</td>
                                 <td class="b-r text-danger">${amt}</td>
                                 <td class="b-c">-</td>
                             </tr>`;
@@ -1591,8 +1595,7 @@
                         rowsHtml += `<tr>
                             <td class="b-c">${stt++}</td>
                             <td class="b-c">${formatD(t.date)}</td>
-                            <td class="b-c">${t.id}</td>
-                            <td class="b-l">Thanh toán nợ: ${t.details}</td>
+                            <td class="b-l" style="color:#059669;"><b>Thanh toán / Trừ nợ</b><br><i style="color:#444; font-size:10pt;">(${t.details})</i></td>
                             <td class="b-c">-</td>
                             <td class="b-c">-</td>
                             <td class="b-c">-</td>
@@ -1604,7 +1607,6 @@
         });
 
         let noCuoi = noCu + phatSinh - daTra;
-        let logoHtml = storeInfo.logoUrl ? `<img src="${storeInfo.logoUrl}" height="80" style="vertical-align:middle;">` : '';
 
         let html = `
         <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
@@ -1617,78 +1619,59 @@
                 .b-c { border: 1px solid #000; text-align: center; vertical-align: middle; }
                 .b-l { border: 1px solid #000; text-align: left; vertical-align: middle; }
                 .b-r { border: 1px solid #000; text-align: right; vertical-align: middle; }
-                .text-danger { color: #d97706; font-weight: bold; }
+                .text-danger { color: #d90429; font-weight: bold; }
                 .text-success { color: #059669; font-weight: bold; }
             </style>
         </head>
         <body>
             <table>
-                <!-- Cấu trúc 8 cột chuẩn -->
-                <col width="50"> <col width="90"> <col width="110"> <col width="300"> 
-                <col width="50"> <col width="90"> <col width="110"> <col width="110"> 
+                <col width="50"> <col width="110"> <col width="350"> 
+                <col width="80"> <col width="100"> <col width="120"> <col width="120"> 
 
-                <!-- Header cân đối -->
                 <tr>
-                    <td colspan="3" style="text-align:left; vertical-align:middle;">${logoHtml}</td>
-                    <td colspan="5" style="text-align:right; vertical-align:middle;">
+                    <td colspan="3" style="text-align:left; vertical-align:middle;"></td>
+                    <td colspan="4" style="text-align:right; vertical-align:middle;">
                         <b style="font-size:16pt;">${storeInfo.name}</b><br>
                         <span>ĐC: ${storeInfo.address}</span><br>
                         <span>ĐT: ${storeInfo.phone}</span>
                     </td>
                 </tr>
-                <tr><td colspan="8" style="height:15px;"></td></tr>
+                <tr><td colspan="7" style="height:15px;"></td></tr>
+                <tr><td colspan="7" style="text-align:center; font-size:18pt; font-weight:bold;">BẢNG KÊ CHI TIẾT CÔNG NỢ</td></tr>
+                <tr><td colspan="7" style="text-align:center; font-style:italic;">(Từ ngày ${formatD(from)} đến ngày ${formatD(to)})</td></tr>
+                <tr><td colspan="7" style="height:15px;"></td></tr>
+                <tr><td colspan="7"><b>Khách hàng:</b> ${cName}</td></tr>
+                <tr><td colspan="7"><b>Điện thoại:</b> ${phone}</td></tr>
+                <tr><td colspan="7" style="text-align:right; font-style:italic;">Đơn vị tính: VNĐ</td></tr>
 
-                <!-- Title -->
-                <tr><td colspan="8" style="text-align:center; font-size:18pt; font-weight:bold;">BẢNG KÊ CHI TIẾT CÔNG NỢ</td></tr>
-                <tr><td colspan="8" style="text-align:center; font-style:italic;">(Từ ngày ${formatD(from)} đến ngày ${formatD(to)})</td></tr>
-                <tr><td colspan="8" style="height:15px;"></td></tr>
-
-                <!-- Info -->
-                <tr><td colspan="8"><b>Khách hàng:</b> ${cName}</td></tr>
-                <tr><td colspan="8"><b>Điện thoại:</b> ${phone}</td></tr>
-                <tr><td colspan="8" style="text-align:right; font-style:italic;">Đơn vị tính: VNĐ</td></tr>
-
-                <!-- Bảng Dữ Liệu -->
                 <thead>
                     <tr style="background-color: #e5e7eb; font-weight:bold; text-align:center;">
                         <th class="b-c">STT</th>
-                        <th class="b-c">Ngày</th>
-                        <th class="b-c">Chứng từ</th>
-                        <th class="b-c">Mặt hàng / Diễn giải</th>
-                        <th class="b-c">SL</th>
+                        <th class="b-c">Ngày tháng năm</th>
+                        <th class="b-c">Nội dung (Mặt hàng / Dịch vụ)</th>
+                        <th class="b-c">Số lượng</th>
                         <th class="b-c">Đơn giá</th>
-                        <th class="b-c">Phát sinh (Nợ)</th>
-                        <th class="b-c">Thanh toán (Có)</th>
+                        <th class="b-c">Thành tiền (Phát sinh)</th>
+                        <th class="b-c">Thanh toán (Thu vào)</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td colspan="6" class="b-r" style="font-weight:bold;">Số dư nợ đầu kỳ:</td>
+                        <td colspan="5" class="b-r" style="font-weight:bold;">Số dư nợ đầu kỳ:</td>
                         <td class="b-r" style="font-weight:bold;">${noCu > 0 ? noCu : 0}</td>
                         <td class="b-c">-</td>
                     </tr>
-                    ${rowsHtml || `<tr><td colspan="8" class="b-c" style="font-style:italic;">Không có phát sinh trong kỳ</td></tr>`}
+                    ${rowsHtml || `<tr><td colspan="7" class="b-c" style="font-style:italic; text-align:center;">Không có phát sinh trong kỳ</td></tr>`}
                     <tr>
-                        <td colspan="6" class="b-r" style="font-weight:bold;">Cộng phát sinh trong kỳ:</td>
+                        <td colspan="5" class="b-r" style="font-weight:bold;">Cộng phát sinh trong kỳ:</td>
                         <td class="b-r" style="font-weight:bold;">${phatSinh}</td>
                         <td class="b-r" style="font-weight:bold;">${daTra}</td>
                     </tr>
                     <tr>
-                        <td colspan="6" class="b-r" style="font-weight:bold; font-size:14pt;">SỐ DƯ NỢ CUỐI KỲ (CÒN NỢ):</td>
+                        <td colspan="5" class="b-r" style="font-weight:bold; font-size:14pt;">SỐ DƯ NỢ CUỐI KỲ (CÒN NỢ):</td>
                         <td colspan="2" class="b-c" style="font-weight:bold; font-size:16pt; color:red;">${noCuoi}</td>
                     </tr>
                 </tbody>
-
-                <!-- Footer Signatures -->
-                <tr><td colspan="8" style="height:30px;"></td></tr>
-                <tr>
-                    <td colspan="4" style="text-align:center; vertical-align:top;">
-                        <b>Người mua hàng</b><br><i style="font-size:10pt;">(Ký, ghi rõ họ tên)</i>
-                    </td>
-                    <td colspan="4" style="text-align:center; vertical-align:top;">
-                        <b>Đại diện cửa hàng</b><br><i style="font-size:10pt;">(Ký, ghi rõ họ tên)</i>
-                    </td>
-                </tr>
             </table>
         </body>
         </html>`;
@@ -1697,7 +1680,7 @@
         let url = URL.createObjectURL(blob);
         let a = document.createElement('a');
         a.href = url;
-        a.download = `BangKeCongNo_${removeAccents(cName).replace(/\s+/g, '_')}_${getToday()}.xls`;
+        a.download = `BangKe_${removeAccents(cName).replace(/\s+/g, '_')}_${getToday()}.xls`;
         a.click();
     }
     
