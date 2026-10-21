@@ -909,22 +909,40 @@
 
     // HÀM TẢI ẢNH BILL (GỬI ZALO) - TÍNH NĂNG MỚI
     function downloadBillImage() {
-        let element = document.getElementById('print-area').firstElementChild;
-        if(!element) return;
-        html2canvas(element, { scale: 2, useCORS: true }).then(canvas => {
-            let link = document.createElement('a');
-            link.download = `HoaDon_${Date.now()}.png`;
-            link.href = canvas.toDataURL('image/png');
-            link.click();
-            uiAlert("✅ Đã tải ảnh xuống máy! Bro có thể gửi Zalo ngay.");
-        });
+    // Trỏ đúng vào khung đang hiển thị trên màn hình thay vì khung in bị ẩn
+    let element = document.getElementById('preview-content');
+    if(!element) {
+        uiAlert("❌ Không tìm thấy nội dung để chụp!");
+        return;
     }
+    
+    // Tạm đổi text nút để báo hiệu đang xử lý
+    let btn = event.target || event.srcElement;
+    let oldText = btn.innerText;
+    btn.innerText = "⏳ Đang tạo ảnh...";
+    btn.disabled = true;
 
-    function logAction(action, detail) { 
-        let s = staffs.find(x=>x.id===activeUser); let sName = s ? s.name : 'Hệ thống'; 
-        activityLogs.push({ id: 'LOG_'+Date.now(), time: formatD(getToday()) + ' ' + getTime(), staff: sName, action: action, detail: detail }); 
-        if(activityLogs.length > 200) activityLogs.shift(); 
-    }
+    html2canvas(element, { 
+        scale: 2, 
+        useCORS: true,
+        backgroundColor: "#ffffff" // Ép nền trắng cứng để chống lỗi nền đen dính chữ
+    }).then(canvas => {
+        let link = document.createElement('a');
+        link.download = `HoaDon_LuongGia_${Date.now()}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        
+        // Trả lại trạng thái nút
+        btn.innerText = oldText;
+        btn.disabled = false;
+        
+        uiAlert("✅ Đã tải ảnh nét căng! Bro check thư mục tải xuống để gửi Zalo nhé.");
+    }).catch(err => {
+        btn.innerText = oldText;
+        btn.disabled = false;
+        uiAlert("❌ Lỗi khi chụp ảnh: " + err);
+    });
+}
     
     function deleteItemToBin(id, type, arrayRef, labelGen) { 
         uiConfirm('⚠️ CHẮC CHẮN MUỐN XÓA?', () => { 
