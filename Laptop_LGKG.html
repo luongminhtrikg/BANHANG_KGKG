@@ -695,7 +695,7 @@
             <!-- BẢN MỚI CÓ NÚT LƯU ẢNH ZALO DÀNH CHO MOBILE -->
             <div style="display:flex; gap:10px; margin-top:15px; flex-wrap:wrap;">
                 <button class="btn btn-outline" style="flex:1; min-width:120px;" onclick="closeModal('previewModal')">❌ THOÁT</button>
-                <button class="btn btn-success" style="flex:1; min-width:160px; font-size:1.1rem;" onclick="downloadBillImage()">📥 TẢI ẢNH (GỬI ZALO)</button>
+                <button class="btn btn-success" style="flex:1; min-width:160px; font-size:1.1rem;" onclick="downloadBillImage()">📥 TẢI ẢNH BILL</button>
                 <button class="btn btn-primary" style="flex:1; min-width:160px; font-size:1.1rem;" onclick="executePrint()">🖨️ CHỐT IN RA GIẤY</button>
             </div>
         </div>
@@ -907,38 +907,53 @@
 
     // HÀM TẢI ẢNH BILL ZALO DÀNH CHO MOBILE - FIX CHUẨN 100%
     function downloadBillImage() {
-        let element = document.getElementById('preview-content');
-        if(!element) return;
-        
-        let btn = event.target || event.srcElement;
-        let oldText = btn.innerText;
-        btn.innerText = "⏳ Đang tạo ảnh...";
-        btn.disabled = true;
-
-        html2canvas(element, { 
-            scale: 2, 
-            useCORS: true, 
-            backgroundColor: "#ffffff" // Chống nền đen
-        }).then(canvas => {
-            let imgData = canvas.toDataURL('image/png');
-            
-            // Xóa HTML cũ và hiển thị ảnh lên màn hình để user NHẤN GIỮ (Dành riêng cho iPhone/Android)
-            document.getElementById('preview-content').innerHTML = `
-                <div style="text-align:center; padding-bottom: 20px;">
-                    <p style="color:var(--danger); font-weight:bold; font-size:1.1rem; margin:0 0 10px 0; background:#fef2f2; padding:10px; border-radius:8px; border:1px solid #fecaca;">
-                        👇 NHẤN GIỮ VÀO ẢNH BÊN DƯỚI VÀ CHỌN "LƯU VÀO ẢNH" 👇<br>
-                        <small style="color:var(--text-main); font-weight:normal;">(Hoặc chọn "Sao chép" rồi dán thẳng qua Zalo)</small>
-                    </p>
-                    <img src="${imgData}" style="max-width:100%; border:1px solid #ccc; border-radius:8px; box-shadow:0 4px 15px rgba(0,0,0,0.2);">
-                </div>`;
-            
-            btn.innerText = "✅ Xong! Hãy Nhấn Giữ Ảnh Phía Trên";
-            setTimeout(() => { btn.innerText = oldText; btn.disabled = false; }, 3000);
-        }).catch(err => {
-            btn.innerText = oldText; btn.disabled = false;
-            uiAlert("❌ Lỗi khi chụp ảnh: " + err);
-        });
+    let element = document.getElementById('preview-content');
+    if(!element) {
+        uiAlert("❌ Không tìm thấy nội dung để chụp!");
+        return;
     }
+    
+    let btn = event.target || event.srcElement;
+    let oldText = btn.innerText;
+    btn.innerText = "⏳ Đang tạo ảnh...";
+    btn.disabled = true;
+
+    // Thủ thuật chống cắt xén ảnh trên điện thoại: 
+    // Nhân bản bill ra ngoài màn hình chính để chụp full 100% chiều cao
+    let clone = element.cloneNode(true);
+    clone.style.position = 'absolute';
+    clone.style.top = '-9999px';
+    clone.style.left = '-9999px';
+    clone.style.width = element.offsetWidth + 'px';
+    clone.style.height = 'auto'; // Ép full chiều cao không bị cuộn
+    document.body.appendChild(clone);
+
+    html2canvas(clone, { 
+        scale: 2, 
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        logging: false
+    }).then(canvas => {
+        // Chụp xong thì xóa bản nháp đi
+        document.body.removeChild(clone); 
+        
+        // Tự động kích hoạt tải file về máy (1 click ăn luôn cho PC và Mobile)
+        let link = document.createElement('a');
+        link.download = `HoaDon_LuongGia_${Date.now()}.png`;
+        link.href = canvas.toDataURL('image/png');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        btn.innerText = "✅ Đã tải xong!";
+        setTimeout(() => { btn.innerText = oldText; btn.disabled = false; }, 2000);
+    }).catch(err => {
+        if(document.body.contains(clone)) document.body.removeChild(clone);
+        btn.innerText = oldText;
+        btn.disabled = false;
+        uiAlert("❌ Lỗi khi chụp ảnh: " + err);
+    });
+}
 
     function logAction(action, detail) { 
         let s = staffs.find(x=>x.id===activeUser); let sName = s ? s.name : 'Hệ thống'; 
