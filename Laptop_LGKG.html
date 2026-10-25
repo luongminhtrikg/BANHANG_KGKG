@@ -918,14 +918,13 @@
     btn.innerText = "⏳ Đang tạo ảnh...";
     btn.disabled = true;
 
-    // Thủ thuật chống cắt xén ảnh trên điện thoại: 
-    // Nhân bản bill ra ngoài màn hình chính để chụp full 100% chiều cao
+    // Nhân bản bill ra ngoài màn hình chính để chụp full 100% chiều cao (chống cắt mất khúc dưới)
     let clone = element.cloneNode(true);
     clone.style.position = 'absolute';
     clone.style.top = '-9999px';
     clone.style.left = '-9999px';
     clone.style.width = element.offsetWidth + 'px';
-    clone.style.height = 'auto'; // Ép full chiều cao không bị cuộn
+    clone.style.height = 'auto'; 
     document.body.appendChild(clone);
 
     html2canvas(clone, { 
@@ -934,19 +933,42 @@
         backgroundColor: "#ffffff",
         logging: false
     }).then(canvas => {
-        // Chụp xong thì xóa bản nháp đi
         document.body.removeChild(clone); 
-        
-        // Tự động kích hoạt tải file về máy (1 click ăn luôn cho PC và Mobile)
-        let link = document.createElement('a');
-        link.download = `HoaDon_LuongGia_${Date.now()}.png`;
-        link.href = canvas.toDataURL('image/png');
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        btn.innerText = "✅ Đã tải xong!";
-        setTimeout(() => { btn.innerText = oldText; btn.disabled = false; }, 2000);
+        let fileName = `HoaDon_LuongGia_${Date.now()}.png`;
+
+        canvas.toBlob(function(blob) {
+            let file = new File([blob], fileName, { type: 'image/png' });
+
+            // Trị bệnh điện thoại: Bật menu hệ thống để Lưu vào máy hoặc Gửi Zalo trực tiếp
+            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+                navigator.share({
+                    files: [file],
+                    title: 'Hóa Đơn',
+                    text: 'Gửi hóa đơn Lương Gia KG'
+                }).then(() => {
+                    btn.innerText = "✅ Đã lưu/gửi!";
+                    setTimeout(() => { btn.innerText = oldText; btn.disabled = false; }, 2000);
+                }).catch(err => {
+                    // Nếu user bấm Hủy chia sẻ thì trả lại nút bình thường
+                    btn.innerText = oldText; 
+                    btn.disabled = false;
+                });
+            } else {
+                // Trị bệnh máy tính: Tải file thẳng về thư mục Downloads
+                let url = URL.createObjectURL(blob);
+                let link = document.createElement('a');
+                link.download = fileName;
+                link.href = url;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url); // Dọn dẹp bộ nhớ chống lag
+                
+                btn.innerText = "✅ Đã tải xong!";
+                setTimeout(() => { btn.innerText = oldText; btn.disabled = false; }, 2000);
+            }
+        }, 'image/png');
+
     }).catch(err => {
         if(document.body.contains(clone)) document.body.removeChild(clone);
         btn.innerText = oldText;
@@ -954,7 +976,6 @@
         uiAlert("❌ Lỗi khi chụp ảnh: " + err);
     });
 }
-
     function logAction(action, detail) { 
         let s = staffs.find(x=>x.id===activeUser); let sName = s ? s.name : 'Hệ thống'; 
         activityLogs.push({ id: 'LOG_'+Date.now(), time: formatD(getToday()) + ' ' + getTime(), staff: sName, action: action, detail: detail }); 
