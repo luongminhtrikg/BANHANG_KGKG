@@ -3384,7 +3384,45 @@ const LGShop = (() => {
     tx.note+=' · '+order.model+' · '+order.condition;
     return tx;
   }
-  return {category,serviceItem,suggest,totals,allocate,saveQuote,sellQuote,quickRepair};
+  function intake(d,p,env){
+    P.assert(env.user==='ADMIN','Chỉ quản trị được nhập kho tại đây.');
+    P.assert(p.requestId,'Thiếu mã lần nhập.');
+    P.assert(![...d.importReceipts,...(d.storeInfo.recoveredReceipts||[])].some(r=>r.quickIntakeId===p.requestId),'Lần nhập này đã lưu.');
+    P.assert(['purchase','recovered'].includes(p.source),'Chọn nguồn nhập.');
+    P.assert(Number.isSafeInteger(p.qty)&&p.qty>0,'Số lượng nhập phải là số nguyên dương.');
+    P.amount(p.cost);P.amount(p.price);P.amount(p.paid);
+    P.assert(p.source!=='recovered'||p.cost===0&&p.paid===0,'Nhập tháo máy vốn 0 không ghi tiền mua hoặc tiền trả.');
+    P.assert(p.source!=='recovered'||p.note?.trim(),'Ghi rõ máy nguồn / lý do nhập vốn 0.');
+    let item;
+    if(p.itemId){item=d.inventory.find(i=>i.id===p.itemId);P.assert(item&&d.inventory.filter(i=>i.id===p.itemId).length===1,'Không tìm thấy hàng hoặc mã đang trùng.');}
+    else{
+      const name=(p.name||'').trim(),norm=s=>s.trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').toLowerCase();
+      P.assert(name,'Nhập tên linh kiện.');P.assert(!d.inventory.some(i=>norm(i.name)===norm(name)),'Tên hàng đã có. Tìm hàng đó và chọn Nhập thêm.');
+      item={id:env.id('SP'),name,category:p.category||'Chờ xác nhận / Chưa phân nhóm',stock:0,cost:0,price:p.price,minStock:0};d.inventory.push(item);
+    }
+    P.assert(!serviceItem(item),'Tiền công không cần nhập kho.');
+    P.assert(P.n(item.stock)>=0,'Hàng đang âm kho, cần kiểm kê trước.');
+    let receipt;
+    if(p.source==='purchase'){
+      let supplier=d.suppliers.find(s=>s.id===p.supId);
+      if(!supplier&&p.supName?.trim()){
+        supplier=d.suppliers.find(s=>s.name.trim().toLowerCase()===p.supName.trim().toLowerCase());
+        if(!supplier){supplier={id:env.id('NCC'),name:p.supName.trim(),phone:''};d.suppliers.push(supplier);}
+      }
+      P.assert(supplier,'Chọn nhà cung cấp hoặc nhập tên người bán.');
+      receipt=P.purchase(d,{supId:supplier.id,items:[{id:item.id,qty:p.qty,cost:p.cost,price:p.price}],paid:p.paid,account:p.account},env);
+      receipt.note=p.note||'';
+    }else{
+      P.assert(!item.serial||P.n(item.stock)+p.qty<=1,'Máy có serial chỉ được tồn một chiếc.');
+      item.cost=P.money(P.n(item.stock)*P.n(item.cost)/(P.n(item.stock)+p.qty));item.stock=P.n(item.stock)+p.qty;
+      receipt={id:env.id('NT'),date:env.date,time:env.time,staffId:env.user,source:'recovered',total:0,paid:0,note:p.note.trim(),items:[{id:item.id,name:item.name,qty:p.qty,cost:0}]};
+      (d.storeInfo.recoveredReceipts??=[]).push(receipt);
+    }
+    receipt.quickIntakeId=p.requestId;
+    P.audit(d,env,p.source==='purchase'?'Nhập linh kiện nhanh':'Nhập linh kiện tháo máy vốn 0',receipt.id+' · '+item.name+' × '+p.qty+' · '+(p.note||''));
+    return {item:P.clone(item),receiptId:receipt.id};
+  }
+  return {category,serviceItem,suggest,totals,allocate,saveQuote,sellQuote,quickRepair,intake};
 })();
 
 </script>
@@ -3399,7 +3437,7 @@ const LGShop = (() => {
   const val=id=>$('sh-'+id).value.trim(),num=id=>{const s=val(id);P.assert(/^\d+$/.test(s),'Nhập số nguyên đồng / số lượng hợp lệ.');return P.amount(Number(s));};
   const customersSelect=(id='')=>'<label class="shop-field">Khách trong danh bạ (bắt buộc nếu còn nợ)<select id="sh-customer" class="form-control">'+O('','Khách lẻ — thanh toán đủ')+customers.map(c=>'<option value="'+E(c.id)+'" '+(c.id===id?'selected':'')+'>'+E(c.name)+' · '+E(c.phone||'')+'</option>').join('')+'</select></label>';
   const account=()=>'<label class="shop-field">Thu vào<select class="form-control" id="sh-account">'+O('cash','Tiền mặt')+O('bank','Ngân hàng')+'</select></label>';
-  let draft=null,quick=null,mode='',quotePreview=false;
+  let draft=null,quick=null,mode='',quotePreview=false,intakeDraft=null,returnMode='';
   document.head.insertAdjacentHTML('beforeend','<style>.shop-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}.shop-field{display:block;margin:10px 0}.shop-actions{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.shop-muted{font-size:13px;color:#64748b}.shop-scroll{overflow:auto}.shop-scroll input{min-width:85px}.shop-summary{padding:12px;background:#eff6ff;border-radius:8px;margin:12px 0}#shop-modal .modal-box{max-width:960px;width:95%;max-height:92vh;overflow:auto}#shop-modal table td{white-space:normal}#shop-modal button{cursor:pointer}</style>');
   document.body.insertAdjacentHTML('beforeend','<datalist id="shop-categories"></datalist><div class="modal-overlay" id="shop-modal"><div class="modal-box"><div style="display:flex;justify-content:space-between;gap:12px"><h3 class="modal-title" id="shop-title"></h3>'+btn('close','Đóng')+'</div><div id="shop-body"></div></div></div>');
   const page=(title,body)=>{$('shop-title').textContent=title;$('shop-body').innerHTML=body;openModal('shop-modal');};
@@ -3434,6 +3472,7 @@ const LGShop = (() => {
   window.renderData=function(){const r=render.apply(this,arguments);categoryControls();inventoryView();return r;};
   $('pos-header-card').insertAdjacentHTML('afterbegin','<details style="margin-bottom:12px"><summary style="cursor:pointer;text-align:right" aria-label="Tác vụ bán hàng khác">⋯ Thêm</summary><div class="shop-actions">'+btn('pc','Ráp bộ PC')+btn('quotes','Báo giá đã lưu')+'</div></details>');
   $('service').insertAdjacentHTML('afterbegin','<div class="shop-actions">'+btn('quick','⚡ Sửa nhanh / giao ngay')+'</div>');
+  $('inventory').insertAdjacentHTML('afterbegin','<div class="shop-actions">'+btn('intake-history','Lịch sử nhập linh kiện tại phiếu')+'</div>');
   $('imp-cart').insertAdjacentHTML('afterend','<details style="margin:12px 0"><summary>Gợi ý giá bán theo giá nhập</summary><p class="shop-muted">Dựa trên giá vốn dự kiến sau nhập; bạn chọn giá, phần mềm không tự đổi giá bán.</p>'+btn('import-prices','Xem gợi ý giá')+'</details>');
   function newPC(){return {id:genId('BG'),revision:0,name:'Bộ máy tính',customerId:'',customerName:'',phone:'',note:'',validUntil:getToday(),items:[],total:0};}
   function readForm(){
@@ -3443,14 +3482,43 @@ const LGShop = (() => {
     if(mode==='pc'){d.name=val('bundle');d.note=val('note');d.validUntil=val('until');d.total=num('total');}
     else{d.machine=val('machine');d.work=val('work');d.labor=num('labor');d.paid=num('paid');d.account=val('account');}
   }
-  function picker(){return '<div class="shop-grid"><label class="shop-field">Tìm linh kiện trong kho<input class="form-control" id="sh-search" placeholder="Tên hoặc mã hàng"></label><label class="shop-field">Chọn hàng<select class="form-control" id="sh-product"></select></label></div>'+btn('add','+ Thêm linh kiện');}
-  function pickFilter(){const q=removeAccents($('sh-search').value).toLowerCase();$('sh-product').innerHTML=O('','Chọn linh kiện')+inventory.filter(i=>!S.serviceItem(i)&&removeAccents(i.name+' '+i.id).toLowerCase().includes(q)).map(i=>O(i.id,i.name+' · Tồn '+M(i.stock))).join('');}
+  function picker(){return '<label class="shop-field" for="sh-search">Tìm linh kiện trong kho (không bắt buộc khi chỉ sửa công)</label><div style="display:flex;gap:8px"><input class="form-control" id="sh-search" autocomplete="off" placeholder="Gõ tên hoặc mã, ví dụ: pin CMOS…" aria-controls="sh-results">'+(activeUser==='ADMIN'?btn('intake-new','＋ Thêm & nhập kho'):'')+'</div><div id="sh-results" aria-live="polite" style="max-height:260px;overflow:auto;margin:8px 0"></div>';}
+  function pickFilter(){
+    const tokens=removeAccents($('sh-search').value).toLowerCase().trim().split(/\s+/).filter(Boolean);
+    if(!tokens.length){$('sh-results').innerHTML='<p class="shop-muted">Gõ từ khóa để xem hàng phù hợp; bấm tên hàng để thêm vào phiếu.</p>';return;}
+    const matches=inventory.filter(i=>!S.serviceItem(i)&&tokens.every(t=>removeAccents(i.name+' '+i.id+' '+S.category(i)).toLowerCase().includes(t)));
+    $('sh-results').innerHTML=matches.length?matches.map(i=>{const duplicate=inventory.filter(x=>x.id===i.id).length>1;return '<div style="display:flex;gap:8px;align-items:center;border-bottom:1px solid #e2e8f0;padding:8px 0"><button type="button" class="btn btn-outline" style="flex:1;text-align:left;white-space:normal" data-pick-item="'+E(i.id)+'" '+(duplicate?'disabled':'')+'><b>'+E(i.name)+'</b><br><small>'+E(i.id)+' · Tồn '+M(i.stock)+' · Giá bán '+M(i.price)+' đ'+(duplicate?' · Trùng mã, cần đối chiếu':'')+'</small></button>'+(activeUser==='ADMIN'&&!duplicate?'<button type="button" class="btn btn-outline" data-intake-item="'+E(i.id)+'">＋ Nhập thêm</button>':'')+'</div>';}).join(''):'<p class="shop-muted">Không tìm thấy hàng. Bấm ＋ cạnh ô tìm để tạo hàng và nhập kho.</p>';
+  }
+  function addItem(id){
+    readForm();const d=mode==='pc'?draft:quick,i=inventory.find(i=>i.id===id);
+    P.assert(i&&inventory.filter(x=>x.id===id).length===1,'Hàng không còn hoặc bị trùng mã.');
+    const prior=d.items.find(x=>x.id===id);
+    if(mode==='quick')P.assert(P.n(i.stock)>=(prior?.qty||0)+1,'Chưa đủ tồn. Bấm Nhập thêm để ghi nguồn hàng trước.');
+    if(prior)prior.qty++;else d.items.push({id:i.id,name:i.name,qty:1,price:P.n(i.price),warranty:''});
+    if(mode==='pc')d.total=d.items.reduce((s,i)=>s+i.qty*i.price,0);
+    editor(mode);
+  }
+  function intakeOpen(id=''){
+    P.assert(activeUser==='ADMIN','Chỉ quản trị được nhập kho tại đây.');readForm();returnMode=mode;
+    const i=inventory.find(i=>i.id===id);
+    intakeDraft={requestId:genId('IN'),itemId:id,name:i?.name||$('sh-search').value.trim(),price:P.n(i?.price),cost:P.n(i?.cost),category:i?S.category(i):''};
+    mode='intake';
+    page('Thêm linh kiện & nhập kho', '<p class="shop-muted">Phiếu sửa / cấu hình đang nhập được giữ lại. Lưu bên dưới sẽ nhập kho thật ngay, kể cả khi bạn chưa hoàn tất phiếu sửa.</p>'+field('intake-name','Tên linh kiện',intakeDraft.name)+'<label class="shop-field">Nhóm hàng<input class="form-control" id="sh-intake-category" list="shop-categories" value="'+E(intakeDraft.category)+'"></label><label class="shop-field">Nguồn hàng<select class="form-control" id="sh-source">'+O('purchase','Mua từ nhà cung cấp / người bán')+O('recovered','Tháo máy / được cho — vốn 0')+'</select></label><div class="shop-grid">'+field('qty','Số lượng nhập',1,'number')+field('intake-price','Giá bán / cái (đ)',intakeDraft.price,'number')+'</div><div id="sh-purchase-fields"><label class="shop-field">Nhà cung cấp<select class="form-control" id="sh-supplier">'+O('','Chọn hoặc nhập tên người bán bên dưới')+suppliers.map(s=>O(s.id,s.name)).join('')+'</select></label>'+field('supplier-name','Người bán mới (nếu chưa chọn nhà cung cấp)')+'<div class="shop-grid">'+field('cost','Giá mua / cái (đ)',intakeDraft.cost,'number')+field('intake-paid','Đã trả người bán (đ)',0,'number')+account()+'</div>'+btn('intake-pay-full','Điền trả đủ')+'</div>'+field('intake-note','Ghi chú / máy nguồn (bắt buộc nếu vốn 0)')+'<div class="shop-summary" id="sh-intake-summary"></div><p class="shop-muted" id="sh-recovered-hint" style="display:none">Vốn 0: tăng số lượng kho, không tạo tiền chi hoặc nợ nhà cung cấp. Ghi rõ máy tháo / nguồn cho. Nếu máy nguồn còn giá vốn cần phân bổ thì không dùng lựa chọn vốn 0 này.</p><div class="shop-actions">'+btn('intake-save','Lưu nhập kho & thêm 1 món vào phiếu')+btn('intake-back','Quay lại, chưa nhập')+'</div>');
+    $('sh-intake-name').readOnly=!!id;$('sh-intake-category').readOnly=!!id;$('sh-intake-price').readOnly=!!id;
+    $('sh-source').onchange=intakeSummary;intakeSummary();
+  }
+  function intakeSummary(){
+    const recovered=val('source')==='recovered';$('sh-purchase-fields').style.display=recovered?'none':'';$('sh-recovered-hint').style.display=recovered?'':'none';
+    const total=recovered?0:Number($('sh-qty').value)*Number($('sh-cost').value),paid=recovered?0:Number($('sh-intake-paid').value);
+    $('sh-intake-summary').textContent='Tiền nhập: '+M(total)+' đ · Đã trả: '+M(paid)+' đ · Còn nợ người bán: '+M(total-paid)+' đ';
+  }
   function lineTable(d){return '<div class="shop-scroll"><table><thead><tr><th>Linh kiện</th><th>SL</th><th>Giá bán / cái</th>'+(mode==='pc'?'<th>Bảo hành</th>':'')+'<th>Thành tiền</th><th></th></tr></thead><tbody>'+d.items.map((i,k)=>'<tr><td>'+E(i.name)+'</td><td><input class="form-control" type="number" min="1" step="1" data-line="'+k+'" data-key="qty" value="'+i.qty+'"></td><td><input class="form-control" type="number" min="0" step="1" data-line="'+k+'" data-key="price" value="'+i.price+'"></td>'+(mode==='pc'?'<td><input class="form-control" data-line="'+k+'" data-key="warranty" value="'+E(i.warranty)+'" placeholder="VD: 12 tháng"></td>':'')+'<td>'+M(i.qty*i.price)+'</td><td>'+btn('remove-'+k,'×')+'</td></tr>').join('')+'</tbody></table></div>';}
   function editor(kind){
     mode=kind;const d=kind==='pc'?draft:quick;
     let h=customersSelect(d.customerId)+'<div class="shop-grid">'+field('name','Tên khách',d.customerName)+field('phone','Điện thoại',d.phone)+'</div>';
     h+=kind==='pc'?field('bundle','Tên bộ máy',d.name):'<div class="shop-grid">'+field('machine','Máy / model / serial',d.machine)+field('work','Đã sửa gì, cho ai?',d.work)+'</div>';
-    h+=picker()+lineTable(d);
+    if(kind==='quick')h+='<p class="shop-summary"><b>Chỉ sửa lấy tiền công?</b> Bỏ qua linh kiện, nhập Tiền công bên dưới → Điền thu đủ → Hoàn tất & thu tiền.</p>';
+    h+=picker()+(d.items.length?lineTable(d):'<p class="shop-muted">Chưa thêm linh kiện'+(kind==='quick'?' — vẫn lưu được phiếu chỉ có tiền công.':'.')+'</p>');
     if(kind==='pc'){
       h+='<div class="shop-grid">'+field('total','Giá bán trọn bộ (đ)',d.total,'number')+field('until','Báo giá có hiệu lực đến',d.validUntil,'date')+'</div>'+field('note','Ghi chú gửi khách',d.note);
       h+='<div class="shop-summary" id="sh-summary"></div>';
@@ -3490,6 +3558,18 @@ const LGShop = (() => {
     page('Gợi ý giá bán sau nhập','<p class="shop-muted">Giá vốn bình quân dự kiến = (vốn tồn + tiền hàng nhập) ÷ tổng số lượng. Đây là gợi ý theo mức lãi, chưa khảo sát giá thị trường. Nhập hàng vẫn cần lưu tại phiếu nhập.</p><div class="shop-scroll"><table><thead><tr><th>Hàng</th><th>Vốn dự kiến</th><th>Giá đang bán</th><th>Chọn giá đề xuất</th></tr></thead><tbody>'+impCart.map((line,k)=>{const i=inventory.find(i=>i.id===line.id);if(!i)return '';const qty=Number(i.stock)+Number(line.qty),cost=qty>0?Math.round((Number(i.stock)*Number(i.cost)+line.qty*line.cost)/qty):0;return '<tr><td>'+E(i.name)+'</td><td>'+M(cost)+'</td><td>'+M(i.price)+'</td><td>'+[10,15,20].map(m=>'<button class="btn btn-outline" data-price-item="'+E(i.id)+'" data-price-value="'+S.suggest(cost,m)+'">'+m+'%: '+M(S.suggest(cost,m))+'</button>').join(' ')+'</td></tr>';}).join('')+'</tbody></table></div>');
   }
   async function action(a){
+    if(a==='intake-history'){
+      P.assert(activeUser==='ADMIN','Chỉ quản trị xem giá nhập.');mode='intake-history';
+      const rows=[...importReceipts.filter(r=>r.quickIntakeId),...(storeInfo.recoveredReceipts||[])].sort((a,b)=>(b.date+' '+b.time).localeCompare(a.date+' '+a.time));
+      return page('Lịch sử nhập linh kiện tại phiếu','<div class="shop-scroll"><table><thead><tr><th>Ngày / phiếu</th><th>Nguồn / người bán</th><th>Linh kiện</th><th>Tiền nhập / trả lúc nhập</th><th>Ghi chú</th></tr></thead><tbody>'+rows.map(r=>'<tr><td>'+E(r.date)+'<br>'+E(r.id)+'</td><td>'+E(r.source==='recovered'?'Tháo máy / được cho — vốn 0':suppliers.find(s=>s.id===r.supId)?.name||r.supId)+'</td><td>'+(r.items||[]).map(i=>E(i.name)+' × '+i.qty).join('<br>')+'</td><td>'+M(r.total)+' đ<br>Đã trả: '+M(r.paid)+' đ</td><td>'+E(r.note)+'</td></tr>').join('')+'</tbody></table></div>');
+    }
+    if(mode==='intake'&&(a==='close'||a==='intake-back')){intakeDraft=null;return editor(returnMode);}
+    if(a==='intake-new')return intakeOpen();
+    if(a==='intake-pay-full'){$('sh-intake-paid').value=String(num('qty')*num('cost'));return intakeSummary();}
+    if(a==='intake-save'){
+      const source=val('source'),p={...intakeDraft,source,name:val('intake-name'),category:val('intake-category'),qty:num('qty'),price:num('intake-price'),cost:source==='recovered'?0:num('cost'),paid:source==='recovered'?0:num('intake-paid'),supId:source==='recovered'?'':val('supplier'),supName:source==='recovered'?'':val('supplier-name'),account:source==='recovered'?'':val('account'),note:val('intake-note')};
+      return lgRun('Nhập linh kiện tại phiếu',(data,e)=>S.intake(data,p,e),result=>{const d=returnMode==='pc'?draft:quick,prior=d.items.find(x=>x.id===result.item.id);if(prior)prior.qty++;else d.items.push({id:result.item.id,name:result.item.name,qty:1,price:result.item.price,warranty:''});if(returnMode==='pc')d.total=d.items.reduce((s,i)=>s+i.qty*i.price,0);intakeDraft=null;editor(returnMode);});
+    }
     if(a==='close'){if(['pc','quick'].includes(mode))readForm();closeModal('shop-modal');return;}
     if(a==='pc'){draft??=newPC();return editor('pc');}
     if(a==='quick'){quick??={requestId:genId('QR'),customerId:'',customerName:'',phone:'',machine:'',work:'',items:[],labor:0,paid:0,account:'cash'};return editor('quick');}
@@ -3498,7 +3578,6 @@ const LGShop = (() => {
     if(a.startsWith('price-')){P.assert(activeUser==='ADMIN','Chỉ quản trị gợi ý giá theo vốn.');const [,prefix,margin]=a.split('-');return setVal(prefix+'-price',S.suggest(getVal(prefix+'-cost'),Number(margin)));}
     if(a==='sell'){const p={id:selling.id,revision:selling.revision,customerId:val('customer'),paid:num('paid'),account:val('account'),allowLoss:$('sh-loss')?.checked===true};return lgRun('Bán bộ PC',(d,e)=>S.sellQuote(d,p,e),tx=>{if(draft?.id===selling.id)draft=null;closeModal('shop-modal');printBill(tx.id,'sales');});}
     readForm();const d=mode==='pc'?draft:quick;
-    if(a==='add'){const i=inventory.find(i=>i.id===val('product'));P.assert(i,'Chọn linh kiện cần thêm.');const prior=d.items.find(x=>x.id===i.id);if(prior)prior.qty++;else d.items.push({id:i.id,name:i.name,qty:1,price:P.n(i.price),warranty:''});if(mode==='pc')d.total=d.items.reduce((s,i)=>s+i.qty*i.price,0);return editor(mode);}
     if(a.startsWith('remove-')){d.items.splice(Number(a.slice(7)),1);return editor(mode);}
     if(a.startsWith('bundle-price-')){P.assert(activeUser==='ADMIN','Chỉ quản trị được xem giá vốn.');d.total=S.suggest(S.totals(d.items,inventory,d.total).cost,Number(a.slice(13)));return editor('pc');}
     if(a==='paid-full'){d.paid=d.labor+d.items.reduce((s,i)=>s+i.qty*i.price,0);return editor('quick');}
@@ -3508,9 +3587,11 @@ const LGShop = (() => {
     if(a==='finish-quick'){const p=P.clone(d);return lgRun('Sửa nhanh giao ngay',(data,e)=>S.quickRepair(data,p,e),tx=>{quick=null;closeModal('shop-modal');printBill(tx.id,'sales');});}
   }
   document.addEventListener('click',async e=>{
-    const b=e.target.closest('[data-shop],[data-quote-preview],[data-quote-edit],[data-quote-sell],[data-quote-bill],[data-price-item]');if(!b)return;
+    const b=e.target.closest('[data-shop],[data-quote-preview],[data-quote-edit],[data-quote-sell],[data-quote-bill],[data-price-item],[data-pick-item],[data-intake-item]');if(!b)return;
     try{
       if(b.dataset.shop)await action(b.dataset.shop);
+      else if(b.dataset.pickItem)addItem(b.dataset.pickItem);
+      else if(b.dataset.intakeItem)intakeOpen(b.dataset.intakeItem);
       else if(b.dataset.quotePreview)publicQuote((storeInfo.pcQuotes||[]).find(q=>q.id===b.dataset.quotePreview));
       else if(b.dataset.quoteEdit){draft=P.clone(storeInfo.pcQuotes.find(q=>q.id===b.dataset.quoteEdit));editor('pc');}
       else if(b.dataset.quoteSell)checkout(b.dataset.quoteSell);
@@ -3519,8 +3600,10 @@ const LGShop = (() => {
     }catch(error){uiAlert(E(error.message));}
   });
   $('shop-body').addEventListener('change',e=>{
+    if(mode==='intake'){intakeSummary();return;}
     try{if(e.target.dataset.line!==undefined){readForm();const d=mode==='pc'?draft:quick,line=d.items[Number(e.target.dataset.line)],key=e.target.dataset.key;const value=key==='warranty'?e.target.value:Number(e.target.value);if(key!=='warranty'){P.amount(value);if(key==='qty')P.assert(value>0,'Số lượng phải lớn hơn 0.');}line[key]=value;editor(mode);}else summary();}catch(error){uiAlert(E(error.message));}
   });
+  $('shop-body').addEventListener('input',()=>{if(mode==='intake')intakeSummary();else summary();});
   categoryControls();inventoryView();
 })();
 
