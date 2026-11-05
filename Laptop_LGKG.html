@@ -3425,6 +3425,91 @@ const LGShop = (() => {
   return {category,serviceItem,suggest,totals,allocate,saveQuote,sellQuote,quickRepair,intake};
 })();
 
+const LGCorrections=(()=>{
+ const P=LGPro,active=P.active,copy=P.clone;
+ function authorize(d,p,e,row,date){
+  P.assert(e.user==='ADMIN','Chỉ quản trị được sửa phiếu đã lưu.');P.assert(row&&active(row),'Không tìm thấy phiếu còn hiệu lực.');
+  P.assert(p.reason?.trim(),'Ghi lý do sửa phiếu.');
+  P.assert((row.editRevision||0)===(p.revision||0),'Phiếu đã được sửa ở nơi khác. Mở lại trước khi lưu.');
+  P.assert(!d.storeInfo.closedThrough||date>d.storeInfo.closedThrough,'Kỳ này đã khóa. Mở lại kỳ để sửa.');
+ }
+ function moneyPeriod(d,date){
+  P.assert(!LGBooks.checkpoints(d.storeInfo).some(c=>c.date>date),'Phiếu nằm trước mốc số dư đã khai báo. Cần đối chiếu lại mốc trước khi sửa tiền.');
+  P.assert(!(d.storeInfo.cashCounts||[]).some(c=>c.countDate>=date),'Đã kiểm quỹ từ ngày phiếu này. Cần đối chiếu kiểm quỹ trước khi sửa tiền.');
+ }
+ function stamp(r){return (r.date||r.handoverDate||r.receiveDate||'')+' '+(r.time||r.receiveTime||'');}
+ function laterStock(d,source,ids,excludeOrder){
+  if(!ids.size)return;
+  const touches=r=>[...(r.itemsRaw||[]),...(r.items||[]),...(r.partsUsed||[])].some(i=>ids.has(i.id))||ids.has(r.itemId);
+  const groups=[...d.transactions.filter(t=>['cash','debt','refund'].includes(t.type)),...d.importReceipts,...(d.storeInfo.warrantyIssues||[]),...(d.storeInfo.stockAdjustments||[]),...(d.storeInfo.recoveredReceipts||[])];
+  P.assert(!groups.some(r=>active(r)&&r.id!==source.id&&touches(r)&&stamp(r)>=stamp(source)), 'Linh kiện đã có nhập/xuất/kiểm kê sau phiếu này. Chưa thể sửa số lượng/giá nhập trực tiếp vì sẽ đổi giá vốn các phiếu sau; cần đối chiếu chuỗi phát sinh. Có thể sửa giá bán, ghi chú hoặc tiền nếu không vướng chứng từ liên quan.');
+  P.assert(!d.serviceOrders.some(o=>active(o)&&o.id!==excludeOrder&&o.isDeducted&&!/Đã trả|Đã giao|Hủy/.test(o.status||'')&&touches(o)), 'Linh kiện đang giữ trong phiếu sửa khác. Đối chiếu phiếu đó trước khi sửa kho.');
+ }
+ function changedIds(old,items,withCost){const ids=new Set([...old,...items].map(i=>i.id));return new Set([...ids].filter(id=>{const a=old.find(i=>i.id===id),b=items.find(i=>i.id===id);return P.n(a?.qty)!==P.n(b?.qty)||(withCost&&P.n(a?.cost)!==P.n(b?.cost));}));}
+ function log(d,row,before,kind,p,e){row.editRevision=(row.editRevision||0)+1;row.lastEditedAt=new Date().toISOString();const revision={id:e.id('SUA'),kind,documentId:row.id,date:e.date,time:e.time,staffId:e.user,reason:p.reason.trim(),before,after:copy(row)};(d.storeInfo.documentEdits??=[]).push(revision);P.audit(d,e,'Sửa '+kind,row.id+' · '+p.reason);return row;}
+ function initialPayment(d,t){return d.transactions.filter(r=>active(r)&&r.type==='pay'&&r.date===t.date&&r.allocations?.length===1&&r.allocations[0].invoiceId===t.id&&r.details==='Trả trước cho HĐ '+t.id);}
+ function initialInfo(d,t){const rows=initialPayment(d,t);P.assert(rows.length<=1,'Có nhiều phiếu trả trước, cần đối chiếu.');const r=t.type==='cash'?t:rows[0];return {paid:Math.max(0,(t.type==='cash'?P.total(t):P.n(r?.amount))-P.n(t.depositApplied)),account:r?.paymentAccount||'cash',splitTender:r?.splitTender||null};}
+ function sale(d,p,e){
+  const t=d.transactions.find(t=>t.id===p.id);authorize(d,p,e,t,t?.date);P.assert(['cash','debt'].includes(t.type),'Chọn hóa đơn bán hàng / sửa chữa.');
+  P.assert(!d.transactions.some(r=>active(r)&&r.type==='refund'&&r.originalTxId===t.id),'Phiếu đã trả hàng hoặc giảm/miễn nợ. Cần đối chiếu các phiếu điều chỉnh trước.');
+  const before=copy(t),old=t.itemsRaw||[],isService=P.service(t),order=d.serviceOrders.find(o=>o.id===t.serviceOrderId||o.invoiceId===t.id);
+  const paymentsBefore=copy(d.transactions.filter(r=>r.type==='pay'&&r.allocations?.some(a=>a.invoiceId===t.id))),inventoryBefore=copy(d.inventory),orderBefore=order?copy(order):null;
+  P.assert(old.length||isService,'Phiếu cũ thiếu chi tiết hàng, không tự sửa kho.');
+  const changed=changedIds(old,p.items,false);laterStock(d,t,changed,order?.id);
+  const items=p.items.length?P.lines(d,p.items,'sale',old):[];P.assert(items.length||isService,'Phiếu bán hàng cần ít nhất một món.');
+  for(const i of items){const prev=old.find(x=>x.id===i.id),keep=Math.min(i.qty,P.n(prev?.qty)),extra=i.qty-keep;const inv=d.inventory.find(x=>x.id===i.id);i.cost=P.money((keep*P.n(prev?.cost)+extra*P.n(inv.cost))/i.qty);}
+  const gross=P.money(items.reduce((s,i)=>s+i.qty*i.price,0));P.amount(p.discount||0);P.amount(p.labor||0);P.amount(p.paid);
+  const net=isService?gross+p.labor:gross-(p.discount||0);P.assert(net>=0,'Giảm giá vượt tiền hàng.');
+  const initial=initialPayment(d,t),initialIds=new Set(initial.map(x=>x.id));
+  const later=d.transactions.filter(r=>active(r)&&r.type==='pay'&&!initialIds.has(r.id)&&r.allocations?.some(a=>a.invoiceId===t.id));
+  P.assert(!d.transactions.some(r=>active(r)&&r.type==='pay'&&r.customerId===t.customerId&&!r.allocations?.length),'Khách có phiếu thu cũ chưa phân bổ rõ. Cần đối chiếu trước khi sửa hóa đơn.');
+  const laterPaid=later.reduce((s,r)=>s+r.allocations.filter(a=>a.invoiceId===t.id).reduce((n,a)=>n+a.amount,0),0),held=P.n(t.depositApplied),initialPaid=p.paid+held;
+  P.assert(initialPaid+laterPaid<=net,'Tổng tiền đã thu/cọc vượt tổng mới. Sửa đúng số thực thu; nếu thực tế phải hoàn khách, dùng nghiệp vụ hoàn/giảm tiền.');
+  P.assert(!later.length||p.customerId===t.customerId,'Đã thu nợ về sau, không đổi khách trên phiếu gốc.');
+  P.assert(!held||p.customerId===t.customerId,'Đã dùng tiền cọc, không đổi khách khi sửa hóa đơn.');
+  P.assert(initialPaid===net||d.customers.some(c=>c.id===p.customerId),'Phiếu còn nợ cần chọn khách trong danh bạ.');
+  P.account(p.account,p.paid);
+  if(p.splitTender){P.amount(p.splitTender.cash);P.amount(p.splitTender.bank);P.assert(!held&&p.splitTender.cash+p.splitTender.bank===p.paid&&p.splitTender.cash>0&&p.splitTender.bank>0,'Kiểm tra tiền mặt và ngân hàng.');}
+  const prior=initialInfo(d,t);
+  if(prior.paid!==p.paid||prior.account!==(p.splitTender?'mixed':p.account)||JSON.stringify(prior.splitTender)!==JSON.stringify(p.splitTender||null))moneyPeriod(d,t.date);
+  for(const i of old){const delta=i.qty-P.n(items.find(x=>x.id===i.id)?.qty);if(delta>0)P.put(d,[{...i,qty:delta}]);}
+  for(const i of items){const delta=i.qty-P.n(old.find(x=>x.id===i.id)?.qty);if(delta>0){const inv=d.inventory.find(x=>x.id===i.id);P.assert(inv.stock>=delta,'Không đủ tồn '+i.name);inv.stock-=delta;}}
+  const cash=initialPaid===net&&!later.length;t.type=cash?'cash':'debt';t.itemsRaw=items;t.customerId=p.customerId||'';t.amount=isService?p.labor:net;if(isService)t.partsRevenue=gross;else t.discount=p.discount||0;
+  t.totalCost=P.money(items.reduce((s,i)=>s+i.qty*i.cost,0));t.note=p.note||'';t.details=isService?(p.details||t.details):items.map(i=>i.name+' (x'+i.qty+')').join(', ');t.paymentAccount=p.splitTender?'mixed':p.account;
+  delete t.splitTender;delete t.depositPortion;if(cash&&p.splitTender)t.splitTender=copy(p.splitTender);if(cash&&held)t.depositPortion=held;
+  if(initial.length){const r=initial[0];if(cash||!initialPaid){r.voidedAt=new Date().toISOString();r.voidReason='Sửa phiếu '+t.id;}else{r.amount=initialPaid;r.customerId=t.customerId;r.allocations=[{invoiceId:t.id,amount:initialPaid}];r.paymentAccount=t.paymentAccount;delete r.splitTender;delete r.depositPortion;if(p.splitTender)r.splitTender=copy(p.splitTender);if(held)r.depositPortion=held;}}
+  else if(!cash&&initialPaid){const r={id:e.id('PT'),type:'pay',date:t.date,time:t.time,staffId:e.user,customerId:t.customerId,amount:initialPaid,allocations:[{invoiceId:t.id,amount:initialPaid}],details:'Trả trước cho HĐ '+t.id,paymentAccount:t.paymentAccount,engineVersion:3};if(held)r.depositPortion=held;if(p.splitTender)r.splitTender=copy(p.splitTender);d.transactions.push(r);}
+  if(order){order.partsUsed=copy(items);order.laborCost=p.labor;order.quote=net;order.customerId=t.customerId;}
+  const quote=(d.storeInfo.pcQuotes||[]).find(q=>q.invoiceId===t.id);if(quote){quote.invoiceAdjusted=true;t.bundleLines=LGShop.allocate(items,net);}
+  const result=log(d,t,before,'hóa đơn',p,e);Object.assign(d.storeInfo.documentEdits.at(-1),{paymentsBefore,inventoryBefore,orderBefore,paymentsAfter:copy(d.transactions.filter(r=>r.type==='pay'&&r.allocations?.some(a=>a.invoiceId===t.id)))});return result;
+ }
+ function purchase(d,p,e){
+  const r=d.importReceipts.find(r=>r.id===p.id);authorize(d,p,e,r,r?.date);P.assert(!r.returnOf,'Không sửa phiếu trả hàng bằng phiếu nhập.');
+  P.assert(!d.importReceipts.some(x=>active(x)&&x.returnOf===r.id),'Đã trả hàng từ phiếu này. Cần đối chiếu phiếu trả trước.');
+  P.assert(d.suppliers.some(s=>s.id===p.supId),'Chọn nhà cung cấp.');const before=copy(r),changed=changedIds(r.items||[],p.items,true);laterStock(d,r,changed);
+  const related=d.cashflow.filter(c=>active(c)&&c.type==='chi_ncc'&&(c.importId===r.id||c.appliesTo===r.id));
+  const initial=related.filter(c=>c.importId===r.id&&c.date===r.date&&c.reason==='Thanh toán phiếu nhập '+r.id);
+  P.assert(initial.length<=1,'Phiếu có nhiều khoản trả lúc nhập, cần đối chiếu.');
+  P.assert(P.n(r.paid)===initial.reduce((s,c)=>s+c.amount,0),'Tiền đã trả trên phiếu cũ chưa có liên kết rõ. Cần đối chiếu trước khi sửa.');
+  const later=related.filter(c=>!initial.includes(c));
+  const oldTotal=r.total,paymentsBefore=copy(related);
+  const base=copy(d.inventory);
+  for(const old of r.items||[]){if(!changed.has(old.id))continue;const inv=d.inventory.find(i=>i.id===old.id);P.assert(inv&&d.inventory.filter(i=>i.id===old.id).length===1,'Mã hàng thiếu hoặc trùng.');P.assert(inv.stock>=old.qty,'Hàng đã xuất quá số còn lại, không thể đảo phiếu nhập.');const remaining=inv.stock-old.qty,value=inv.stock*inv.cost-old.qty*old.cost;P.assert(value>=-Math.max(1,inv.stock),'Giá vốn hiện tại không đủ để đảo phiếu; cần đối chiếu.');inv.stock=remaining;inv.cost=remaining?P.money(Math.max(0,value)/remaining):0;}
+  const validation=copy(d);for(const i of r.items||[]){if(!changed.has(i.id)){const inv=validation.inventory.find(x=>x.id===i.id);if(inv?.serial)inv.stock-=i.qty;}}
+  const items=P.lines(validation,p.items,'import'),total=P.money(items.reduce((s,i)=>s+i.qty*i.cost,0));P.amount(p.paid);P.assert(p.paid+later.reduce((s,c)=>s+c.amount,0)<=total,'Tiền đã trả vượt tổng mới; cần xử lý khoản NCC hoàn lại trước.');P.account(p.account,p.paid);
+  if(total!==oldTotal||p.supId!==r.supId)P.assert(!d.cashflow.some(c=>active(c)&&c.supId===r.supId&&c.type==='chi_ncc'&&!c.importId&&!c.appliesTo),'Nhà cung cấp có khoản trả chưa gắn phiếu. Cần phân bổ trước khi sửa tổng nợ.');
+  P.assert(!later.length||p.supId===r.supId,'Đã trả nợ về sau, không đổi nhà cung cấp.');
+  if(p.paid!==r.paid||(initial[0]&&p.account!==initial[0].paymentAccount))moneyPeriod(d,r.date);
+  for(const i of items){const inv=d.inventory.find(x=>x.id===i.id);if(changed.has(i.id)){const count=inv.stock+i.qty;inv.cost=P.money((inv.stock*inv.cost+i.qty*i.cost)/count);inv.stock=count;}}
+  r.items=items;r.total=total;r.paid=p.paid;r.supId=p.supId;r.paymentAccount=p.account;r.note=p.note||'';
+  if(initial[0]){const c=initial[0];c.amount=p.paid;c.supId=p.supId;c.paymentAccount=p.account;if(!p.paid){c.voidedAt=new Date().toISOString();c.voidReason='Sửa phiếu nhập '+r.id;}}
+  else if(p.paid)d.cashflow.push({id:e.id('CF'),type:'chi_ncc',date:r.date,time:r.time,staffId:e.user,supId:p.supId,amount:p.paid,importId:r.id,reason:'Thanh toán phiếu nhập '+r.id,paymentAccount:p.account,engineVersion:3});
+  const result=log(d,r,before,'phiếu nhập',p,e);Object.assign(d.storeInfo.documentEdits.at(-1),{inventoryBefore:base,paymentsBefore,paymentsAfter:copy(d.cashflow.filter(c=>c.importId===r.id||c.appliesTo===r.id))});return result;
+ }
+ function service(d,p,e){const o=d.serviceOrders.find(o=>o.id===p.id);authorize(d,p,e,o,o?.receiveDate);P.assert(!/Đã trả|Đã giao|Hủy/.test(o.status||''),'Máy đã bàn giao: sửa tại hóa đơn liên quan.');P.assert(p.model?.trim()&&p.condition?.trim(),'Nhập máy và nội dung sửa.');P.assert(d.customers.some(c=>c.id===p.customerId),'Chọn khách hàng.');const before=copy(o);P.assert(o.customerId===p.customerId||!LGBooks.depositBalance(d,o.id),'Máy đã có cọc, cần đối chiếu cọc trước khi đổi khách.');o.customerId=p.customerId;o.model=p.model.trim();o.condition=p.condition.trim();P.amount(p.quote);if(o.isDeducted)P.assert(p.quote===o.quote,'Đã xuất linh kiện: đổi chi phí ở phiếu bàn giao để kho được cập nhật cùng.');else o.quote=p.quote;return log(d,o,before,'phiếu nhận máy',p,e);}
+ return {sale,purchase,service,initialInfo};
+})();
+
 </script>
 <script>
 (function(){
@@ -3515,10 +3600,11 @@ const LGShop = (() => {
   function lineTable(d){return '<div class="shop-scroll"><table><thead><tr><th>Linh kiện</th><th>SL</th><th>Giá bán / cái</th>'+(mode==='pc'?'<th>Bảo hành</th>':'')+'<th>Thành tiền</th><th></th></tr></thead><tbody>'+d.items.map((i,k)=>'<tr><td>'+E(i.name)+'</td><td><input class="form-control" type="number" min="1" step="1" data-line="'+k+'" data-key="qty" value="'+i.qty+'"></td><td><input class="form-control" type="number" min="0" step="1" data-line="'+k+'" data-key="price" value="'+i.price+'"></td>'+(mode==='pc'?'<td><input class="form-control" data-line="'+k+'" data-key="warranty" value="'+E(i.warranty)+'" placeholder="VD: 12 tháng"></td>':'')+'<td>'+M(i.qty*i.price)+'</td><td>'+btn('remove-'+k,'×')+'</td></tr>').join('')+'</tbody></table></div>';}
   function editor(kind){
     mode=kind;const d=kind==='pc'?draft:quick;
-    let h=customersSelect(d.customerId)+'<div class="shop-grid">'+field('name','Tên khách',d.customerName)+field('phone','Điện thoại',d.phone)+'</div>';
+    let h=(kind==='quick'?'<details '+(d.customerId?'open':'')+'><summary>Chọn khách đã lưu / bán nợ</summary>'+customersSelect(d.customerId)+'</details>':customersSelect(d.customerId))+'<div class="shop-grid">'+field('name','Tên khách',d.customerName)+field('phone','Điện thoại (không bắt buộc)',d.phone)+'</div>';
     h+=kind==='pc'?field('bundle','Tên bộ máy',d.name):'<div class="shop-grid">'+field('machine','Máy / model / serial',d.machine)+field('work','Đã sửa gì, cho ai?',d.work)+'</div>';
-    if(kind==='quick')h+='<p class="shop-summary"><b>Chỉ sửa lấy tiền công?</b> Bỏ qua linh kiện, nhập Tiền công bên dưới → Điền thu đủ → Hoàn tất & thu tiền.</p>';
-    h+=picker()+(d.items.length?lineTable(d):'<p class="shop-muted">Chưa thêm linh kiện'+(kind==='quick'?' — vẫn lưu được phiếu chỉ có tiền công.':'.')+'</p>');
+    if(kind==='quick')h+='<details '+(d.items.length?'open':'')+'><summary style="cursor:pointer;margin:12px 0">＋ Linh kiện thay thế'+(d.items.length?' ('+d.items.length+' món)':' — chỉ mở khi có thay hàng')+'</summary>';
+    h+=picker()+(d.items.length?lineTable(d):'');
+    if(kind==='quick')h+='</details>';
     if(kind==='pc'){
       h+='<div class="shop-grid">'+field('total','Giá bán trọn bộ (đ)',d.total,'number')+field('until','Báo giá có hiệu lực đến',d.validUntil,'date')+'</div>'+field('note','Ghi chú gửi khách',d.note);
       h+='<div class="shop-summary" id="sh-summary"></div>';
@@ -3605,6 +3691,76 @@ const LGShop = (() => {
   });
   $('shop-body').addEventListener('input',()=>{if(mode==='intake')intakeSummary();else summary();});
   categoryControls();inventoryView();
+})();
+
+</script>
+<script>
+(function(){
+ const P=LGPro,C=LGCorrections,$=id=>document.getElementById(id),E=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),M=v=>P.money(v).toLocaleString('vi-VN');
+ const option=(id,label,selected)=>'<option value="'+E(id)+'" '+(id===selected?'selected':'')+'>'+E(label)+'</option>';
+ const input=(id,label,v,type='text')=>'<label class="shop-field">'+label+'<input id="ce-'+id+'" class="form-control" type="'+type+'" value="'+E(v)+'" '+(type==='number'?'step="1" min="0"':'')+'></label>';
+ const select=(id,label,rows,value)=>'<label class="shop-field">'+label+'<select class="form-control" id="ce-'+id+'">'+rows.map(r=>option(r.id,r.name,value)).join('')+'</select></label>';
+ let form=null;
+ document.body.insertAdjacentHTML('beforeend','<div id="ce-modal" class="modal-overlay"><div class="modal-box" style="max-width:900px;width:95%;max-height:92vh;overflow:auto"><h3 id="ce-title" class="modal-title"></h3><div id="ce-body"></div><div class="shop-actions"><button class="btn btn-primary" id="ce-save">Lưu sửa phiếu</button><button class="btn btn-outline" id="ce-close">Đóng</button></div></div></div>');
+ function page(title,body,save=true){$('ce-title').textContent=title;$('ce-body').innerHTML=body;$('ce-save').style.display=save?'':'none';openModal('ce-modal');}
+ function open(kind,id){
+  try{
+   P.assert(activeUser==='ADMIN','Đăng nhập quản trị để sửa phiếu.');const d=lgSnapshot(),r=(kind==='sale'?d.transactions:kind==='purchase'?d.importReceipts:d.serviceOrders).find(r=>r.id===id);P.assert(r,'Không tìm thấy phiếu.');
+   if(kind==='service'&&/Đã trả|Đã giao/.test(r.status||'')){const t=d.transactions.find(t=>t.id===r.invoiceId||t.serviceOrderId===r.id);P.assert(t,'Chưa tìm thấy hóa đơn bàn giao.');return open('sale',t.id);}
+   form={kind,id,revision:r.editRevision||0,items:P.clone(kind==='sale'?r.itemsRaw||[]:kind==='purchase'?r.items||[]:[]),customerId:r.customerId||'',supId:r.supId||'',note:r.note||'',reason:'',model:r.model||'',condition:r.condition||'',quote:r.quote||0,details:r.details||'',labor:kind==='sale'&&P.service(r)?r.amount:0,discount:r.discount||0,isService:kind==='sale'&&P.service(r)};
+   if(kind==='sale'){const initial=C.initialInfo(d,r);form.paid=initial.paid;form.account=initial.account;form.cash=initial.splitTender?.cash||0;form.discount=form.isService?0:P.money(form.items.reduce((s,i)=>s+i.qty*i.price,0))-P.total(r);}
+   if(kind==='purchase'){form.paid=r.paid||0;form.account=r.paymentAccount||d.cashflow.find(c=>c.importId===r.id)?.paymentAccount||'cash';}
+   editor();
+  }catch(e){uiAlert(E(e.message));}
+ }
+ function editor(){
+  const f=form;let h='<p class="shop-muted">Sửa dữ liệu đã ghi sai, giữ mã và ngày phiếu. Không dùng chức năng này để ghi nhận khách trả hàng hoặc hoàn tiền thực tế.</p>';
+  if(f.kind==='service')h+=select('customer','Khách hàng',customers,f.customerId)+'<div class="shop-grid">'+input('model','Máy / model',f.model)+input('condition','Tình trạng / việc sửa',f.condition)+input('quote','Báo giá dự kiến',f.quote,'number')+'</div>';
+  else{
+   h+=f.kind==='purchase'?select('supplier','Nhà cung cấp',suppliers,f.supId):select('customer','Khách hàng',[{id:'',name:'Khách lẻ'},...customers],f.customerId);
+   h+='<div class="shop-scroll"><table><thead><tr><th>Hàng</th><th>SL</th><th>'+(f.kind==='purchase'?'Giá nhập':'Giá bán')+'</th><th></th></tr></thead><tbody>'+f.items.map((i,k)=>'<tr><td>'+E(i.name)+'</td><td><input aria-label="Số lượng" class="form-control" style="width:90px" id="ce-qty-'+k+'" type="number" min="1" step="1" value="'+i.qty+'"></td><td><input aria-label="Đơn giá" class="form-control" id="ce-price-'+k+'" type="number" min="0" step="1" value="'+(f.kind==='purchase'?i.cost:i.price)+'"></td><td><button class="btn btn-outline" data-ce-remove="'+k+'">×</button></td></tr>').join('')+'</tbody></table></div><details><summary>＋ Thêm / đổi mặt hàng</summary><input class="form-control" id="ce-search" placeholder="Gõ tên linh kiện"><div id="ce-results"></div></details>';
+   h+='<div class="shop-grid">'+(f.kind==='sale'?input(f.isService?'labor':'discount',f.isService?'Tiền công':'Giảm giá toàn phiếu',f.isService?f.labor:f.discount,'number'):'')+input('paid',f.kind==='purchase'?'Đã trả lúc nhập (không gồm trả nợ sau)':f.isService?'Thu thêm lúc bàn giao (không gồm cọc / thu nợ sau)':'Đã thu lúc bán (không gồm thu nợ sau)',f.paid,'number')+select('account','Tài khoản ghi trên phiếu',[{id:'cash',name:'Tiền mặt'},{id:'bank',name:'Ngân hàng'},...(f.kind==='sale'?[{id:'mixed',name:'Cả tiền mặt & ngân hàng'}]:[])],f.account)+'</div>';
+   if(f.kind==='sale')h+='<div id="ce-cash-field">'+input('cash','Phần thu tiền mặt (phần còn lại là ngân hàng)',f.cash,'number')+'</div>';
+   h+=input('note','Ghi chú',f.note);
+  }
+  h+=input('reason','Lý do sửa (*)',f.reason)+'<div class="shop-summary" id="ce-total"></div><details><summary>Lịch sử sửa phiếu này</summary>'+(storeInfo.documentEdits||[]).filter(x=>x.documentId===f.id).map(x=>'<p>'+E(x.date)+' · '+E(x.reason)+'</p>').join('')+'</details>';
+  page('Sửa '+(f.kind==='sale'?'hóa đơn':f.kind==='purchase'?'phiếu nhập':'phiếu nhận máy')+' · '+f.id,h);
+  if($('ce-search'))$('ce-search').oninput=search;totals();
+ }
+ const num=id=>{const x=$('ce-'+id).value;P.assert(/^\d+$/.test(x),'Nhập số nguyên không âm.');return P.amount(Number(x));};
+ function read(){const f=form;if(f.kind==='service'){f.customerId=$('ce-customer').value;f.model=$('ce-model').value;f.condition=$('ce-condition').value;f.quote=num('quote');}
+  else{f.items.forEach((i,k)=>{i.qty=num('qty-'+k);i[f.kind==='purchase'?'cost':'price']=num('price-'+k);});f.paid=num('paid');f.account=$('ce-account').value;f.note=$('ce-note').value;if(f.kind==='purchase')f.supId=$('ce-supplier').value;else{f.customerId=$('ce-customer').value;if(f.isService)f.labor=num('labor');else f.discount=num('discount');f.cash=num('cash');}}
+  f.reason=$('ce-reason').value;return P.clone(f);
+ }
+ function totals(){if(!form||!$('ce-total'))return;try{const f=read();if(f.kind==='service'){$('ce-total').textContent='Phiếu nhận chưa bàn giao: không tự ghi doanh thu hoặc tiền thu.';return;}const amount=f.items.reduce((s,i)=>s+i.qty*(f.kind==='purchase'?i.cost:i.price),0)+(f.isService?f.labor:0)-(f.kind==='sale'&&!f.isService?f.discount:0);$('ce-total').textContent='Tổng sau sửa: '+M(amount)+' đ · Số tiền ghi lúc lập phiếu: '+M(f.paid)+' đ';if($('ce-cash-field'))$('ce-cash-field').style.display=f.account==='mixed'?'':'none';}catch(e){$('ce-total').textContent=e.message;}}
+ function search(){const q=removeAccents($('ce-search').value).toLowerCase().trim();$('ce-results').innerHTML=q?inventory.filter(i=>removeAccents(i.name+' '+i.id).toLowerCase().includes(q)).map(i=>'<button class="btn btn-outline" data-ce-add="'+E(i.id)+'">'+E(i.name)+' · Tồn '+M(i.stock)+'</button>').join(''):'';}
+ $('ce-body').addEventListener('input',totals);$('ce-body').addEventListener('change',totals);
+ $('ce-body').addEventListener('click',e=>{const b=e.target.closest('[data-ce-remove],[data-ce-add],[data-ce-import]');if(!b)return;try{if(b.dataset.ceImport)return open('purchase',b.dataset.ceImport);read();if(b.dataset.ceRemove!==undefined)form.items.splice(Number(b.dataset.ceRemove),1);else{const item=inventory.find(i=>i.id===b.dataset.ceAdd),prior=form.items.find(i=>i.id===item.id);if(prior)prior.qty++;else form.items.push({id:item.id,name:item.name,qty:1,price:item.price||0,cost:item.cost||0});}editor();}catch(e){uiAlert(E(e.message));}});
+ $('ce-close').onclick=()=>closeModal('ce-modal');
+ $('ce-save').onclick=()=>{try{
+  const p=read();if(p.account==='mixed'){p.splitTender={cash:p.cash,bank:p.paid-p.cash};p.account='cash';}
+  const before=lgSnapshot(),candidate=P.clone(before),env={date:getToday(),time:getTime(),user:activeUser,id:genId};C[p.kind](candidate,p,env);LGBooks.protectClosed(before,candidate);
+  const a=LGAccounting.report(before,'1900-01-01',getToday()),b=LGAccounting.report(candidate,'1900-01-01',getToday());
+  let message='Lưu sửa phiếu '+E(p.id)+'? Sổ sách được sửa tại ngày phiếu gốc.<br>Chênh lệch tiền mặt: '+M(b.accounts.cash.net-a.accounts.cash.net)+' đ · Ngân hàng: '+M(b.accounts.bank.net-a.accounts.bank.net)+' đ.<br>Chênh lệch doanh thu: '+M(b.revenue-a.revenue)+' đ · Lãi: '+M(b.profit-a.profit)+' đ.';
+  const stock=candidate.inventory.filter(i=>i.stock!==before.inventory.find(x=>x.id===i.id)?.stock).map(i=>E(i.name)+': '+before.inventory.find(x=>x.id===i.id)?.stock+' → '+i.stock);if(stock.length)message+='<br>Kho: '+stock.join('; ');
+  const debt=kind=>[...new Set([...Object.keys(a[kind]),...Object.keys(b[kind])])].reduce((s,k)=>s+(b[kind][k]||0)-(a[kind][k]||0),0);
+  message+='<br>Chênh lệch khách nợ: '+M(debt('customerBalances'))+' đ · Nợ NCC: '+M(debt('supplierBalances'))+' đ.';
+  uiConfirm(message,()=>lgRun('Sửa phiếu có đối chiếu',(d,e)=>C[p.kind](d,p,e),()=>closeModal('ce-modal')));
+ }catch(e){uiAlert(E(e.message));}};
+ window.editFullTransaction=id=>open('sale',id);
+ window.editServiceOrder=id=>open('service',id);
+ window.actionSrvEdit=function(){const id=$('srv-action-id').value;closeModal('srvActionModal');open('service',id);};
+ const oldSrv=window.openSrvAction;window.openSrvAction=function(){oldSrv.apply(this,arguments);$('srv-action-edit').style.display=activeUser==='ADMIN'?'block':'none';};
+ // Put infrequent administrative actions behind one disclosure, keeping everyday forms visible.
+ for(const section of ['cashbook','service','inventory','history','reports']){
+  const buttons=[...document.querySelectorAll('#'+section+' [data-books]')];if(!buttons.length)continue;
+  const card=buttons[0].closest('.card');if(!card)continue;const details=document.createElement('details'),summary=document.createElement('summary');summary.textContent='⋯ Quản lý & đối chiếu';details.appendChild(summary);const box=document.createElement('div');box.className='shop-actions';buttons.forEach(b=>box.appendChild(b));details.appendChild(box);card.replaceChildren(details);
+  if(section==='inventory'){
+   const history=document.querySelector('[data-shop="intake-history"]');if(history){const parent=history.parentElement;box.appendChild(history);if(!parent.children.length)parent.remove();}
+  }
+ }
+ $('inventory').insertAdjacentHTML('afterbegin','<div class="shop-actions"><button class="btn btn-outline" id="ce-imports">Phiếu nhập hàng · xem / sửa</button></div>');
+ $('ce-imports').onclick=()=>{form=null;const rows=importReceipts.filter(r=>!r.voidedAt&&!r.returnOf).slice().sort((a,b)=>(b.date+(b.time||'')).localeCompare(a.date+(a.time||'')));page('Phiếu nhập hàng','<input class="form-control" id="ce-import-search" placeholder="Tìm mã phiếu, người bán, mặt hàng"><div class="shop-scroll"><table><thead><tr><th>Ngày / phiếu</th><th>Nhà cung cấp / hàng</th><th>Tổng</th><th></th></tr></thead><tbody id="ce-import-list">'+rows.map(r=>'<tr><td>'+E(r.date)+'<br>'+E(r.id)+'</td><td>'+E(suppliers.find(s=>s.id===r.supId)?.name||r.supId)+'<br>'+E((r.items||[]).map(i=>i.name).join(', '))+'</td><td>'+M(r.total)+'</td><td><button class="btn btn-outline" data-ce-import="'+E(r.id)+'">Sửa</button></td></tr>').join('')+'</tbody></table></div>',false);$('ce-import-search').oninput=()=>filterTable('ce-import-list',$('ce-import-search').value);};
 })();
 
 </script>
