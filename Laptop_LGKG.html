@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Lương Gia KG · Quản lý cửa hàng V4</title>
+    <title>Lương Gia KG · Quản lý cửa hàng V5</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -115,7 +115,7 @@
     <div id="loginOverlay" style="position:fixed; inset:0; background:#1c252e; z-index:15000; display:flex; justify-content:center; align-items:center;">
         <div class="card" style="width: 90%; max-width: 400px; text-align: center; padding: 40px 20px;">
             <h2 style="color:var(--primary); margin-top:0;">LƯƠNG GIA KG</h2>
-            <p style="color:var(--text-muted); margin-bottom:10px;">Quản lý cửa hàng · V4</p>
+            <p style="color:var(--text-muted); margin-bottom:10px;">Quản lý cửa hàng · V5</p>
             <div id="net-status" style="font-size:0.8rem; color:var(--warning); margin-bottom:15px; min-height:15px;">Đang dò kết nối máy chủ...</div>
             <select id="login-user" class="form-control" style="margin-bottom:15px;"></select>
             <input type="password" id="login-pass" class="form-control" placeholder="Mật khẩu..." style="margin-bottom:20px;" onkeypress="if(event.key==='Enter') doLogin()">
@@ -1282,7 +1282,7 @@
     
     function editServiceOrder(id) { 
         let o = serviceOrders.find(x=>x.id===id); if(!o) return; 
-        let c = customers.find(x=>x.id===o.customerId); editingSrvId = id; 
+        let c = customers.find(x=>x.id===o.customerId)||{name:o.customerName||'Khách',phone:o.phone||''}; editingSrvId = id; 
         document.getElementById('srv-title-txt').innerHTML = `🛠️ Sửa Phiếu: <b style="color:var(--danger)">${id}</b> <button class="btn btn-outline" style="padding:4px 8px;" onclick="cancelEditSrv()">Hủy</button>`; 
         if(c) { document.getElementById('srv-cus-input').value = `${c.name} - ${c.phone}`; document.getElementById('srv-cus-id').value = c.id; } 
         document.getElementById('srv-model').value = o.model; document.getElementById('srv-cond').value = o.condition; setVal('srv-quote', o.quote); document.getElementById('srv-btn').innerText = 'LƯU THAY ĐỔI'; 
@@ -1298,7 +1298,7 @@
         if(stat === 'Chờ khách lấy' || stat === 'Đã trả khách') { 
             hoCart = o.partsUsed ? JSON.parse(JSON.stringify(o.partsUsed)) : []; 
             document.getElementById('ho-id').value = id; 
-            let c = customers.find(x=>x.id===o.customerId); 
+            let c = customers.find(x=>x.id===o.customerId)||{name:o.customerName||'Khách',phone:o.phone||''}; 
             document.getElementById('ho-cus').innerText = c ? `${c.name} - ${c.phone}` : 'Khách'; 
             document.getElementById('ho-model').innerText = o.model; 
             setVal('ho-labor', o.laborCost !== undefined ? o.laborCost : (o.quote||0)); 
@@ -1942,11 +1942,11 @@
         else if (type === 'bills') { 
             document.getElementById('dd-title').innerText = 'Tất Cả Bill Đã Tạo Hôm Nay'; document.getElementById('dd-head').innerHTML = `<tr><th>Giờ</th><th>Loại Bill</th><th>Khách Hàng</th><th>Nội Dung</th></tr>`; 
             transactions.forEach(t => { if(t.date === target) { let c = customers.find(x=>x.id===t.customerId), typ = t.type === 'pay' ? 'Thu Nợ' : 'Bán Hàng'; html += `<tr class="dash-tr-hover" onclick="jumpToTicket('${t.id}', 'history')"><td>${t.time||''}</td><td>${typ} (${t.id})</td><td>${c?c.name:'Khách'}</td><td>${t.details}</td></tr>`; } }); 
-            serviceOrders.forEach(o => { if(o.receiveDate === target) { let c = customers.find(x=>x.id===o.customerId); html += `<tr class="dash-tr-hover" onclick="jumpToTicket('${o.id}', 'service')"><td>${o.receiveTime||''}</td><td>Nhận Máy (${o.id})</td><td>${c?c.name:'Khách'}</td><td>${o.model} - ${o.condition}</td></tr>`; } }); 
+            serviceOrders.forEach(o => { if(o.receiveDate === target) { let c = customers.find(x=>x.id===o.customerId)||{name:o.customerName||'Khách',phone:o.phone||''}; html += `<tr class="dash-tr-hover" onclick="jumpToTicket('${o.id}', 'service')"><td>${o.receiveTime||''}</td><td>Nhận Máy (${o.id})</td><td>${c?c.name:'Khách'}</td><td>${o.model} - ${o.condition}</td></tr>`; } }); 
         } 
         else if (type === 'repairs') { 
             document.getElementById('dd-title').innerText = 'Máy Đang Nằm Viện (Chưa Trả)'; document.getElementById('dd-head').innerHTML = `<tr><th>Mã Số</th><th>Khách Hàng</th><th>Thông Tin Máy</th><th>Trạng Thái</th></tr>`; 
-            serviceOrders.forEach(o => { if(!o.status.includes('Đã trả') && !o.status.includes('Đã giao') && !o.status.includes('Hủy')) { let c = customers.find(x=>x.id===o.customerId); html += `<tr class="dash-tr-hover" onclick="jumpToTicket('${o.id}', 'service')"><td>${o.id}</td><td>${c?c.name:'Khách'}</td><td><b>${o.model}</b><br><small>${o.condition}</small></td><td><span style="color:var(--warning);">${o.status}</span></td></tr>`; } }); 
+            serviceOrders.forEach(o => { if(!o.status.includes('Đã trả') && !o.status.includes('Đã giao') && !o.status.includes('Hủy')) { let c = customers.find(x=>x.id===o.customerId)||{name:o.customerName||'Khách',phone:o.phone||''}; html += `<tr class="dash-tr-hover" onclick="jumpToTicket('${o.id}', 'service')"><td>${o.id}</td><td>${c?c.name:'Khách'}</td><td><b>${o.model}</b><br><small>${o.condition}</small></td><td><span style="color:var(--warning);">${o.status}</span></td></tr>`; } }); 
         } 
         else if (type === 'expenses') { 
             document.getElementById('dd-title').innerText = 'Chi Phí Hôm Nay'; document.getElementById('dd-head').innerHTML = `<tr><th>Giờ</th><th>Người Chi</th><th>Lý Do</th><th style="text-align:right;">Số Tiền</th></tr>`; 
@@ -2097,7 +2097,7 @@
         let h = '', logoHtml = storeInfo.logoUrl ? `<img src="${storeInfo.logoUrl}" style="max-width:120px; max-height:80px; object-fit:contain; margin-bottom:10px;">` : '';
         if(type==='sales') {
             let t = transactions.find(x=>x.id===id); if(!t) return;
-            let c = customers.find(x=>x.id===t.customerId) || {name:'Khách lẻ', phone:''}, trs = ''; 
+            let c = customers.find(x=>x.id===t.customerId) || {name:t.customerName||'Khách lẻ',phone:t.customerPhone||''}, trs = ''; 
             if(t.itemsRaw && t.itemsRaw.length > 0) { 
                 t.itemsRaw.forEach((i, idx)=>trs+=`<div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:14px;"><div style="flex:1; padding-right:10px;"><b>${i.name}</b><br><span style="color:#555;">${i.qty} x ${i.price.toLocaleString()}</span></div><div style="font-weight:bold; text-align:right;">${(i.qty*i.price).toLocaleString()}</div></div>`); 
             } else { 
@@ -2135,7 +2135,7 @@
             </div>`;
         } else if(type==='service') {
             let o = serviceOrders.find(x=>x.id===id); if(!o) return;
-            let c = customers.find(x=>x.id===o.customerId) || {name:'Khách',phone:''};
+            let c = customers.find(x=>x.id===o.customerId) || {name:o.customerName||'Khách',phone:o.phone||''};
             let prt = ''; if (o.partsUsed && o.partsUsed.length > 0) { prt = `<div style="margin-top:15px; padding-top:15px; border-top:1px dashed #ccc;"><b>Linh kiện thay thế:</b><br><ul style="margin:5px 0 0 0; padding-left:20px;">` + o.partsUsed.map(p => `<li style="margin-bottom:3px;">${p.name} <span style="color:#555;">(x${p.qty})</span></li>`).join('') + `</ul></div>`; }
             h = `<div style="width:100%; max-width:380px; margin:0 auto; font-family:'Inter', sans-serif; color:#000; background:#fff; padding:20px; box-sizing:border-box; border: 1px solid #ddd; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
                 <div style="text-align:center; border-bottom:2px dashed #000; padding-bottom:15px; margin-bottom:15px;">
@@ -2191,7 +2191,7 @@
         let acTbl = document.getElementById('srv-tbl-active'), doTbl = document.getElementById('srv-tbl-done'), acHtml = '', doHtml = '';
         serviceOrders.sort((a, b) => b.id.localeCompare(a.id));
         serviceOrders.forEach(o => { 
-            let c = customers.find(x=>x.id===o.customerId);
+            let c = customers.find(x=>x.id===o.customerId)||{name:o.customerName||'Khách',phone:o.phone||''};
             let sHtml = `<tr>
                 <td><b>${c?c.name:'Khách'}</b><br><small>${c?c.phone:''}</small></td>
                 <td><b>${o.model}</b><br><small>${o.condition}</small><br><i style="font-size:0.8rem; color:#888;">${o.id} - Báo giá: ${(o.quote||0).toLocaleString()} đ</i></td>
@@ -2257,7 +2257,7 @@
 
         let salesHtml = '', payHtml = ''; 
         [...transactions].sort((a,b) => (b.date+b.time).localeCompare(a.date+a.time)).forEach(t => { 
-            let c = customers.find(x=>x.id===t.customerId); 
+            let c = customers.find(x=>x.id===t.customerId)||{name:t.customerName||'Khách',phone:t.customerPhone||''}; 
             let dtTxt = `<small>${formatD(t.date)}<br>${t.time||''}</small>`;
             let extraNote = (t.note && !t.details.includes(t.note)) ? `<br><i style="font-size:0.8rem; color:var(--warning);">Lưu ý: ${t.note}</i>` : '';
             if(t.type === 'cash' || t.type === 'debt') { 
@@ -2323,7 +2323,7 @@ function init(d){d=clone(d||{});for(const k of ['staffs','inventory','customers'
 function account(a,amount){assert(!amount||['cash','bank'].includes(a),'Chọn tài khoản Tiền mặt hoặc Ngân hàng.');return a||'unknown';}
 function amount(x,label='Số tiền'){assert(Number.isSafeInteger(x)&&x>=0,label+' phải là số nguyên không âm (đồng).');return x;}
 function audit(d,env,action,detail){d.activityLogs.push({id:env.id('LOG'),time:env.date+' '+env.time,staff:env.user,action,detail});d.storeInfo.financeJournal.push({id:env.id('AUD'),date:env.date,time:env.time,staffId:env.user,action,detail});}
-function lines(d,items,mode,prior=[]){assert(items.length>0,'Chưa có mặt hàng.');const seen=new Set();return items.map(i=>{assert(!seen.has(i.id),'Trùng mã hàng trong giỏ: '+i.id);seen.add(i.id);const p=d.inventory.find(p=>p.id===i.id);assert(p,'Mặt hàng không còn trong kho: '+i.id);assert(Number.isSafeInteger(i.qty)&&i.qty>0,'Số lượng phải là số nguyên lớn hơn 0.');if(p.serial&&mode==='import')assert(n(p.stock)+i.qty<=1,'Máy theo serial đã tồn tại trong kho.');assert(n(p.stock)>=0,'Kho đang âm. Cần kiểm kê và điều chỉnh trước: '+p.name);const price=amount(i.price??0,'Giá bán');assert(mode==='import'||p.cost!==undefined&&p.cost!==null&&Number.isFinite(Number(p.cost)),'Mặt hàng thiếu giá vốn; quản trị cần đối chiếu trước: '+p.name);let cost=mode==='import'?amount(i.cost,'Giá nhập'):n(p.cost);assert(Number.isFinite(cost)&&cost>=0,'Giá vốn không hợp lệ.');const reserved=prior.find(x=>x.id===i.id);assert(!reserved||reserved.cost!==undefined&&reserved.cost!==null&&Number.isFinite(Number(reserved.cost)),'Phiếu sửa cũ thiếu giá vốn linh kiện; cần đối chiếu trước: '+p.name);assert(mode==='import'||i.qty<=n(p.stock)+n(reserved?.qty),'Không đủ tồn kho: '+p.name);if(reserved&&i.qty<=reserved.qty)cost=n(reserved.cost);return{id:p.id,name:p.name,qty:i.qty,price,cost};});}
+function lines(d,items,mode,prior=[]){assert(items.length>0,'Chưa có mặt hàng.');const seen=new Set();return items.map(i=>{assert(!seen.has(i.id),'Trùng mã hàng trong giỏ: '+i.id);seen.add(i.id);const p=d.inventory.find(p=>p.id===i.id);assert(p,'Mặt hàng không còn trong kho: '+i.id);assert(d.inventory.filter(x=>x.id===i.id).length===1,'Mã hàng bị trùng, cần tách mã trước: '+i.id);assert(Number.isSafeInteger(i.qty)&&i.qty>0,'Số lượng phải là số nguyên lớn hơn 0.');if(p.serial&&mode==='import')assert(n(p.stock)+i.qty<=1,'Máy theo serial đã tồn tại trong kho.');assert(n(p.stock)>=0,'Kho đang âm. Cần kiểm kê và điều chỉnh trước: '+p.name);const price=amount(i.price??0,'Giá bán');assert(mode==='import'||p.cost!==undefined&&p.cost!==null&&Number.isFinite(Number(p.cost)),'Mặt hàng thiếu giá vốn; quản trị cần đối chiếu trước: '+p.name);let cost=mode==='import'?amount(i.cost,'Giá nhập'):n(p.cost);assert(Number.isFinite(cost)&&cost>=0,'Giá vốn không hợp lệ.');const reserved=prior.find(x=>x.id===i.id);assert(!reserved||reserved.cost!==undefined&&reserved.cost!==null&&Number.isFinite(Number(reserved.cost)),'Phiếu sửa cũ thiếu giá vốn linh kiện; cần đối chiếu trước: '+p.name);assert(mode==='import'||i.qty<=n(p.stock)+n(reserved?.qty),'Không đủ tồn kho: '+p.name);if(reserved&&i.qty<=reserved.qty)cost=n(reserved.cost);return{id:p.id,name:p.name,qty:i.qty,price,cost};});}
 function take(d,items){for(const i of items){const p=d.inventory.find(p=>p.id===i.id);p.stock=n(p.stock)-i.qty;}}
 function put(d,items){for(const i of items){const p=d.inventory.find(p=>p.id===i.id);assert(p,'Không thể hoàn kho vì thiếu mã hàng '+i.id);const q=n(p.stock);assert(q>=0,'Kho âm, cần đối chiếu trước khi hoàn hàng.');p.cost=money((q*n(p.cost)+i.qty*n(i.cost))/(q+i.qty));p.stock=q+i.qty;}}
 function outstanding(d,to='9999-12-31'){const invoices=d.transactions.filter(t=>active(t)&&t.type==='debt'&&t.date<=to).sort((a,b)=>(a.date+' '+(a.time||'')).localeCompare(b.date+' '+(b.time||''))||a.id.localeCompare(b.id));const map=Object.fromEntries(invoices.map(t=>[t.id,total(t)]));const generic=[];for(const p of d.transactions.filter(t=>active(t)&&t.type==='pay'&&t.date<=to)){if(p.allocations?.length){for(const a of p.allocations){if(map[a.invoiceId]!==undefined)map[a.invoiceId]-=n(a.amount);}}else {const token=(p.details||'').match(/(?:HĐ|HD)\s+([^\s()]+)/)?.[1];const linked=p.originalTxId||(invoices.some(t=>t.id===token&&t.customerId===p.customerId)?token:null);if(linked&&map[linked]!==undefined)map[linked]-=n(p.amount);else generic.push(p);}}
@@ -2629,7 +2629,7 @@ window.lgPayExpense=function(id){$('lg-pay-expense-id').value=id;$('lg-pay-expen
 window.submitLoan=function(){const type=$('loan-type').value,creditorId=$('loan-cred-id').value,amt=getVal('loan-amt'),acc=lgAccount('loan'),note=$('loan-note').value,appliesTo=type==='tra_no'?$('v4-loan-ref').value:'',dueDate=type==='vay'?$('v4-loan-due').value:'';ask((type==='vay'?'Nhận vay ':'Trả gốc vay ')+M(amt)+'?',()=>lgRun('Vay/trả gốc',(d,e)=>{P.amount(amt);P.assert(amt>0&&d.creditors.some(c=>c.id===creditorId),'Chọn chủ nợ và số tiền hợp lệ.');P.assert(['vay','tra_no'].includes(type),'Loại giao dịch không hợp lệ.');P.account(acc,amt);if(type==='tra_no'){const due=d.cashflow.filter(c=>P.active(c)&&c.creditorId===creditorId).reduce((s,c)=>s+(c.type==='vay'?P.n(c.amount):c.type==='tra_no'?-P.n(c.amount):0),0);P.assert(amt<=due,'Tiền trả vượt dư gốc vay đã ghi nhận. Lãi vay lập phiếu riêng.');}if(appliesTo)P.assert(amt<=(LGBooks.obligations(d,'loan',creditorId,e.date).find(r=>r.id===appliesTo)?.value||0),'Vượt dư gốc của khoản vay đã chọn.');P.assert(!dueDate||dueDate>=e.date,'Hạn trả trước ngày vay.');const c={id:e.id('CF'),date:e.date,time:e.time,type,appliesTo,dueDate,creditorId,amount:amt,paymentAccount:acc,reason:note||type,staffId:e.user,engineVersion:3};d.cashflow.push(c);P.audit(d,e,'Vay/trả gốc',c.id);},()=>closeModal('loanModal')));};
 window.lgTransfer=function(){const p={from:$('lg-transfer-from').value,amount:getVal('lg-transfer-amount'),reason:$('lg-transfer-note').value};ask('Chuyển nội bộ '+M(p.amount)+'?',()=>lgRun('Chuyển nội bộ',(d,e)=>P.transfer(d,p,e),()=>setVal('lg-transfer-amount',0)));};
 window.lgSaveOpening=function(){const opening={date:$('lg-opening-date').value,cash:getVal('lg-opening-cash'),bank:getVal('lg-opening-bank'),unknown:getVal('lg-opening-unknown')};if(!opening.date||!$('lg-opening-cash').value.trim()||!$('lg-opening-bank').value.trim())return uiAlert('Chọn ngày mốc và nhập cả tiền mặt/ngân hàng; nhập 0 nếu không có.');ask('Lưu số dư trước giao dịch đầu tiên của ngày '+formatD(opening.date)+'?',()=>lgRun('Số dư đầu ngày',(d,e)=>{P.assert(e.user==='ADMIN','Chỉ chủ cửa hàng được đổi số dư mốc.');d.storeInfo.accountingOpening=opening;P.audit(d,e,'Số dư đầu ngày',JSON.stringify(opening));}));};
-window.saveEditProduct=function(){const id=$('ep-id').value,p={name:$('ep-name').value.trim(),cost:getVal('ep-cost'),price:getVal('ep-price'),stock:getVal('ep-stock'),minStock:getVal('ep-minstock')};ask('Lưu thông tin/kiểm kê mặt hàng? Điều chỉnh tồn và giá vốn sẽ có nhật ký, không đổi hóa đơn cũ.',()=>lgRun('Cập nhật mặt hàng',(d,e)=>{const old=d.inventory.find(x=>x.id===id);P.assert(old&&p.name,'Mặt hàng/tên không hợp lệ.');if(p.cost!==old.cost||p.stock!==old.stock)P.assert(e.user==='ADMIN','Chỉ quản trị được điều chỉnh tồn và giá vốn.');P.audit(d,e,'Điều chỉnh mặt hàng',JSON.stringify({id,before:{stock:old.stock,cost:old.cost},after:p}));Object.assign(old,p);},()=>closeModal('editProdModal')));};
+window.saveEditProduct=function(){const id=$('ep-id').value,p={name:$('ep-name').value.trim(),cost:getVal('ep-cost'),price:getVal('ep-price'),stock:getVal('ep-stock'),minStock:getVal('ep-minstock'),category:$('shop-edit-category').value.trim()};ask('Lưu thông tin/kiểm kê mặt hàng? Điều chỉnh tồn và giá vốn sẽ có nhật ký, không đổi hóa đơn cũ.',()=>lgRun('Cập nhật mặt hàng',(d,e)=>{const old=d.inventory.find(x=>x.id===id);P.assert(d.inventory.filter(x=>x.id===id).length===1,'Hai mặt hàng đang trùng mã. Cần đối chiếu và tách mã trước khi sửa.');P.assert(old&&p.name,'Mặt hàng/tên không hợp lệ.');if(p.cost!==old.cost||p.stock!==old.stock)P.assert(e.user==='ADMIN','Chỉ quản trị được điều chỉnh tồn và giá vốn.');P.audit(d,e,'Điều chỉnh mặt hàng',JSON.stringify({id,before:{stock:old.stock,cost:old.cost},after:p}));Object.assign(old,p);},()=>closeModal('editProdModal')));};
 window.lgToggleExpense=function(){$('lg-expense-options').style.display=['chi','chi_lai'].includes($('cb-type').value)?'block':'none';};
 $('cb-type').insertAdjacentHTML('beforeend','<option value="chi_lai">Lãi vay (không gồm gốc)</option><option value="von">Chủ góp vốn</option><option value="chi_taisan">Mua tài sản / công cụ cần phân bổ</option>');$('cb-type').addEventListener('change',lgToggleExpense);$('cb-reason').parentElement.insertAdjacentHTML('afterend','<div id="lg-expense-options"><div class="form-group"><label>Nhóm chi phí</label><select class="form-control" id="lg-expense-category"><option value="other">Chi phí khác</option><option value="outsource">Thuê thợ / sửa ngoài</option><option value="salary">Lương nhân viên</option><option value="rent">Mặt bằng</option><option value="utilities">Điện, nước, Internet</option><option value="marketing">Quảng cáo</option></select></div><div class="form-group"><label>Ngày phát sinh chi phí</label><input type="date" class="form-control" id="lg-expense-date"></div><div class="form-group"><label>Người nhận / đơn vị cung cấp</label><input class="form-control" id="lg-expense-party"></div><label><input type="checkbox" id="lg-expense-unpaid"> Chưa trả tiền (ghi chi phí và khoản phải trả)</label><p style="font-size:12px;color:var(--text-muted)">Tiền công chủ tự làm chưa quy thành lương. Chi phí nhiều tháng cần phân bổ trước khi nhập.</p></div>');$('lg-expense-date').value=getToday();
 $('cashbook').insertAdjacentHTML('beforeend','<div id="lg-cash-extra"></div><details class="card admin-only"><summary>Số dư đầu ngày & chuyển nội bộ</summary><div class="row"><div class="col"><label>Ngày mốc (trước giao dịch đầu tiên)</label><input type="date" id="lg-opening-date" class="form-control"></div><div class="col"><label>Tiền mặt</label><input id="lg-opening-cash" class="form-control" inputmode="numeric" oninput="formatNum(this)"></div><div class="col"><label>Ngân hàng</label><input id="lg-opening-bank" class="form-control" inputmode="numeric" oninput="formatNum(this)"></div><div class="col"><label>Chưa phân loại</label><input id="lg-opening-unknown" class="form-control" value="0" oninput="formatNum(this)"></div></div><button class="btn btn-primary" onclick="lgSaveOpening()">Lưu số dư mốc</button><hr><div class="row"><select class="form-control col" id="lg-transfer-from"><option value="cash">Tiền mặt → Ngân hàng</option><option value="bank">Ngân hàng → Tiền mặt</option></select><input id="lg-transfer-amount" class="form-control col" placeholder="Số tiền chuyển" oninput="formatNum(this)"><input id="lg-transfer-note" class="form-control col" placeholder="Diễn giải"></div><button class="btn btn-outline" onclick="lgTransfer()">Ghi chuyển nội bộ</button></details>');$('lg-opening-date').value=getToday();
@@ -2667,7 +2667,7 @@ const oldRender=renderData;let renderedVersion=-1,renderedUser=null;window.rende
 window.exportData=function(){const url=URL.createObjectURL(new Blob([JSON.stringify(lgSnapshot(),null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='LuongGia_V4_Backup_'+getToday()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);};
 window.restoreDataFromPC=function(e){const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=()=>{let d;try{d=JSON.parse(reader.result);if(!d.inventory||!d.staffs)throw Error('Thiếu danh sách hàng hoặc nhân viên.');d=LGPro.init(d);}catch(err){return uiAlert('File sao lưu không hợp lệ: '+err.message);}uiConfirm('Khôi phục sẽ thay toàn bộ dữ liệu bằng file đã chọn. Bạn đã sao lưu dữ liệu hiện tại chưa?',async()=>{if(activeUser!=='ADMIN')return uiAlert('Chỉ quản trị được khôi phục.');try{await lgCommit(d);uiAlert('✅ Đã khôi phục dữ liệu.');}catch(err){uiAlert('Chưa khôi phục: '+err.message);}});};reader.readAsText(file);};
 const change=changeSrvStatus;window.changeSrvStatus=function(id,status,select){if(status==='Hủy - Không sửa'){const o=serviceOrders.find(x=>x.id===id);if(select&&o)select.value=o.status;return revertHandover(id);}return change(id,status,select);};
-window.saveProduct=function(){const serial=$('v4-serial').value.trim().toUpperCase(),id=serial?'SN-'+serial:$('qa-id').value.trim()||genId('SP'),name=$('qa-name').value.trim()+(serial?' · SN '+serial:''),cost=getVal('qa-cost'),price=getVal('qa-price'),stock=getVal('qa-stock'),minStock=getVal('qa-minstock');lgRun('Thêm hàng',(d,e)=>{LGPro.assert(name,'Nhập tên hàng.');LGPro.assert(!d.inventory.some(x=>x.id===id||removeAccents(x.name)===removeAccents(name)),'Mã hoặc tên hàng đã có.');LGPro.assert(e.user==='ADMIN'||stock===0&&cost===0,'Nhân viên chỉ được tạo hàng chưa có tồn/giá vốn.');LGPro.assert(!serial||stock<=1,'Mỗi serial chỉ có một máy.');d.inventory.push({id,name,cost,price,stock,minStock,serial});LGPro.audit(d,e,'Thêm hàng / tồn đầu',JSON.stringify({id,stock,cost}));},()=>{closeModal('quickAddModal');$('qa-id').value='';$('qa-name').value='';['qa-cost','qa-price','qa-stock','qa-minstock'].forEach(x=>setVal(x,0));});};
+window.saveProduct=function(){const serial=$('v4-serial').value.trim().toUpperCase(),id=serial?'SN-'+serial:$('qa-id').value.trim()||genId('SP'),name=$('qa-name').value.trim()+(serial?' · SN '+serial:''),cost=getVal('qa-cost'),price=getVal('qa-price'),stock=getVal('qa-stock'),minStock=getVal('qa-minstock');lgRun('Thêm hàng',(d,e)=>{LGPro.assert(name,'Nhập tên hàng.');LGPro.assert(!d.inventory.some(x=>x.id===id||removeAccents(x.name)===removeAccents(name)),'Mã hoặc tên hàng đã có.');LGPro.assert(e.user==='ADMIN'||stock===0&&cost===0,'Nhân viên chỉ được tạo hàng chưa có tồn/giá vốn.');LGPro.assert(!serial||stock<=1,'Mỗi serial chỉ có một máy.');d.inventory.push({id,name,cost,price,stock,minStock,serial,category:$('shop-new-category').value.trim()});LGPro.audit(d,e,'Thêm hàng / tồn đầu',JSON.stringify({id,stock,cost}));},()=>{closeModal('quickAddModal');$('qa-id').value='';$('qa-name').value='';['qa-cost','qa-price','qa-stock','qa-minstock'].forEach(x=>setVal(x,0));});};
 window.executeMerge=function(){uiAlert('Tạm khóa gộp mã có thể làm thay đổi liên kết hóa đơn/kho. Cần đối chiếu và chuyển mã có nhật ký trước khi gộp.');};
 })();
 (function(){window.lgPrintStatus=function(t){if(transactions.some(r=>r.type==='refund'&&!r.voidedAt&&r.originalTxId===t.id&&!r.partial))return 'Đã trả/hủy toàn bộ';if(transactions.some(r=>r.type==='refund'&&!r.voidedAt&&r.originalTxId===t.id&&r.partial))return 'Đã điều chỉnh một phần · Còn nợ '+LGPro.money(LGPro.outstanding(lgSnapshot())[t.id]||0).toLocaleString('vi-VN')+' đ';if(t.splitTender)return 'Đã thu đủ · Tiền mặt '+t.splitTender.cash.toLocaleString('vi-VN')+' đ · Chuyển khoản '+t.splitTender.bank.toLocaleString('vi-VN')+' đ';if(t.type==='cash')return 'Đã thu đủ'+(t.paymentAccount==='bank'?' · Ngân hàng':t.paymentAccount==='cash'?' · Tiền mặt':'');const due=Math.max(0,LGPro.n(LGPro.outstanding(lgSnapshot())[t.id]));return due?'Còn nợ '+LGPro.money(due).toLocaleString('vi-VN')+' đ':'Đã thanh toán hết';};})();
@@ -3281,6 +3281,247 @@ const LGFamily = (() => {
   }
   const routes={family,count:counts,daily,deposit:deposits,supplier:()=>returns(true),customer:()=>returns(false),stock,revenue,adjust,reverse,claim:claims,assets,lock};
   document.addEventListener('click',e=>{const btn=e.target.closest('[data-books]');if(btn&&activeUser==='ADMIN')routes[btn.dataset.books]();});
+})();
+
+</script>
+<script>
+const LGCategoryMap={"SP_13993::Asus A1503 i5-12500h/8 (Hư màn oled)":"Máy tính & màn hình / Laptop nguyên máy","SP_12662::Asus X415JA i3 gen 10 (bể B mất 1 che bản lề vỏ xấu)":"Máy tính & màn hình / Laptop nguyên máy","SP_72979::Laptop Acer A715-42G r5/1650":"Máy tính & màn hình / Laptop nguyên máy","SP_31909::Laptop Asus A512 ryzen5 (Full vỏ)":"Máy tính & màn hình / Laptop nguyên máy","SP_5244::Laptop asus expertbook b1400c i3-11/4/256":"Máy tính & màn hình / Laptop nguyên máy","SP_0137::Laptop Asus X409JA i5-10":"Máy tính & màn hình / Laptop nguyên máy","SP_78119::Laptop Asus X412 R3-3200/4":"Máy tính & màn hình / Laptop nguyên máy","SP_50495::Laptop Lenovo Thinkbook 14S-IWL i5gen8":"Máy tính & màn hình / Laptop nguyên máy","SP_17609::Laptop MSI modern 14 B11MOL i3 gen 11 + mua D":"Máy tính & màn hình / Laptop nguyên máy","SP_3678::Thùng PC Cũ001":"Máy tính & màn hình / PC nguyên bộ (cần xác nhận)","SP_54454::Màn hình 27in Samsung Công (Cũ)":"Máy tính & màn hình / Màn hình rời","SP_57395::Màn hinh 27in VSP IP2702S":"Máy tính & màn hình / Màn hình rời","SP_3603::Màn Hình Dell 24in full cổng (cũ)":"Máy tính & màn hình / Màn hình rời","SP_7d9c3ff4-a6d5-4772-8c3d-fa56ab28d9ad::Màn hinh Dell pro E2726Hs 27in fhd 100hz":"Máy tính & màn hình / Màn hình rời","SP_3170::Màn hình Glowy 22in":"Máy tính & màn hình / Màn hình rời","SP_28542::Màn Hinh LG 34in Sọc mờ k chân":"Máy tính & màn hình / Màn hình rời","SP_09176::Màn hình VSP 24in":"Máy tính & màn hình / Màn hình rời","SP_0088::Màn hinh VSP IP2702S (đen)":"Máy tính & màn hình / Màn hình rời","SP_96551::Case bể cá trung":"Linh kiện máy tính / Vỏ case PC","SP_79658::Case hồng":"Linh kiện máy tính / Vỏ case PC","SP_1891::Case kính Edra ECS1303H":"Linh kiện máy tính / Vỏ case PC","SP_fed05429-b2a6-4055-b76c-de52b8da77e8::Case Strar office CS600":"Linh kiện máy tính / Vỏ case PC","SP_2734::Case VSP V200-Đen":"Linh kiện máy tính / Vỏ case PC","SP_3415::Case Xigmatek  View III + 3 Fan":"Linh kiện máy tính / Vỏ case PC","SP_0190::Case Xigmatek Cloud M DGT 3AF Arctic (trắng)":"Linh kiện máy tính / Vỏ case PC","SP_01ee434f-bf59-4947-844f-cabad0c607d3::CPU i3 14100 New box":"Linh kiện máy tính / CPU","SP_69207::CPU i3-10105f":"Linh kiện máy tính / CPU","SP_92007::CPU i5 11400 tray":"Linh kiện máy tính / CPU","SP_03809::Cpu i5 gen 4 pc":"Linh kiện máy tính / CPU","SP_04041::Card 1060 3GB (Củ)":"Linh kiện máy tính / Card đồ họa","SP_49567::Main Asus H510 (Cũ)":"Linh kiện máy tính / Main PC","SP_1192::Main Asus H610 fpt":"Linh kiện máy tính / Main PC","SP_71512::Main LG H87":"Linh kiện máy tính / Main PC","SP_27740::Mainboad Asus H510M K new":"Linh kiện máy tính / Main PC","SP_1a77bfd7-abbd-4b87-817b-913ec643820a::Mainboad Gigabyte H610m-k (new)":"Linh kiện máy tính / Main PC","SP_9599::Main Asus UX3402VA i5gen13/16gb lpddr5":"Linh kiện máy tính / Main laptop","SP_02560::Dram 4 8GB PC4 (cũ)":"Linh kiện máy tính / RAM","SP_06258::DRAM 4GB PC3":"Linh kiện máy tính / RAM","SP_43538::DRAM 4GB PC4":"Linh kiện máy tính / RAM","SP_4692::Dram Dr3l 4GB":"Linh kiện máy tính / RAM","SP_99980::Dram4 4GB 3200  laptop (Cũ)":"Linh kiện máy tính / RAM","SP_23672::Dram4 4GB laptop (2nd)":"Linh kiện máy tính / RAM","SP_26091::Dram4 8GB 3200 laptop (Cũ)":"Linh kiện máy tính / RAM","SP_2394::Ram laptop ram4 4gb":"Linh kiện máy tính / RAM","SP_4601::Ram3 4gb":"Linh kiện máy tính / RAM","SP_74184::Ram3 PC 8GB (cũ)":"Linh kiện máy tính / RAM","SP_33324::Ram4  16GB 3200 (PC) (Cũ)":"Linh kiện máy tính / RAM","SP_26933::Ram4 8GB (PC)":"Linh kiện máy tính / RAM","SP_0218::Hdd 1tb củ":"Linh kiện máy tính / HDD, SSD","SP_07631::SSD 256GB Nvme (cũ)":"Linh kiện máy tính / HDD, SSD","SP_98058::SSD m2 nmve 256GB (sk yếu)":"Linh kiện máy tính / HDD, SSD","SP_53889::SSD m2 nvme 512GB (cũ)":"Linh kiện máy tính / HDD, SSD","SP_68978::SSD nvme 128GB (cũ)":"Linh kiện máy tính / HDD, SSD","SP_85282::SSD sata 128 new":"Linh kiện máy tính / HDD, SSD","SP_7365::SSD sata 128GB (Cũ)":"Linh kiện máy tính / HDD, SSD","SP_5379::SSD WD256GB":"Linh kiện máy tính / HDD, SSD","SP_5e407b48-7603-4bbf-af9b-f48ce6cd341d::Ssf Apacer m2 nvme 256GB new":"Linh kiện máy tính / HDD, SSD","SP_00137::Fan CPU leb củ":"Linh kiện máy tính / Quạt, tản nhiệt và hub quạt PC","SP_0720::Fan led argb Đen (new)":"Linh kiện máy tính / Quạt, tản nhiệt và hub quạt PC","SP_2056::Fan led argb trắng (cũ)":"Linh kiện máy tính / Quạt, tản nhiệt và hub quạt PC","SP_42648::Hub led argb có mote":"Linh kiện máy tính / Quạt, tản nhiệt và hub quạt PC","SP_99737::Tản nhiệt CPU infinity Tháp":"Linh kiện máy tính / Quạt, tản nhiệt và hub quạt PC","SP_45346::Nguồn 450W new":"Linh kiện máy tính / Nguồn PC","SP_21755::Nguồn 500w":"Linh kiện máy tính / Nguồn PC","SP_50075::Nguồn dell optiplex 3020":"Linh kiện máy tính / Nguồn PC","SP_33063::Nguồn Edra EP350Pro 250w CST":"Linh kiện máy tính / Nguồn PC","SP_5085::Nguồn MIX 600w (cũ)":"Linh kiện máy tính / Nguồn PC","SP_2431::Nguồn PC Ocypus Beta P350S":"Linh kiện máy tính / Nguồn PC","SP_69798709-2ec5-487b-af86-2239abb3e13b::Nguồn VSP NS450 450w new":"Linh kiện máy tính / Nguồn PC","SP_25438::Màn hình 14in led slim 40p renew":"Linh kiện máy tính / Màn laptop","SP_03787::Màn hình 14in slim 30pin fhd full viền ips new":"Linh kiện máy tính / Màn laptop","SP_8558::Màn hình 15.6fhd 30pin k viền":"Linh kiện máy tính / Màn laptop","SP_90870::Màn hình 15.6FHD 30pin k viền ips":"Linh kiện máy tính / Màn laptop","SP_6646::Màn hình 15.6in led dầy40p HD (BH 6t)":"Linh kiện máy tính / Màn laptop","SP_3973::Màn laptop 14in led dầy":"Linh kiện máy tính / Màn laptop","SP_42758::Phím Asus A415E (bạc)":"Linh kiện máy tính / Phím thay laptop","SP_e47616f9-9d73-419a-a24b-c799de4ffebc::Phím Asus Vivobook X512 A512 Bạc":"Linh kiện máy tính / Phím thay laptop","SP_56122::Phím Asus X402(zin)":"Linh kiện máy tính / Phím thay laptop","SP_09643::Phím Asus X412 Bạc (zin)":"Linh kiện máy tính / Phím thay laptop","SP_36323::Phím Dell 3541 3542 zin":"Linh kiện máy tính / Phím thay laptop","SP_02907::Phím Dell Latitude 3340 k chuột (zin)":"Linh kiện máy tính / Phím thay laptop","SP_08986::Phím HP 15-BS000 Bạc (zin) nút dell cạnh vuông":"Linh kiện máy tính / Phím thay laptop","SP_2751::Phím HP 15-DA000 (zin)":"Linh kiện máy tính / Phím thay laptop","SP_87310::Phím HP 4430S 4540":"Linh kiện máy tính / Phím thay laptop","SP_24480::Pin Asus K42 - 6 cell":"Linh kiện máy tính / Pin laptop","SP_5650::Pin Asus X509":"Linh kiện máy tính / Pin laptop","SP_0954::Pin Dell 14R N4010 (GREEN 6 CELL)":"Linh kiện máy tính / Pin laptop","SP_04755::Pin Dell 3421 OME":"Linh kiện máy tính / Pin laptop","SP_9857::Pin DELL 3578 M5Y1K (ZIN 4 CELL)":"Linh kiện máy tính / Pin laptop","SP_0087::Pin HP 14-CE000 HT03XL (GREEN 3 CELL)":"Linh kiện máy tính / Pin laptop","SP_39985::Pin HP 4430S 6cell":"Linh kiện máy tính / Pin laptop","SP_5305::Pin HP X360 ON03XL":"Linh kiện máy tính / Pin laptop","SP_9332::Sạc Acer aspire 3 15. chân nhỏ":"Linh kiện máy tính / Sạc laptop","SP_5295::Sạc Asus 19v-3.42A 65w Vuông đầu trung 4.0x1.35":"Linh kiện máy tính / Sạc laptop","SP_3467::Sạc Dell 65W kim nhỏ (zin máy cũ)":"Linh kiện máy tính / Sạc laptop","SP_23509::Sạc MSI 19v - 3.42A (Kim Nhỏ - 4.5x3.0)":"Linh kiện máy tính / Sạc laptop","SP_3653::FAN laptop dell latitude 5410":"Linh kiện máy tính / Loa và quạt thay laptop","SP_34947::Fan Laptop HP 240 G8":"Linh kiện máy tính / Loa và quạt thay laptop","SP_23346::Loa độ cho laptop (1 cập)":"Linh kiện máy tính / Loa và quạt thay laptop","SP_30380::Loa độ laptop nhỏ":"Linh kiện máy tính / Loa và quạt thay laptop","SP_09580::IC nguồn CPU ISL 95858":"Linh kiện máy tính / IC và pin CMOS","SP_87942::Pin Cmos (Tốt)":"Linh kiện máy tính / IC và pin CMOS","SP_94405::Máy in brother HL L2321D (in 2 mặt)":"Máy in & photocopy / Máy nguyên chiếc","SP_76499::Băng mực máy in kim":"Máy in & photocopy / Mực nạp, băng mực","SP_59316::Mục nạp Photo Shap (Đông thái)":"Máy in & photocopy / Mực nạp, băng mực","SP_5707::Mực 12A":"Máy in & photocopy / Mực nạp, băng mực","SP_7858::Mực 17A":"Máy in & photocopy / Mực nạp, băng mực","SP_0960::Mực 35A":"Máy in & photocopy / Mực nạp, băng mực","SP_9851::Mực borther":"Máy in & photocopy / Mực nạp, băng mực","SP_8634::Mực màu đen HP M252BK":"Máy in & photocopy / Mực nạp, băng mực","SP_2473::Mực màu hồng HP M252M":"Máy in & photocopy / Mực nạp, băng mực","SP_2923::Mực màu Vàng HP M252Y":"Máy in & photocopy / Mực nạp, băng mực","SP_0168::Mực màu xanh HP M252C":"Máy in & photocopy / Mực nạp, băng mực","SP_0612::Mực máy photo 2525":"Máy in & photocopy / Mực nạp, băng mực","SP_4174::Mực máy photo bizhub 225i":"Máy in & photocopy / Mực nạp, băng mực","SP_59754::Mực photo bihuz 367":"Máy in & photocopy / Mực nạp, băng mực","SP_60467::Mực photocopy Canon 2625i":"Máy in & photocopy / Mực nạp, băng mực","SP_0030::Mực samsung-xerox":"Máy in & photocopy / Mực nạp, băng mực","SP_43596::Cụm mực 070 canon 243dw":"Máy in & photocopy / Hộp, cụm mực","SP_1054::Cụm mực 12A":"Máy in & photocopy / Hộp, cụm mực","SP_55298::Cụm mực 30A":"Máy in & photocopy / Hộp, cụm mực","SP_00857::Cụm mực 325 35A - 85A":"Máy in & photocopy / Hộp, cụm mực","SP_6854::Cụm mực 337 83A":"Máy in & photocopy / Hộp, cụm mực","SP_3976::Cụm mực 49A":"Máy in & photocopy / Hộp, cụm mực","SP_1503::Cụm mực 76A":"Máy in & photocopy / Hộp, cụm mực","SP_5949::Cụm mực 78A":"Máy in & photocopy / Hộp, cụm mực","SP_8276::Cụm mực 87A M501/M506/M527 (CF287A) 9K":"Máy in & photocopy / Hộp, cụm mực","SP_62940::Cụm mực Brother 2385":"Máy in & photocopy / Hộp, cụm mực","SP_8738::Cụm mực Cannnon LBP633Cdw Hồng":"Máy in & photocopy / Hộp, cụm mực","SP_9063::Cụm mực Cannnon LBP633Cdw Màu Đen":"Máy in & photocopy / Hộp, cụm mực","SP_0530::Cụm mực Cannnon LBP633Cdw Vàng":"Máy in & photocopy / Hộp, cụm mực","SP_1704::Cụm mực Cannnon LBP633Cdw Xanh Dương":"Máy in & photocopy / Hộp, cụm mực","SP_0389::Cụm mực HP 17/30 m203":"Máy in & photocopy / Hộp, cụm mực","SP_5131::Cụm mực HP 4103":"Máy in & photocopy / Hộp, cụm mực","SP_70854::Cụm mực Pantum P3012D":"Máy in & photocopy / Hộp, cụm mực","SP_02099::Hộp mực photo shap có chíp (đông thái)":"Máy in & photocopy / Hộp, cụm mực","SP_00122::Cụm drum brother 2385":"Máy in & photocopy / Cụm drum","SP_81084::Cụm drum Brother DRB022 B207":"Máy in & photocopy / Cụm drum","SP_3963::Cụm Drum Pantum P3012d (DO412K) 12k":"Máy in & photocopy / Cụm drum","SP_76395::Drum 071":"Máy in & photocopy / Trống (drum) rời","SP_89051::Drum 12A (Phấn)":"Máy in & photocopy / Trống (drum) rời","SP_9011::Drum 12A mitsu":"Máy in & photocopy / Trống (drum) rời","SP_96756::Drum 16A (HP5200)":"Máy in & photocopy / Trống (drum) rời","SP_17400::Drum 17/30":"Máy in & photocopy / Trống (drum) rời","SP_9572::Drum 26A":"Máy in & photocopy / Trống (drum) rời","SP_6510::Drum 35A":"Máy in & photocopy / Trống (drum) rời","SP_52101::Drum 49A":"Máy in & photocopy / Trống (drum) rời","SP_5007::Drum 505":"Máy in & photocopy / Trống (drum) rời","SP_8956::Drum brother 2385":"Máy in & photocopy / Trống (drum) rời","SP_0414::Bao lụa máy in 2900":"Máy in & photocopy / Linh kiện sửa máy in","SP_6883::Bo fomater borther 2321d":"Máy in & photocopy / Linh kiện sửa máy in","SP_8136::Bộ vỏ canon 2900":"Máy in & photocopy / Linh kiện sửa máy in","SP_6238::Chip Pantum P3012d DO-412k":"Máy in & photocopy / Linh kiện sửa máy in","SP_4915::Gạt lớn 12A":"Máy in & photocopy / Linh kiện sửa máy in","SP_84720::Gạt lớn 35A":"Máy in & photocopy / Linh kiện sửa máy in","SP_5985::Gạt nhỏ 12A":"Máy in & photocopy / Linh kiện sửa máy in","SP_4006::Gối đệm rulo 2900":"Máy in & photocopy / Linh kiện sửa máy in","SP_94043::Hộp scan brother":"Máy in & photocopy / Linh kiện sửa máy in","SP_2464::Hợp Scan canon 2900":"Máy in & photocopy / Linh kiện sửa máy in","SP_81707::Miếng dẫn mực 2900":"Máy in & photocopy / Linh kiện sửa máy in","SP_63512::Ống sấy Brother 2321d":"Máy in & photocopy / Linh kiện sửa máy in","SP_3669::Quả đào kéo giấy 35":"Máy in & photocopy / Linh kiện sửa máy in","SP_94522::Quả đào kéo giấy Canon 2900":"Máy in & photocopy / Linh kiện sửa máy in","SP_5340::Ru lo 2900":"Máy in & photocopy / Linh kiện sửa máy in","SP_98801::Rulo canon lbp 252":"Máy in & photocopy / Linh kiện sửa máy in","SP_8434::Trục sạc 12A":"Máy in & photocopy / Linh kiện sửa máy in","SP_1525::Trục Từ 12A":"Máy in & photocopy / Linh kiện sửa máy in","SP_1460::Xương sấy Canon 252DW":"Máy in & photocopy / Linh kiện sửa máy in","SP_19161::Camera imou Titan Pro IPC-U7LP-6V06mp":"Camera & mạng / Camera, đầu ghi","SP_47465::Camera IP Dahua dome 2mpx":"Camera & mạng / Camera, đầu ghi","SP_7581::Camera Topsee Wifi Z-T4P03 Đêm":"Camera & mạng / Camera, đầu ghi","SP_64096::Đầu ghi Dahua 8 kênh":"Camera & mạng / Camera, đầu ghi","SP_0138::Imou A32 + thẻ 64GB":"Camera & mạng / Camera, đầu ghi","SP_0666::imou A53":"Camera & mạng / Camera, đầu ghi","SP_9904::Balun camera":"Camera & mạng / Vật tư thi công và nguồn camera","SP_11568::Cáp 4 lổi có cường lực":"Camera & mạng / Vật tư thi công và nguồn camera","SP_1212::Dây mạng":"Camera & mạng / Vật tư thi công và nguồn camera","0::Hạt mạng RJ45":"Camera & mạng / Vật tư thi công và nguồn camera","SP_01320::Hộp kỷ thuật":"Camera & mạng / Vật tư thi công và nguồn camera","SP_8933::Nguồn camera":"Camera & mạng / Vật tư thi công và nguồn camera","SP_4110::Nguồn ptz":"Camera & mạng / Vật tư thi công và nguồn camera","SP_12308::Hub chia mạng 5 prot":"Camera & mạng / Thiết bị mạng","SP_52776::Phát wifi di động 4G LTE-DWR-M905":"Camera & mạng / Thiết bị mạng","SP_46017::Switch POE 8Port":"Camera & mạng / Thiết bị mạng","SP_7328::USB Thu WIFI TP Link":"Camera & mạng / Thiết bị mạng","SP_4808::Usb wf 5g":"Camera & mạng / Thiết bị mạng","SP_54122::Bàn phím logitech K120":"Phụ kiện bán lẻ / Phím rời, chuột, lót chuột","SP_12555::Chuột có dây B100":"Phụ kiện bán lẻ / Phím rời, chuột, lót chuột","SP_67920::Chuột có dây màu hồng":"Phụ kiện bán lẻ / Phím rời, chuột, lót chuột","SP_3988::Chuột có dây thường":"Phụ kiện bán lẻ / Phím rời, chuột, lót chuột","SP_fd181175-6feb-499f-9aa9-32ea69ff017f::Chuột dare-u LM130s đen":"Phụ kiện bán lẻ / Phím rời, chuột, lót chuột","SP_7897::Chuột gaming PB1 Trắng":"Phụ kiện bán lẻ / Phím rời, chuột, lót chuột","SP_2566::Chuột không dây Dareu":"Phụ kiện bán lẻ / Phím rời, chuột, lót chuột","SP_6177::Chuột không dây logitech B175 (hãng)":"Phụ kiện bán lẻ / Phím rời, chuột, lót chuột","SP_22968::Lót chuột Hồng 80x30":"Phụ kiện bán lẻ / Phím rời, chuột, lót chuột","SP_7c1038ec-9a6f-4052-9229-89509963a3f2::Lót chuột nhỏ":"Phụ kiện bán lẻ / Phím rời, chuột, lót chuột","SP_25680::Phím cơ Emaster EKM700WP Hồng":"Phụ kiện bán lẻ / Phím rời, chuột, lót chuột","SP_47013277-147b-4a52-b2bf-e9b2d0e73320::Phím Dare-u Lk135 đen":"Phụ kiện bán lẻ / Phím rời, chuột, lót chuột","SP_54059::Bộ chia usb":"Phụ kiện bán lẻ / Cáp, chuyển đổi, hub USB","SP_82462::Cáp máy in (xanh dương)":"Phụ kiện bán lẻ / Cáp, chuyển đổi, hub USB","SP_84186::Cáp USB nối dài 10m (loại Tốt)":"Phụ kiện bán lẻ / Cáp, chuyển đổi, hub USB","SP_53899::Chuyển VGA - HDMI":"Phụ kiện bán lẻ / Cáp, chuyển đổi, hub USB","SP_6763::Hdmi 5m":"Phụ kiện bán lẻ / Cáp, chuyển đổi, hub USB","SP_9283::Usb âm thanh":"Phụ kiện bán lẻ / Cáp, chuyển đổi, hub USB","SP_4808::Box di động 2.5 + Ổ 500GB":"Phụ kiện bán lẻ / Box ổ cứng, thẻ nhớ","SP_2091::Box hdd 2.5":"Phụ kiện bán lẻ / Box ổ cứng, thẻ nhớ","SP_67864::Thẻ nhớ 64GB PNY":"Phụ kiện bán lẻ / Box ổ cứng, thẻ nhớ","SP_9470::Thẻ nhớ Kingsoec 64gb":"Phụ kiện bán lẻ / Box ổ cứng, thẻ nhớ","SP_1702::Loa mini":"Phụ kiện bán lẻ / Loa rời, webcam, túi","SP_51672::Loa mini Hồng":"Phụ kiện bán lẻ / Loa rời, webcam, túi","SP_2705::Túi chống sốc Coooble 15in":"Phụ kiện bán lẻ / Loa rời, webcam, túi","SP_94744::Webcam JBlue 2K":"Phụ kiện bán lẻ / Loa rời, webcam, túi","SP_71809::Cell pin samsung 33G 3000mAh (cũ)":"Điện, pin & thiết bị khác / Cell, mạch pin, vỏ pin","SP_02183::Cell pin sanyo đỏ (Đóng công cụ)":"Điện, pin & thiết bị khác / Cell, mạch pin, vỏ pin","SP_37261::Mạch 3s 12.6v":"Điện, pin & thiết bị khác / Cell, mạch pin, vỏ pin","SP_75834::Mạch 4s 16.8v":"Điện, pin & thiết bị khác / Cell, mạch pin, vỏ pin","SP_53067::Vỏ mạc pin khoan Bosh 10.8v":"Điện, pin & thiết bị khác / Cell, mạch pin, vỏ pin","SP_65231::Bộ chuyển điện 24v - 220v 1000VA":"Điện, pin & thiết bị khác / Bộ điện, năng lượng","SP_67416::Bộ năng lượng mặt trời 12v 40W-30AH":"Điện, pin & thiết bị khác / Bộ điện, năng lượng","SP_6897::Box Android  TV98Pro":"Điện, pin & thiết bị khác / TV box, giá treo","SP_72008::Pat treo TIVI":"Điện, pin & thiết bị khác / TV box, giá treo","SP_99221::Xác asus a415e i3-11/4/512 vỏ màn xấu":"Xác máy / Laptop tháo linh kiện","SP_0363::Xác Asus tuf FA506HR AMD":"Xác máy / Laptop tháo linh kiện","SP_2038::Xác Asus x1402 i3 gen12":"Xác máy / Laptop tháo linh kiện","SP_11722::Xác Asus x415E vỏ đẹp main chết":"Xác máy / Laptop tháo linh kiện","SP_53447::Xác asus X421EAY (đủ đồ)":"Xác máy / Laptop tháo linh kiện","SP_0554::Xác dell inspiron 15 3520":"Xác máy / Laptop tháo linh kiện","SP_7507::Xác dell vostro 3500 gen 11 (loa,pin,fan, bản lè, chuột,boad usb, vân tay,cáp MH)":"Xác máy / Laptop tháo linh kiện","SP_20991::Xác laptop acer nitro r5/1650 (chết cpu)":"Xác máy / Laptop tháo linh kiện","SP_7175::Xác lenovo ideapad 5 - 14IIL05 : LA-J551P":"Xác máy / Laptop tháo linh kiện","SP_4165::Xác lenovo ideapad Flex 14au7":"Xác máy / Laptop tháo linh kiện","SP_69f273bc-24c5-4314-bd4d-b6d0716b3517::Xác máy in Canon 2900":"Xác máy / Máy in tháo linh kiện","SP_5942::Cài window k crack":"Dịch vụ & bản quyền / Tiền công, dịch vụ","SP_2567::Công lắp camera":"Dịch vụ & bản quyền / Tiền công, dịch vụ","SP_1517::Công thợ sửa chữa":"Dịch vụ & bản quyền / Tiền công, dịch vụ","SP_67528::Dịch vụ sửa chữa":"Dịch vụ & bản quyền / Tiền công, dịch vụ","SP_0930::Vệ sinh máy in":"Dịch vụ & bản quyền / Tiền công, dịch vụ","SP_5553::Key bản quyền windows 11pro OEM":"Dịch vụ & bản quyền / Bản quyền phần mềm","SP_9849::Kho bia":"Chờ xác nhận / Tên chưa rõ","SP_07193::Laptop Tồn":"Chờ xác nhận / Tên chưa rõ"};
+const LGShop = (() => {
+  const P = LGPro;
+  function category(item) {
+    return item.category || LGCategoryMap[item.id+'::'+item.name] || 'Chờ xác nhận / Chưa phân nhóm';
+  }
+  function serviceItem(item) {
+    return category(item) === 'Dịch vụ & bản quyền / Tiền công, dịch vụ';
+  }
+  function suggest(cost, margin) {
+    P.amount(cost, 'Giá vốn');
+    P.assert(Number.isFinite(margin) && margin >= 0 && margin < 100, 'Mức lãi phải từ 0 đến dưới 100%.');
+    return Math.ceil(cost / (1 - margin / 100) / 10000) * 10000;
+  }
+  function totals(items, inventory, price) {
+    let cost = 0, retail = 0;
+    for (const line of items) {
+      const item = inventory.find(i => i.id === line.id);
+      P.assert(item && !serviceItem(item), 'Chọn linh kiện còn trong danh mục.');
+      P.assert(inventory.filter(i=>i.id===line.id).length===1,'Mã hàng bị trùng, cần tách mã trước: '+line.id);
+      P.assert(Number.isSafeInteger(line.qty) && line.qty > 0, 'Số lượng phải là số nguyên dương.');
+      P.assert(Number.isFinite(Number(item.cost)) && item.cost !== null && item.cost !== undefined && Number(item.cost) >= 0, 'Linh kiện thiếu giá vốn.');
+      cost += line.qty * Number(item.cost);
+      retail += line.qty * P.n(line.price);
+    }
+    return {cost: P.money(cost), retail: P.money(retail), profit: price - P.money(cost), margin: price > 0 ? (price - P.money(cost)) / price * 100 : 0};
+  }
+  function allocate(items, total) {
+    const weight = items.reduce((n, i) => n + i.qty * i.price, 0);
+    const denominator = weight || items.reduce((n,i) => n + i.qty,0);
+    let cumulative = 0, used = 0;
+    return items.map(i => {
+      cumulative += weight ? i.qty * i.price : i.qty;
+      const next = Math.round(total * cumulative / denominator);
+      const line = {...i, amount: next - used};
+      used = next;
+      return line;
+    });
+  }
+  function saveQuote(d, p, env) {
+    P.assert(p.name.trim() && p.items.length, 'Nhập tên cấu hình và thêm linh kiện.');
+    P.amount(p.total); P.assert(p.total > 0, 'Nhập giá trọn bộ.');
+    const seen = new Set();
+    const items = p.items.map(line => {
+      P.assert(!seen.has(line.id), 'Linh kiện bị trùng dòng. Tăng số lượng ở dòng đã có.');
+      seen.add(line.id);
+      const item = d.inventory.find(i => i.id === line.id);
+      P.assert(item && !serviceItem(item), 'Linh kiện không còn trong danh mục.');
+      P.amount(line.price);
+      return {id:item.id,name:item.name,qty:line.qty,price:line.price,warranty:line.warranty||'',serial:item.serial||''};
+    });
+    totals(items,d.inventory,p.total);
+    const list = d.storeInfo.pcQuotes ??= [];
+    const prior = list.find(q => q.id === p.id);
+    if (prior) {
+      P.assert(!prior.invoiceId, 'Báo giá đã chốt bán.');
+      P.assert(prior.revision === p.revision, 'Báo giá vừa được sửa ở nơi khác. Mở lại để cập nhật.');
+    }
+    P.assert(!p.validUntil || /^\d{4}-\d{2}-\d{2}$/.test(p.validUntil) && p.validUntil >= env.date, 'Ngày hiệu lực báo giá phải từ hôm nay.');
+    const quote = {id: prior?.id || p.id || env.id('BG'),revision:(prior?.revision||0)+1,date:env.date,staffId:env.user,
+      name:p.name.trim(),customerId:p.customerId||'',customerName:p.customerName||'',phone:p.phone||'',
+      total:p.total,items,note:p.note||'',validUntil:p.validUntil||'',updatedAt:new Date().toISOString()};
+    if (prior) list[list.indexOf(prior)] = quote;
+    else list.push(quote);
+    P.audit(d,env,'Lưu báo giá PC',quote.id);
+    return quote;
+  }
+  function sellQuote(d,p,env) {
+    const q = (d.storeInfo.pcQuotes||[]).find(q => q.id===p.id);
+    P.assert(q && !q.invoiceId,'Báo giá đã bán hoặc không còn.');
+    P.assert(q.revision===p.revision,'Báo giá vừa thay đổi, mở lại trước khi bán.');
+    P.assert(!q.validUntil || q.validUntil>=env.date,'Báo giá đã hết hiệu lực. Kiểm tra và lưu lại ngày hiệu lực.');
+    const sums=totals(q.items,d.inventory,q.total);
+    if(q.total<sums.cost)P.assert(p.allowLoss && env.user==='ADMIN','Giá bộ thấp hơn vốn. Quản trị cần xác nhận bán dưới vốn.');
+    const allocated=allocate(q.items,q.total);
+    const lines=allocated.map(i=>({id:i.id,qty:i.qty,price:Math.ceil(i.amount/i.qty)}));
+    const gross=lines.reduce((n,i)=>n+i.qty*i.price,0);
+    const invoice=P.sale(d,{items:lines,discount:gross-q.total,paid:p.paid,account:p.account,
+      customerId:p.customerId||q.customerId,note:q.name+' · Báo giá '+q.id+' · '+q.note},env);
+    invoice.pcQuoteId=q.id;invoice.bundleName=q.name;invoice.bundleLines=P.clone(allocated);
+    const customer=d.customers.find(c=>c.id===invoice.customerId);
+    invoice.customerName=customer?.name||q.customerName;invoice.customerPhone=customer?.phone||q.phone;
+    q.invoiceId=invoice.id;q.soldAt=env.date;
+    return invoice;
+  }
+  function quickRepair(d,p,env) {
+    P.assert(p.requestId && p.customerName.trim() && p.machine.trim() && p.work.trim(), 'Nhập tên khách, máy và nội dung sửa.');
+    P.assert(!d.serviceOrders.some(o=>o.quickRequestId===p.requestId),'Phiếu sửa nhanh này đã lưu.');
+    P.amount(p.labor);P.amount(p.paid);
+    const id=env.id('SC');
+    const order={id,customerId:p.customerId||'',customerName:p.customerName.trim(),phone:p.phone||'',
+      model:p.machine.trim(),condition:p.work.trim(),receiveDate:env.date,receiveTime:env.time,
+      staffId:env.user,status:'Đang sửa',isDeducted:false,quickRequestId:p.requestId};
+    d.serviceOrders.push(order);
+    const tx=P.repair(d,{serviceId:id,items:p.items,labor:p.labor,paid:p.paid,account:p.account,finish:true},env);
+    tx.customerName=order.customerName;tx.customerPhone=order.phone;
+    tx.note+=' · '+order.model+' · '+order.condition;
+    return tx;
+  }
+  return {category,serviceItem,suggest,totals,allocate,saveQuote,sellQuote,quickRepair};
+})();
+
+</script>
+<script>
+(function(){
+  const S=LGShop,P=LGPro,$=id=>document.getElementById(id);
+  const E=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const M=x=>P.money(x).toLocaleString('vi-VN');
+  const O=(v,t)=>'<option value="'+E(v)+'">'+E(t)+'</option>';
+  const btn=(action,text)=>'<button type="button" class="btn btn-outline" data-shop="'+action+'">'+text+'</button>';
+  const field=(id,label,value='',type='text')=>'<label class="shop-field">'+label+'<input id="sh-'+id+'" class="form-control" type="'+type+'" value="'+E(value)+'" '+(type==='number'?'min="0" step="1"':'')+'></label>';
+  const val=id=>$('sh-'+id).value.trim(),num=id=>{const s=val(id);P.assert(/^\d+$/.test(s),'Nhập số nguyên đồng / số lượng hợp lệ.');return P.amount(Number(s));};
+  const customersSelect=(id='')=>'<label class="shop-field">Khách trong danh bạ (bắt buộc nếu còn nợ)<select id="sh-customer" class="form-control">'+O('','Khách lẻ — thanh toán đủ')+customers.map(c=>'<option value="'+E(c.id)+'" '+(c.id===id?'selected':'')+'>'+E(c.name)+' · '+E(c.phone||'')+'</option>').join('')+'</select></label>';
+  const account=()=>'<label class="shop-field">Thu vào<select class="form-control" id="sh-account">'+O('cash','Tiền mặt')+O('bank','Ngân hàng')+'</select></label>';
+  let draft=null,quick=null,mode='',quotePreview=false;
+  document.head.insertAdjacentHTML('beforeend','<style>.shop-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}.shop-field{display:block;margin:10px 0}.shop-actions{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.shop-muted{font-size:13px;color:#64748b}.shop-scroll{overflow:auto}.shop-scroll input{min-width:85px}.shop-summary{padding:12px;background:#eff6ff;border-radius:8px;margin:12px 0}#shop-modal .modal-box{max-width:960px;width:95%;max-height:92vh;overflow:auto}#shop-modal table td{white-space:normal}#shop-modal button{cursor:pointer}</style>');
+  document.body.insertAdjacentHTML('beforeend','<datalist id="shop-categories"></datalist><div class="modal-overlay" id="shop-modal"><div class="modal-box"><div style="display:flex;justify-content:space-between;gap:12px"><h3 class="modal-title" id="shop-title"></h3>'+btn('close','Đóng')+'</div><div id="shop-body"></div></div></div>');
+  const page=(title,body)=>{$('shop-title').textContent=title;$('shop-body').innerHTML=body;openModal('shop-modal');};
+  function categories(){return [...new Set([...Object.values(LGCategoryMap),...inventory.map(S.category)])].sort((a,b)=>a.localeCompare(b,'vi'));}
+  function categoryControls(){
+    $('shop-categories').innerHTML=categories().map(c=>O(c,c)).join('');
+    const current=$('shop-filter').value;
+    $('shop-filter').innerHTML=O('','Tất cả nhóm hàng')+categories().map(c=>O(c,c)).join('');$('shop-filter').value=current;
+  }
+  $('search-inv').insertAdjacentHTML('beforebegin','<div class="shop-grid"><select aria-label="Nhóm hàng" class="form-control" id="shop-filter"></select><select aria-label="Tình trạng tồn" class="form-control" id="shop-stock"><option value="">Mọi tình trạng</option value="positive">Còn hàng</option><option value="zero">Hết hàng</option><option value="negative">Âm kho cần kiểm</option></select></div><p class="shop-muted">Chọn Sửa để đổi nhóm. Phân nhóm không thay đổi số lượng hoặc chứng từ cũ.</p>');
+  function inventoryView(){
+    if(!activeUser)return;
+    const group=$('shop-filter').value,status=$('shop-stock').value,q=removeAccents($('search-inv').value).toLowerCase();
+    const items=inventory.filter(p=>(!group||S.category(p)===group)&&(!q||removeAccents(p.name+' '+p.id+' '+S.category(p)).toLowerCase().includes(q))&&(!status||(status==='positive'?p.stock>0:status==='negative'?p.stock<0:Number(p.stock||0)===0)));
+    $('inv-tbl').innerHTML=items.map(p=>'<tr><td><b>'+E(p.name)+'</b><div class="shop-muted">'+E(S.category(p))+'</div></td><td style="'+(activeUser==='ADMIN'?'':'display:none')+'">'+M(p.cost)+'</td><td>'+M(p.price)+'</td><td style="color:'+(p.stock<0?'#dc2626':'inherit')+'">'+M(p.stock)+(p.stock<0?' · Âm kho':'')+'</td><td><button type="button" class="btn btn-outline" data-edit-product="'+E(p.id)+'">Sửa</button></td></tr>').join('');
+  }
+  $('shop-filter').onchange=inventoryView;$('shop-stock').onchange=inventoryView;$('search-inv').onkeyup=inventoryView;
+  $('inv-tbl').addEventListener('click',e=>{const b=e.target.closest('[data-edit-product]');if(b)openEditProd(b.dataset.editProduct);});
+  for(const [prefix,id] of [['qa','new'],['ep','edit']]){
+    $(prefix+'-name').parentElement.insertAdjacentHTML('afterend','<label class="shop-field">Nhóm hàng<input class="form-control" id="shop-'+id+'-category" list="shop-categories" placeholder="Chọn hoặc nhập tên nhóm"></label>');
+    $(prefix+'-price').parentElement.insertAdjacentHTML('beforeend','<div class="shop-actions shop-price-admin">'+[10,15,20].map(m=>btn('price-'+prefix+'-'+m,'Lãi '+m+'%')).join('')+'</div><small class="shop-muted shop-price-admin">Giá = vốn ÷ (1 − tỷ lệ lãi trên giá bán), làm tròn lên 10.000đ; chưa trừ chi phí tiệm và thuế.</small>');
+  }
+  const open=window.openModal;
+  window.openModal=function(id){
+    if(id==='previewModal')quotePreview=false;
+    if(id==='editProdModal'){const p=inventory.find(p=>p.id===$('ep-id').value);$('shop-edit-category').value=p?S.category(p):'';}
+    if(id==='quickAddModal')$('shop-new-category').value=$('shop-filter').value;
+    document.querySelectorAll('.shop-price-admin').forEach(x=>x.style.display=activeUser==='ADMIN'?'':'none');
+    return open.apply(this,arguments);
+  };
+  const render=window.renderData;
+  window.renderData=function(){const r=render.apply(this,arguments);categoryControls();inventoryView();return r;};
+  $('pos-header-card').insertAdjacentHTML('afterbegin','<details style="margin-bottom:12px"><summary style="cursor:pointer;text-align:right" aria-label="Tác vụ bán hàng khác">⋯ Thêm</summary><div class="shop-actions">'+btn('pc','Ráp bộ PC')+btn('quotes','Báo giá đã lưu')+'</div></details>');
+  $('service').insertAdjacentHTML('afterbegin','<div class="shop-actions">'+btn('quick','⚡ Sửa nhanh / giao ngay')+'</div>');
+  $('imp-cart').insertAdjacentHTML('afterend','<details style="margin:12px 0"><summary>Gợi ý giá bán theo giá nhập</summary><p class="shop-muted">Dựa trên giá vốn dự kiến sau nhập; bạn chọn giá, phần mềm không tự đổi giá bán.</p>'+btn('import-prices','Xem gợi ý giá')+'</details>');
+  function newPC(){return {id:genId('BG'),revision:0,name:'Bộ máy tính',customerId:'',customerName:'',phone:'',note:'',validUntil:getToday(),items:[],total:0};}
+  function readForm(){
+    if(!['pc','quick'].includes(mode))return;
+    const d=mode==='pc'?draft:quick;
+    d.customerId=val('customer');d.customerName=val('name');d.phone=val('phone');
+    if(mode==='pc'){d.name=val('bundle');d.note=val('note');d.validUntil=val('until');d.total=num('total');}
+    else{d.machine=val('machine');d.work=val('work');d.labor=num('labor');d.paid=num('paid');d.account=val('account');}
+  }
+  function picker(){return '<div class="shop-grid"><label class="shop-field">Tìm linh kiện trong kho<input class="form-control" id="sh-search" placeholder="Tên hoặc mã hàng"></label><label class="shop-field">Chọn hàng<select class="form-control" id="sh-product"></select></label></div>'+btn('add','+ Thêm linh kiện');}
+  function pickFilter(){const q=removeAccents($('sh-search').value).toLowerCase();$('sh-product').innerHTML=O('','Chọn linh kiện')+inventory.filter(i=>!S.serviceItem(i)&&removeAccents(i.name+' '+i.id).toLowerCase().includes(q)).map(i=>O(i.id,i.name+' · Tồn '+M(i.stock))).join('');}
+  function lineTable(d){return '<div class="shop-scroll"><table><thead><tr><th>Linh kiện</th><th>SL</th><th>Giá bán / cái</th>'+(mode==='pc'?'<th>Bảo hành</th>':'')+'<th>Thành tiền</th><th></th></tr></thead><tbody>'+d.items.map((i,k)=>'<tr><td>'+E(i.name)+'</td><td><input class="form-control" type="number" min="1" step="1" data-line="'+k+'" data-key="qty" value="'+i.qty+'"></td><td><input class="form-control" type="number" min="0" step="1" data-line="'+k+'" data-key="price" value="'+i.price+'"></td>'+(mode==='pc'?'<td><input class="form-control" data-line="'+k+'" data-key="warranty" value="'+E(i.warranty)+'" placeholder="VD: 12 tháng"></td>':'')+'<td>'+M(i.qty*i.price)+'</td><td>'+btn('remove-'+k,'×')+'</td></tr>').join('')+'</tbody></table></div>';}
+  function editor(kind){
+    mode=kind;const d=kind==='pc'?draft:quick;
+    let h=customersSelect(d.customerId)+'<div class="shop-grid">'+field('name','Tên khách',d.customerName)+field('phone','Điện thoại',d.phone)+'</div>';
+    h+=kind==='pc'?field('bundle','Tên bộ máy',d.name):'<div class="shop-grid">'+field('machine','Máy / model / serial',d.machine)+field('work','Đã sửa gì, cho ai?',d.work)+'</div>';
+    h+=picker()+lineTable(d);
+    if(kind==='pc'){
+      h+='<div class="shop-grid">'+field('total','Giá bán trọn bộ (đ)',d.total,'number')+field('until','Báo giá có hiệu lực đến',d.validUntil,'date')+'</div>'+field('note','Ghi chú gửi khách',d.note);
+      h+='<div class="shop-summary" id="sh-summary"></div>';
+      if(activeUser==='ADMIN')h+='<div class="shop-actions">'+[10,15,20].map(m=>btn('bundle-price-'+m,'Gợi ý lãi '+m+'%')).join('')+'</div>';
+      h+='<p class="shop-muted">Báo giá chưa giữ hàng, chưa trừ kho, chưa ghi doanh thu. Cần tự kiểm tra socket CPU, RAM, nguồn và kích thước linh kiện trước khi chốt.</p><div class="shop-actions">'+btn('save-quote','Lưu báo giá')+btn('preview-draft','Xem / in / tải ảnh báo giá')+btn('new-pc','Tạo bộ mới')+'</div>';
+    }else{
+      h+='<div class="shop-grid">'+field('labor','Tiền công (đ)',d.labor,'number')+field('paid','Thực thu (đ)',d.paid,'number')+account()+'</div><div class="shop-summary" id="sh-summary"></div><div class="shop-actions">'+btn('paid-full','Điền thu đủ')+btn('finish-quick','Hoàn tất & thu tiền')+'</div><p class="shop-muted">Ghi một phiếu sửa đã giao, xuất linh kiện và ghi thu tiền cùng lúc. Nếu khách còn nợ, chọn khách trong danh bạ; có thể thêm khách bằng mục Khách hàng trước.</p>';
+    }
+    page(kind==='pc'?'Ráp bộ PC & báo giá':'Sửa nhanh — làm xong, giao ngay',h);pickFilter();
+    if(kind==='quick')$('sh-account').value=d.account;
+    $('sh-search').oninput=pickFilter;
+    $('sh-customer').onchange=()=>{const c=customers.find(c=>c.id===val('customer'));if(c){$('sh-name').value=c.name;$('sh-phone').value=c.phone||'';}};
+    summary();
+  }
+  function summary(){
+    if(!['pc','quick'].includes(mode)||!$('sh-summary'))return;
+    const d=mode==='pc'?draft:quick,parts=d.items.reduce((s,i)=>s+i.qty*i.price,0);
+    if(mode==='quick'){$('sh-summary').textContent='Tổng phí sửa: '+M(parts+Number($('sh-labor').value))+' đ · Linh kiện: '+M(parts)+' đ';return;}
+    const total=Number($('sh-total').value);let text='Giá lẻ cộng lại: '+M(parts)+' đ · Giá trọn bộ: '+M(total)+' đ';
+    if(activeUser==='ADMIN'){try{const x=S.totals(d.items,inventory,total);text+=' · Vốn hiện tại: '+M(x.cost)+' đ · Lãi gộp dự kiến: '+M(x.profit)+' đ ('+x.margin.toFixed(1)+'%)';}catch(e){text+=' · '+e.message;}}
+    $('sh-summary').textContent=text;
+  }
+  function publicQuote(q){
+    P.assert(q.items.length&&q.total>0,'Thêm linh kiện và nhập giá trọn bộ trước.');
+    const lines=S.allocate(q.items,q.total),logo=storeInfo.logoUrl;
+    const h='<div style="font-family:Arial,sans-serif;color:#172b4d;background:white;padding:22px;max-width:720px;margin:auto;font-size:14px">'+(logo&&/^(https?:|data:image\/)/i.test(logo)?'<img src="'+E(logo)+'" style="max-height:65px;max-width:140px;float:right">':'')+'<h2>'+E(storeInfo.name||'LƯƠNG GIA KG')+'</h2><p>'+E(storeInfo.address)+'<br>ĐT: '+E(storeInfo.phone)+'</p><h2 style="text-align:center">BÁO GIÁ BỘ MÁY TÍNH</h2><p>Số: '+E(q.id||'Bản nháp')+' · Ngày: '+E(q.date||getToday())+'<br>Khách: '+E(q.customerName||'Khách lẻ')+' · '+E(q.phone)+'<br>Cấu hình: '+E(q.name)+'</p><table style="border-collapse:collapse;width:100%;table-layout:fixed"><thead><tr>'+['Linh kiện / cấu hình','SL','Bảo hành','Thành tiền'].map((x,i)=>'<th style="border:1px solid #64748b;padding:8px;'+(i===0?'width:46%':i===1?'width:8%':'')+'">'+x+'</th>').join('')+'</tr></thead><tbody>'+lines.map(i=>'<tr>'+[E(i.name),i.qty,E(i.warranty||'Theo thỏa thuận'),M(i.amount)].map((x,k)=>'<td style="border:1px solid #64748b;padding:8px;overflow-wrap:anywhere;'+(k===3?'text-align:right':'')+'">'+x+'</td>').join('')+'</tr>').join('')+'<tr><td colspan="3" style="border:1px solid #64748b;padding:10px"><b>TỔNG GIÁ TRỌN BỘ</b></td><td style="border:1px solid #64748b;padding:10px;text-align:right"><b>'+M(q.total)+' đ</b></td></tr></tbody></table><p>Hiệu lực đến: '+E(q.validUntil||'Theo thỏa thuận')+'<br>'+E(q.note)+'</p><p style="font-size:12px">Đơn vị: VNĐ. Giá các linh kiện đã phân bổ theo giá trọn bộ. Báo giá chưa xác nhận giữ hàng. Giá là số tiền khách trả, chưa tách VAT. Đây là báo giá, không phải hóa đơn thuế.</p></div>';
+    $('preview-content').innerHTML=h;$('print-area').innerHTML=h;openModal('previewModal');quotePreview=true;
+  }
+  const print=window.executePrint,printBillOriginal=window.printBill;
+  window.printBill=function(){quotePreview=false;return printBillOriginal.apply(this,arguments);};
+  window.executePrint=function(){if(!quotePreview)return print.apply(this,arguments);const w=window.open('','','width=850,height=900');if(!w)return uiAlert('Trình duyệt đang chặn cửa sổ in. Cho phép cửa sổ bật lên rồi in lại.');w.document.write('<html><head><title>Báo giá PC</title><style>@page{size:A4 portrait;margin:12mm}body{margin:0}tr{break-inside:avoid}thead{display:table-header-group}</style></head><body>'+$('print-area').innerHTML+'</body></html>');w.document.close();w.onload=()=>{w.focus();w.print();};};
+  function quotes(){mode='quotes';const list=(storeInfo.pcQuotes||[]).slice().reverse();page('Báo giá PC đã lưu','<div class="shop-actions">'+btn('pc','Tiếp tục ráp PC')+'</div><div class="shop-scroll"><table><thead><tr><th>Ngày / số</th><th>Cấu hình / khách</th><th>Giá</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>'+list.map(q=>'<tr><td>'+E(q.date)+'<br>'+E(q.id)+'</td><td>'+E(q.name)+'<br>'+E(q.customerName)+'</td><td>'+M(q.total)+'</td><td>'+E(q.invoiceId?'Đã bán':q.validUntil&&q.validUntil<getToday()?'Hết hiệu lực':'Chưa bán')+'</td><td><button class="btn btn-outline" data-quote-preview="'+E(q.id)+'">In / ảnh</button> '+(q.invoiceId?'<button class="btn btn-outline" data-quote-bill="'+E(q.invoiceId)+'">Bill</button>':'<button class="btn btn-outline" data-quote-edit="'+E(q.id)+'">Sửa</button> <button class="btn btn-primary" data-quote-sell="'+E(q.id)+'">Chốt bán</button>')+'</td></tr>').join('')+'</tbody></table></div>');}
+  let selling=null;
+  function checkout(id){const q=(storeInfo.pcQuotes||[]).find(q=>q.id===id);P.assert(q&&!q.invoiceId,'Báo giá không còn hoặc đã bán.');selling=P.clone(q);mode='checkout';page('Chốt bán bộ PC', '<p>'+E(q.name)+' · Tổng thu '+M(q.total)+' đ</p>'+customersSelect(q.customerId)+'<div class="shop-grid">'+field('paid','Thực thu (đ)',q.total,'number')+account()+'</div>'+(activeUser==='ADMIN'?'<label><input type="checkbox" id="sh-loss"> Tôi đồng ý nếu giá bán thấp hơn giá vốn hiện tại</label>':'')+'<p class="shop-muted">Kiểm tra lại tồn kho và giá vốn khi lưu. Thu một phần sẽ ghi nợ cho khách đã chọn.</p>'+btn('sell','Xác nhận chốt bán'));}
+  function importPrices(){
+    P.assert(activeUser==='ADMIN','Chỉ quản trị xem giá vốn và đặt giá bán.');P.assert(impCart.length,'Thêm hàng vào phiếu nhập trước.');mode='prices';
+    page('Gợi ý giá bán sau nhập','<p class="shop-muted">Giá vốn bình quân dự kiến = (vốn tồn + tiền hàng nhập) ÷ tổng số lượng. Đây là gợi ý theo mức lãi, chưa khảo sát giá thị trường. Nhập hàng vẫn cần lưu tại phiếu nhập.</p><div class="shop-scroll"><table><thead><tr><th>Hàng</th><th>Vốn dự kiến</th><th>Giá đang bán</th><th>Chọn giá đề xuất</th></tr></thead><tbody>'+impCart.map((line,k)=>{const i=inventory.find(i=>i.id===line.id);if(!i)return '';const qty=Number(i.stock)+Number(line.qty),cost=qty>0?Math.round((Number(i.stock)*Number(i.cost)+line.qty*line.cost)/qty):0;return '<tr><td>'+E(i.name)+'</td><td>'+M(cost)+'</td><td>'+M(i.price)+'</td><td>'+[10,15,20].map(m=>'<button class="btn btn-outline" data-price-item="'+E(i.id)+'" data-price-value="'+S.suggest(cost,m)+'">'+m+'%: '+M(S.suggest(cost,m))+'</button>').join(' ')+'</td></tr>';}).join('')+'</tbody></table></div>');
+  }
+  async function action(a){
+    if(a==='close'){if(['pc','quick'].includes(mode))readForm();closeModal('shop-modal');return;}
+    if(a==='pc'){draft??=newPC();return editor('pc');}
+    if(a==='quick'){quick??={requestId:genId('QR'),customerId:'',customerName:'',phone:'',machine:'',work:'',items:[],labor:0,paid:0,account:'cash'};return editor('quick');}
+    if(a==='quotes')return quotes();
+    if(a==='import-prices')return importPrices();
+    if(a.startsWith('price-')){P.assert(activeUser==='ADMIN','Chỉ quản trị gợi ý giá theo vốn.');const [,prefix,margin]=a.split('-');return setVal(prefix+'-price',S.suggest(getVal(prefix+'-cost'),Number(margin)));}
+    if(a==='sell'){const p={id:selling.id,revision:selling.revision,customerId:val('customer'),paid:num('paid'),account:val('account'),allowLoss:$('sh-loss')?.checked===true};return lgRun('Bán bộ PC',(d,e)=>S.sellQuote(d,p,e),tx=>{if(draft?.id===selling.id)draft=null;closeModal('shop-modal');printBill(tx.id,'sales');});}
+    readForm();const d=mode==='pc'?draft:quick;
+    if(a==='add'){const i=inventory.find(i=>i.id===val('product'));P.assert(i,'Chọn linh kiện cần thêm.');const prior=d.items.find(x=>x.id===i.id);if(prior)prior.qty++;else d.items.push({id:i.id,name:i.name,qty:1,price:P.n(i.price),warranty:''});if(mode==='pc')d.total=d.items.reduce((s,i)=>s+i.qty*i.price,0);return editor(mode);}
+    if(a.startsWith('remove-')){d.items.splice(Number(a.slice(7)),1);return editor(mode);}
+    if(a.startsWith('bundle-price-')){P.assert(activeUser==='ADMIN','Chỉ quản trị được xem giá vốn.');d.total=S.suggest(S.totals(d.items,inventory,d.total).cost,Number(a.slice(13)));return editor('pc');}
+    if(a==='paid-full'){d.paid=d.labor+d.items.reduce((s,i)=>s+i.qty*i.price,0);return editor('quick');}
+    if(a==='new-pc')return uiConfirm('Bỏ bản nháp đang nhập để tạo bộ PC mới?',()=>{draft=newPC();editor('pc');});
+    if(a==='preview-draft')return publicQuote(d);
+    if(a==='save-quote'){const p=P.clone(d);return lgRun('Lưu báo giá PC',(data,e)=>S.saveQuote(data,p,e),q=>{draft=P.clone(q);quotes();});}
+    if(a==='finish-quick'){const p=P.clone(d);return lgRun('Sửa nhanh giao ngay',(data,e)=>S.quickRepair(data,p,e),tx=>{quick=null;closeModal('shop-modal');printBill(tx.id,'sales');});}
+  }
+  document.addEventListener('click',async e=>{
+    const b=e.target.closest('[data-shop],[data-quote-preview],[data-quote-edit],[data-quote-sell],[data-quote-bill],[data-price-item]');if(!b)return;
+    try{
+      if(b.dataset.shop)await action(b.dataset.shop);
+      else if(b.dataset.quotePreview)publicQuote((storeInfo.pcQuotes||[]).find(q=>q.id===b.dataset.quotePreview));
+      else if(b.dataset.quoteEdit){draft=P.clone(storeInfo.pcQuotes.find(q=>q.id===b.dataset.quoteEdit));editor('pc');}
+      else if(b.dataset.quoteSell)checkout(b.dataset.quoteSell);
+      else if(b.dataset.quoteBill)printBill(b.dataset.quoteBill,'sales');
+      else if(b.dataset.priceItem){const id=b.dataset.priceItem,price=Number(b.dataset.priceValue);uiConfirm('Đặt giá bán '+M(price)+' đ cho mặt hàng này?',()=>lgRun('Cập nhật giá bán',(d,env)=>{P.assert(env.user==='ADMIN','Chỉ quản trị đổi giá.');const item=d.inventory.find(i=>i.id===id);P.assert(item,'Mặt hàng không còn.');P.audit(d,env,'Đổi giá bán',JSON.stringify({id,old:item.price,price}));item.price=price;},importPrices));}
+    }catch(error){uiAlert(E(error.message));}
+  });
+  $('shop-body').addEventListener('change',e=>{
+    try{if(e.target.dataset.line!==undefined){readForm();const d=mode==='pc'?draft:quick,line=d.items[Number(e.target.dataset.line)],key=e.target.dataset.key;const value=key==='warranty'?e.target.value:Number(e.target.value);if(key!=='warranty'){P.amount(value);if(key==='qty')P.assert(value>0,'Số lượng phải lớn hơn 0.');}line[key]=value;editor(mode);}else summary();}catch(error){uiAlert(E(error.message));}
+  });
+  categoryControls();inventoryView();
 })();
 
 </script>
