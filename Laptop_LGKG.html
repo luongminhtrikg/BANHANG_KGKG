@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Lương Gia KG · V17</title>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Lương Gia KG · V18</title>
 <style>
 :root{--bg:#eceff2;--card:#fff;--ink:#14202b;--mut:#5f6c78;--line:#d9dfe5;--pri:#0a7d6e;--onpri:#fff;--warn:#b45309;--bad:#b42318;color-scheme:light dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e151c;--card:#17212b;--ink:#eaf0f5;--mut:#9aa8b5;--line:#2a3945;--pri:#2fbfa8;--onpri:#06231e;--warn:#f59e0b;--bad:#f97066;color-scheme:dark}}
@@ -105,7 +105,7 @@ function audit(d,env,action,detail){d.activityLogs.push({id:env.id('LOG'),time:e
 function lines(d,items,mode,prior=[]){assert(items.length>0,'Chưa có mặt hàng.');const seen=new Set();return items.map(i=>{assert(!seen.has(i.id),'Trùng mã hàng trong giỏ: '+i.id);seen.add(i.id);const p=d.inventory.find(p=>p.id===i.id);assert(p,'Mặt hàng không còn trong kho: '+i.id);assert(d.inventory.filter(x=>x.id===i.id).length===1,'Mã hàng bị trùng, cần tách mã trước: '+i.id);assert(Number.isSafeInteger(i.qty)&&i.qty>0,'Số lượng phải là số nguyên lớn hơn 0.');if(p.serial&&mode==='import')assert(n(p.stock)+i.qty<=1,'Máy theo serial đã tồn tại trong kho.');assert(n(p.stock)>=0,'Kho đang âm. Cần kiểm kê và điều chỉnh trước: '+p.name);const price=amount(i.price??0,'Giá bán');assert(mode==='import'||p.cost!==undefined&&p.cost!==null&&Number.isFinite(Number(p.cost)),'Mặt hàng thiếu giá vốn; quản trị cần đối chiếu trước: '+p.name);let cost=mode==='import'?amount(i.cost,'Giá nhập'):n(p.cost);assert(Number.isFinite(cost)&&cost>=0,'Giá vốn không hợp lệ.');const reserved=prior.find(x=>x.id===i.id);assert(!reserved||reserved.cost!==undefined&&reserved.cost!==null&&Number.isFinite(Number(reserved.cost)),'Phiếu sửa cũ thiếu giá vốn linh kiện; cần đối chiếu trước: '+p.name);assert(mode==='import'||i.qty<=n(p.stock)+n(reserved?.qty),'Không đủ tồn kho: '+p.name);if(reserved&&i.qty<=reserved.qty)cost=n(reserved.cost);return{id:p.id,name:p.name,qty:i.qty,price,cost,note:String(i.note||'')};});}
 function take(d,items){for(const i of items){const p=d.inventory.find(p=>p.id===i.id);p.stock=n(p.stock)-i.qty;}}
 function put(d,items){for(const i of items){const p=d.inventory.find(p=>p.id===i.id);assert(p,'Không thể hoàn kho vì thiếu mã hàng '+i.id);const q=n(p.stock);assert(q>=0,'Kho âm, cần đối chiếu trước khi hoàn hàng.');p.cost=money((q*n(p.cost)+i.qty*n(i.cost))/(q+i.qty));p.stock=q+i.qty;}}
-function outstanding(d,to='9999-12-31'){const invoices=d.transactions.filter(t=>active(t)&&t.type==='debt'&&t.date<=to).sort((a,b)=>(a.date+' '+(a.time||'')).localeCompare(b.date+' '+(b.time||''))||a.id.localeCompare(b.id));const map=Object.fromEntries(invoices.map(t=>[t.id,total(t)]));const generic=[];for(const p of d.transactions.filter(t=>active(t)&&t.type==='pay'&&t.date<=to)){if(p.allocations?.length){for(const a of p.allocations){if(map[a.invoiceId]!==undefined)map[a.invoiceId]-=n(a.amount);}}else {const token=(p.details||'').match(/(?:HĐ|HD)\s+([^\s()]+)/)?.[1];const linked=p.originalTxId||(invoices.some(t=>t.id===token&&t.customerId===p.customerId)?token:null);if(linked&&map[linked]!==undefined)map[linked]-=n(p.amount);else generic.push(p);}}
+function outstanding(d,to='9999-12-31'){const invoices=d.transactions.filter(t=>active(t)&&t.type==='debt'&&t.date<=to).sort((a,b)=>(a.date+' '+(a.time||'')).localeCompare(b.date+' '+(b.time||''))||a.id.localeCompare(b.id));const map=Object.fromEntries(invoices.map(t=>[t.id,total(t)]));const generic=[];for(const p of d.transactions.filter(t=>active(t)&&t.type==='pay'&&t.date<=to)){const allocations=Object.values(p.allocations||{}).filter(Boolean);if(allocations.length){for(const a of allocations){if(map[a.invoiceId]!==undefined)map[a.invoiceId]-=n(a.amount);}}else {const token=(p.details||'').match(/(?:HĐ|HD)\s+([^\s()]+)/)?.[1];const linked=p.originalTxId||(invoices.some(t=>t.id===token&&t.customerId===p.customerId)?token:null);if(linked&&map[linked]!==undefined)map[linked]-=n(p.amount);else generic.push(p);}}
 for(const p of generic){let remain=n(p.amount);for(const t of invoices.filter(t=>t.customerId===p.customerId)){const paid=Math.min(Math.max(0,map[t.id]),remain);map[t.id]-=paid;remain-=paid;}}
 for(const r of d.transactions.filter(t=>active(t)&&t.type==='refund'&&t.date<=to)){if(map[r.originalTxId]!==undefined)map[r.originalTxId]+=n(r.debtAdjustment);}return map;}
 function receipt(d,p,env){amount(p.paid);assert(p.paid>0,'Số tiền thu phải lớn hơn 0.');assert(d.customers.some(c=>c.id===p.customerId),'Chọn khách hàng hợp lệ.');account(p.account,p.paid);const open=outstanding(d,env.date);const inv=d.transactions.filter(t=>active(t)&&t.type==='debt'&&t.date<=env.date&&t.customerId===p.customerId&&n(open[t.id])>0&&(!p.invoiceId||t.id===p.invoiceId)).sort((a,b)=>(a.date+' '+(a.time||'')).localeCompare(b.date+' '+(b.time||''))||a.id.localeCompare(b.id));const due=inv.reduce((s,t)=>s+open[t.id],0);assert(p.paid<=due,'Tiền thu vượt số nợ còn lại ('+money(due).toLocaleString('vi-VN')+' đ).');let remain=p.paid;const allocations=[];for(const t of inv){const a=Math.min(open[t.id],remain);if(a>0)allocations.push({invoiceId:t.id,amount:a});remain-=a;}
@@ -700,7 +700,7 @@ const LGDebtArchive=(()=>{
   }).filter(r=>r.due>0);
   const shown=docs.filter(r=>!from||r.tx.date>=from);
   const totalDue=rows=>rows.reduce((sum,r)=>sum+r.due,0);
-  return {customer:m.customer,docs:shown,from,to,total:totalDue(shown),before:totalDue(docs)-totalDue(shown),unitemized:Math.max(0,openingDue-archivedTotal)};
+  return {customer:m.customer,docs:shown,from,to,total:totalDue(shown),before:totalDue(docs)-totalDue(shown),unitemized:Math.max(0,openingDue-archivedTotal),distributedOpening:openingDue>0&&archivedTotal>openingDue&&shown.some(r=>!liveIds.has(r.tx.id))};
  }
  function render(a,m){
   const customer=m.customer,s=a.store||{};
@@ -715,12 +715,14 @@ const LGDebtArchive=(()=>{
    '<h1>BẢNG KÊ CHI TIẾT CÔNG NỢ</h1><p><b>Khách hàng:</b> '+esc(customer.name)+'<br><b>Điện thoại:</b> '+esc(customer.phone||'')+'</p>'+
    '<p>Phiếu còn nợ '+(m.from?'từ '+esc(date(m.from))+' đến ':'đến ')+esc(date(m.to))+'</p>'+
    '<table><thead><tr><th style="width:48%">Nội dung hàng hóa / dịch vụ</th><th style="width:8%">SL</th><th style="width:22%">Thành tiền (đ)</th><th style="width:22%">Còn nợ (đ)</th></tr></thead><tbody>'+rows+'</tbody>'+
-   '<tfoot><tr><th colspan="3">CÒN PHẢI THANH TOÁN TRONG BẢNG KÊ</th><th class="amount">'+money(m.total)+'</th></tr></tfoot></table>'+
+   '<tfoot><tr><th colspan="3">CÒN NỢ CÁC PHIẾU TRONG BẢNG KÊ</th><th class="amount">'+money(m.total)+'</th></tr></tfoot></table>'+
+   (m.distributedOpening?'<p class="note">Khoản thanh toán cấn vào số dư chuyển sang được phân bổ theo thứ tự ngày của phiếu cũ.</p>':'')+
+   (m.unreconciled?'<p class="note">Số dư trên sổ là '+money(m.balance)+' đ. Tổng số dư còn lại theo từng phiếu có chênh lệch cần đối chiếu.</p>':'')+
    (m.before?'<p class="note">Còn '+money(m.before)+' đ của các phiếu trước ngày bắt đầu. Khoản này nằm ngoài tổng của bảng kê.</p>':'')+
    (m.unitemized?'<p class="note">Số dư chuyển sang chưa có đủ chi tiết phiếu: '+money(m.unitemized)+' đ. Khoản này nằm ngoài tổng của bảng kê.</p>':'')+
    '<div class="sign"><span>Người lập bảng</span><span>Khách hàng đối chiếu</span></div></article>';
  }
- const css='body{font:14px Arial;color:#172b4d;margin:0;background:#eef2f6}*{box-sizing:border-box}.statement{background:white;max-width:790px;margin:18px auto;padding:26px}.statement h1{text-align:center;font-size:21px}.statement h2{margin:0}.statement header{border-bottom:2px solid #203c57;margin-bottom:18px}.statement table{border-collapse:collapse;width:100%;table-layout:fixed}.statement td,.statement th{border:1px solid #64748b;padding:7px;overflow-wrap:anywhere}.statement th{background:#edf2f7}.statement .doc td{background:#f8fafc}.note{font-size:12px;line-height:1.5}.amount{text-align:right;white-space:nowrap}.qty{text-align:center}.sign{display:flex;justify-content:space-around;margin:30px 0 60px}@page{size:A4 portrait;margin:12mm}@media print{body{background:white}.controls{display:none!important}.statement{margin:0;padding:0;max-width:none}thead{display:table-header-group}tfoot{display:table-row-group}tr{break-inside:avoid}.statement{break-after:page}.statement:last-child{break-after:auto}}';
+ const css='body{font:14px Arial;color:#172b4d;margin:0;background:#eef2f6}*{box-sizing:border-box}.statement{background:white;max-width:790px;margin:18px auto;padding:26px}.statement h1{text-align:center;font-size:21px}.statement h2{margin:0}.statement header{border-bottom:2px solid #203c57;margin-bottom:18px}.statement table{border-collapse:collapse;width:100%;table-layout:fixed}.statement td,.statement th{border:1px solid #64748b;padding:7px;overflow-wrap:anywhere}.statement tfoot th{background:#dbeafe}.statement .doc .amount{color:#153b76}.statement th{background:#edf2f7}.statement .doc td{background:#f8fafc}.note{font-size:12px;line-height:1.5}.amount{text-align:right;white-space:nowrap}.qty{text-align:center}.sign{display:flex;justify-content:space-around;margin:30px 0 60px}@media screen and (max-width:540px){.statement{margin:0;padding:12px}.statement h1{font-size:16px}.statement table{font-size:11px}.statement td,.statement th{padding:5px}.statement .amount{white-space:normal}}@page{size:A4 portrait;margin:12mm}@media print{body{background:white}.controls{display:none!important}.statement{margin:0;padding:0;max-width:none}thead{display:table-header-group}tfoot{display:table-row-group}tr{break-inside:avoid}.statement{break-after:page}.statement:last-child{break-after:auto}}';
  return {validate,model,liveModel,unpaid,lines,render,css,sum,delta};
 })();
 
@@ -730,18 +732,15 @@ function currentArchive(){const archive=D?.storeInfo?.debtDetailArchive;if(!arch
 const statementStart=new Map();
 function statement(id){try{
  requireOwner();
- const hasOpening=D.transactions.some(t=>!t.voidedAt&&t.customerId===id&&t.openingBalance);
- const archive=D.storeInfo.debtDetailArchive,hasArchive=hasOpening&&archive?.customers?.some(c=>c.id===id);
- const a=hasArchive?{...currentArchive(),store:D.storeInfo}:{store:D.storeInfo};
- const customer=D.customers.find(c=>c.id===id);
- if(!customer)throw Error('Không tìm thấy khách.');
- const m=hasArchive?X.model(a,D,id):hasOpening?{customer,docs:D.transactions.filter(t=>!t.voidedAt&&t.customerId===id&&!t.openingBalance)}:X.liveModel(D,id);
- const to=today(),sheet=$('#sheet'),name=LGCompact.fold(customer.name);
+ const to=today(),sheet=$('#sheet');
+ const history=window.lgBuildCustomerHistory(id,to),m=history.debtModel,a={store:D.storeInfo};
+ const name=LGCompact.fold(m.customer.name);
  const from=statementStart.get(id)??(/\bkho bac\b.*\ban bien\b/.test(name)?'2026-10-22':'');
  sheet.onclick=null;
- sheet.innerHTML='<div class="panel" style="max-width:850px"><div style="display:flex;gap:10px"><button class="go" id="archive-print">In A4 / Lưu PDF</button><button class="cancel" id="archive-close">Đóng</button></div>'+
-  '<label for="archive-from">Từ ngày (để trống nếu xem mọi phiếu còn nợ)</label><input id="archive-from" type="date" max="'+to+'" value="'+esc(from)+'">'+
-  '<p class="note" id="archive-summary" role="status"></p><iframe id="archive-preview" title="Bảng kê chi tiết công nợ" style="width:100%;height:62vh;border:1px solid #ddd"></iframe></div>';
+ sheet.innerHTML='<div class="panel customer-export" role="dialog" aria-label="Xuất bảng kê còn nợ"><div class="dialog-heading customer-export-heading"><h2>Xuất bảng kê còn nợ</h2><button type="button" class="cancel" id="archive-close">Quay lại</button></div>'+
+  '<div class="customer-export-filters"><div><label for="archive-from">Từ ngày</label><input id="archive-from" type="date" max="'+to+'" value="'+esc(from)+'"></div>'+
+  '<button type="button" class="subbtn" id="archive-clear">Mọi ngày</button><button type="button" class="go" id="archive-print">In / Lưu PDF</button></div>'+
+  '<p class="note" id="archive-summary" role="status"></p><iframe id="archive-preview" title="Bản in bảng kê còn nợ"></iframe></div>';
  sheet.hidden=false;
  const frame=$('#archive-preview'),date=$('#archive-from'),print=$('#archive-print'),summary=$('#archive-summary');
  function draw(){
@@ -750,12 +749,15 @@ function statement(id){try{
   if(frame.hidden){summary.textContent='Chọn ngày bắt đầu đến hôm nay.';return;}
   statementStart.set(id,date.value);
   const result=X.unpaid(D,m,date.value,to);
+  result.balance=history.balance;
+  result.unreconciled=result.total+result.before+result.unitemized!==result.balance;
   summary.textContent=result.docs.length+' phiếu còn nợ · '+fmt(result.total);
   frame.onload=()=>{print.disabled=frame.hidden;};
   frame.srcdoc='<!doctype html><html lang="vi"><meta charset="utf-8"><style>'+X.css+'</style>'+X.render(a,result)+'</html>';
  }
  date.onchange=draw;
- $('#archive-close').onclick=()=>{sheet.hidden=true;sheet.innerHTML='';};
+ $('#archive-clear').onclick=()=>{date.value='';draw();};
+ $('#archive-close').onclick=()=>window.lgCustomerHistory(id,'unpaid');
  print.onclick=()=>{frame.contentWindow.focus();frame.contentWindow.print();};
  draw();
 }catch(e){toast(e.message);}}
@@ -768,8 +770,9 @@ async function restore(){
  }catch(e){alert('Chưa khôi phục: '+e.message);}};file.click();}catch(e){toast(e.message);}
 }
 window.lgRestoreDebt=restore;
+window.lgCustomerStatement=statement;
 const original=debts;debts=function(){original();
- document.querySelectorAll('#app [data-c]').forEach(button=>{const b=document.createElement('button');b.className='go sm';b.style.width='auto';b.textContent='Bảng kê';b.onclick=()=>statement(button.dataset.c);button.parentElement.appendChild(b);});
+ document.querySelectorAll('#app [data-c]').forEach(button=>{const b=document.createElement('button');b.className='go sm';b.style.width='auto';b.textContent='Bảng kê';b.onclick=()=>window.lgCustomerHistory(button.dataset.c);button.parentElement.appendChild(b);});
 };TABS.find(t=>t[0]==='debt')[2]=debts;
 })();
 
@@ -1394,6 +1397,8 @@ function LGRepairPrice(d,p,en){
  }
  newItem=function(addToSale=false){purchaseCart(true,addToSale);};
  const compactDebts=debts;debts=function(){compactDebts();by('app').classList.add('compact-debts');
+ by('q').insertAdjacentHTML('afterend','<div class="wide-row customers-from-debt">'+button('all-customer-history','Xem giao dịch mọi khách','subbtn')+'</div>');
+ by('all-customer-history').onclick=()=>customersView();
  const balances=A.report(D,'1900-01-01',today()).customerBalances,credits=Object.entries(balances).filter(([id,n])=>n<0);if(credits.length){const area=document.createElement('div');area.innerHTML='<h2>Tiền thu dư cần hoàn khách</h2><div class="list">'+credits.map(([id,n])=>'<div class="item"><div>'+E(cname(id))+'<small>Thu dư '+M(-n)+'</small></div><button class="subbtn" data-credit="'+E(id)+'">Hoàn tiền</button></div>').join('')+'</div>';by('app').appendChild(area);area.onclick=e=>{const b=e.target.closest('[data-credit]');if(!b)return;const id=b.dataset.credit;ask('Hoàn khoản thu dư cho '+cname(id),[{k:'amount',l:'Số tiền',m:1,v:String(-balances[id])},{k:'account',l:'Hoàn từ',o:ACC}],async v=>{await run((d,en)=>{P.amount(v.amount);const balance=A.report(d,'1900-01-01',en.date).customerBalances[id];P.assert(v.amount>0&&v.amount<=-balance,'Tiền hoàn vượt khoản thu dư.');let remain=v.amount;const open=P.outstanding(d,en.date);for(const t of d.transactions.filter(t=>!t.voidedAt&&t.type==='debt'&&t.customerId===id&&t.date<=en.date&&(open[t.id]||0)<0)){const amount=Math.min(remain,-open[t.id]);P.account(v.account,amount);d.transactions.push({id:en.id('HT'),type:'refund',partial:true,originalTxId:t.id,documentType:t.documentType,date:en.date,time:en.time,customerId:id,amount:0,partsRevenue:0,totalCost:0,debtAdjustment:amount,cashRefund:amount,paymentAccount:v.account,details:'Hoàn khoản thu dư do sửa giá '+t.id,staffId:en.user});remain-=amount;if(!remain)break;}P.assert(!remain,'Khoản thu dư cần đối chiếu chứng từ.');P.audit(d,en,'Hoàn tiền thu dư',id+' · '+v.amount);});debts();});};}
  };
  const compactFix=fix;fix=function(){compactFix();by('app').classList.add('compact-repairs');const nf=by('nf');if(nf)by('app').prepend(nf);const search=document.createElement('input');search.type='search';search.placeholder='Tìm tên khách / số điện thoại / tên máy';search.className='repair-search';const box=by('app').querySelector('.list');box.before(search);
@@ -1868,14 +1873,248 @@ let stockBeforeV6=stock;stock=function(){stockBeforeV6();if(!adm()||reportSub!==
  by('stock-adjustment-log').onclick=()=>stockAdjustmentLog();
  by('app').querySelectorAll('.add[data-i]').forEach(btn=>{const row=btn.closest('.item');if(!row||row.querySelector('[data-iedit]'))return;btn.style.flex='1';btn.style.minWidth='0';const w=document.createElement('div');w.className='wide-row';w.style.padding='0 8px';w.innerHTML='<button class="subbtn" data-iedit="'+E(btn.dataset.i)+'">Sửa</button><button class="subbtn" data-idel="'+E(btn.dataset.i)+'">Xóa</button>';row.appendChild(w);});
  if(!by('app').dataset.v6){by('app').dataset.v6='1';by('app').addEventListener('click',e=>{const a=e.target.closest('[data-iedit]'),b=e.target.closest('[data-idel]'),r=e.target.closest('.add[data-i]');if(r&&!a&&!b){e.stopPropagation();itemEditor(r.dataset.i);}if(a){e.stopPropagation();itemEditor(a.dataset.iedit);}if(b){e.stopPropagation();itemDelete(b.dataset.idel);}},true);}};
-function customersView(){reportSub='cust';const a=A.report(D,'1900-01-01',today());
+function buildCustomerHistory(data,id,to=today()){
+ const customer=data.customers.find(c=>c.id===id);
+ P.assert(customer,'Không tìm thấy khách hàng.');
+ const X=LGDebtArchive;
+ const live=data.transactions.filter(t=>!t.voidedAt&&t.customerId===id);
+ const liveIds=new Set(live.map(t=>t.id));
+ const openings=live.filter(t=>t.openingBalance);
+ const archive=data.storeInfo?.debtDetailArchive;
+ let debtDocs=live.filter(t=>!t.openingBalance&&['debt','pay','refund'].includes(t.type));
+ let archiveWarning='';
+ if(openings.length)archiveWarning='Khách có số dư chuyển sang. Lịch sử cũ có thể thiếu phiếu bán trả ngay và khoản thu chưa có chứng từ.';
+ if(archive?.customers&&Object.values(archive.customers).some(c=>c?.id===id)){
+  try{
+   debtDocs=X.model(archive,data,id).docs.filter(t=>!t.openingBalance);
+  }catch(error){
+   archiveWarning=[archiveWarning,'Chưa ghép được chi tiết công nợ cũ. '+error.message].filter(Boolean).join(' ');
+  }
+ }else if(openings.length){
+  archiveWarning+=' Chưa có chi tiết của số dư chuyển sang.';
+ }
+ const debtModel={customer,docs:debtDocs};
+ const history=[...debtDocs,...live.filter(t=>t.type==='cash'&&!t.openingBalance)].filter(t=>t.date<=to);
+ const archived=t=>!liveIds.has(t.id);
+ const book={...data,transactions:live};
+ const balance=A.report({transactions:live,storeInfo:{}},'1900-01-01',to).customerBalances[id]||0;
+ const unpaid=X.unpaid(book,debtModel,'',to);
+ unpaid.docs=unpaid.docs.map(r=>({...r,archived:archived(r.tx)}));
+ const openById=new Map(unpaid.docs.map(r=>[r.tx.id,r.due]));
+ const newest=(a,b)=>(b.tx.date+' '+(b.tx.time||'')).localeCompare(a.tx.date+' '+(a.tx.time||''))||
+  String(b.tx.id).localeCompare(String(a.tx.id));
+ const adjustments=history.filter(t=>t.type==='refund').map(t=>({tx:t,amount:P.n(t.cashRefund),archived:archived(t)}));
+ const cancelled=new Set(adjustments.filter(r=>!r.tx.partial).map(r=>r.tx.originalTxId));
+ const purchases=history.filter(t=>['cash','debt'].includes(t.type)).map(t=>({
+  tx:t,amount:P.total(t),archived:archived(t),cancelled:cancelled.has(t.id),
+  due:t.type==='cash'?0:archived(t)?null:openById.get(t.id)||0
+ })).sort(newest);
+ const invoiceById=new Map([...purchases.map(r=>r.tx),...openings].map(t=>[t.id,t]));
+ const payments=[];
+ for(const t of history.filter(t=>t.type==='pay'||t.type==='cash')){
+  const direct=t.type==='cash',documentAmount=direct?P.total(t):P.n(t.amount);
+  if(documentAmount<=0)continue;
+  const appliedDeposit=Math.max(0,Math.min(documentAmount,P.n(t.depositPortion)));
+  // An unallocated receipt can lower the book balance without identifying an invoice.
+  // In particular, an allocation to an opening balance applies to that balance as a whole.
+  const recorded=direct?[{invoiceId:t.id,amount:documentAmount}]:Object.values(t.allocations||{}).filter(Boolean);
+  if(!recorded.length&&t.originalTxId)recorded.push({invoiceId:t.originalTxId,amount:documentAmount});
+  const allocations=[];
+  let matched=0;
+  const validAmount=a=>Number.isSafeInteger(Number(a.amount))&&Number(a.amount)>0;
+  if(recorded.every(validAmount)&&recorded.reduce((sum,a)=>sum+Number(a.amount),0)<=documentAmount){
+   for(const a of recorded){
+    const invoice=invoiceById.get(a.invoiceId);
+    if(!invoice||invoice.date>t.date||!direct&&invoice.type!=='debt')continue;
+    const amount=Number(a.amount);
+    matched+=amount;
+    allocations.push({invoiceId:invoice.id,amount,opening:!!invoice.openingBalance,archived:archived(invoice)});
+   }
+  }
+  payments.push({tx:t,amount:documentAmount-appliedDeposit,documentAmount,appliedDeposit,archived:archived(t),
+   direct,allocations,unallocated:documentAmount-matched});
+ }
+ const services=new Set((data.serviceOrders||[]).filter(o=>!o.voidedAt&&o.customerId===id).map(o=>o.id));
+ for(const t of data.cashflow||[]){
+  if(t.voidedAt||t.date>to||!(t.customerId===id||!t.customerId&&services.has(t.serviceOrderId)))continue;
+  const amount=P.n(t.amount);
+  if(amount<=0)continue;
+  if(t.type==='repair_deposit'){
+   payments.push({tx:t,amount,documentAmount:amount,appliedDeposit:0,archived:false,direct:false,
+    deposit:true,serviceId:t.serviceOrderId,allocations:[],unallocated:0});
+  }
+  if(t.type==='deposit_return')adjustments.push({tx:t,amount,archived:false,deposit:true,serviceId:t.serviceOrderId});
+ }
+ payments.sort(newest);adjustments.sort(newest);
+ const total=rows=>rows.reduce((sum,r)=>sum+r.amount,0);
+ const totals={purchaseCount:purchases.length,paymentCount:payments.filter(r=>r.amount>0).length,
+  purchases:total(purchases),paid:total(payments),refunded:total(adjustments)};
+ return {customer,purchases,payments,adjustments,unpaid,balance,totals,archiveWarning,debtModel};
+}
+window.lgBuildCustomerHistory=(id,to)=>{requireOwner();return buildCustomerHistory(D,id,to);};
+function showCustomerHistory(id, section='activity'){
+ if(!adm())return;
+ let model;
+ try{model=buildCustomerHistory(D,id,today());}
+ catch(error){return toast(error.message);}
+ if(!model?.customer)return toast('Không còn hồ sơ khách hàng.');
+
+ const {customer,purchases,payments,adjustments,unpaid,balance,totals,archiveWarning}=model;
+ const views=[['activity','Giao dịch'],['payments','Thanh toán'],['unpaid','Còn nợ']];
+ let selected=views.some(([key])=>key===section)?section:'activity';
+ const linkedDocs=new Map([...purchases,...unpaid.docs].filter(r=>r.tx?.id).map(r=>[r.tx.id,r]));
+ const reference=t=>t.id?short(t.id):'';
+ const stamp=t=>[vnDate(t.date),t.time,reference(t)].filter(Boolean).join(' · ');
+ const accountName={cash:'Tiền mặt',bank:'Chuyển khoản',mixed:'Tiền mặt và chuyển khoản',unknown:'Chưa rõ quỹ'};
+ const method=t=>accountName[t.paymentAccount]||'';
+ const purchaseLabel=t=>P.service(t)?'Sửa máy':'Bán hàng';
+ const textParts=t=>[t.details,t.note,t.reason].filter((v,i,a)=>v&&a.indexOf(v)===i);
+ const text=t=>textParts(t).map(value=>'<p class="cust-record-text">'+E(value)+'</p>').join('');
+ const record=(kind,category,t,amount,body)=>'<article class="cust-record" data-history-category="'+category+'">'+
+   '<div class="cust-record-top"><div><h3>'+E(kind)+'</h3><p class="cust-record-meta">'+E(stamp(t))+'</p></div>'+
+   (amount?'<strong class="cust-record-amount">'+E(amount)+'</strong>':'')+'</div>'+body+'</article>';
+ const action=id=>id&&linkedDocs.has(id)
+   ?'<button type="button" class="subbtn cust-doc-link" data-customer-history-invoice="'+E(id)+'">Xem phiếu '+E(short(id))+'</button>'
+   :'';
+ const status=(label,kind)=>'<span class="cust-record-status '+kind+'">'+E(label)+'</span>';
+ function purchaseRow(row,isUnpaid=false){
+  const {tx:t,amount,due,cancelled,archived}=row;
+  const total=isUnpaid?(row.amount??A.total(t)):amount;
+  const dueStatus=cancelled?status('Đã hủy','muted'):due==null?status('Chưa rõ nợ theo phiếu','muted'):
+   due>0?status('Còn nợ '+M(due),'due'):due<0?status('Thu dư '+M(-due),'due'):status('Đã thanh toán','paid');
+  const body=text(t)+'<div class="cust-record-actions">'+dueStatus+
+    (archived?status('Phiếu lưu trữ','muted'):'')+action(t.id)+'</div>';
+  return record(t.openingBalance?'Số dư chuyển sang':purchaseLabel(t),P.service(t)?'repair':'sale',t,M(total),body);
+ }
+ function paymentRow(row){
+  const {tx:t,direct,archived,amount,allocations,unallocated,deposit,appliedDeposit,documentAmount}=row;
+  const meta=[method(t),archived?'Phiếu lưu trữ':''].filter(Boolean).join(' · ');
+  const allocationsHtml=allocations.map(a=>{
+   const label=a.opening?'Vào số dư chuyển sang':a.invoiceId?'Phiếu '+short(a.invoiceId):'Phiếu chưa rõ mã';
+   return '<li><div><span>'+E(label)+'</span><strong>'+E(M(a.amount))+'</strong></div>'+
+    (a.opening?'':action(a.invoiceId))+'</li>';
+  }).join('');
+  const unallocatedHtml=unallocated>0?'<p class="cust-record-meta">Chưa gắn với phiếu cụ thể · '+E(M(unallocated))+'</p>':'';
+  const depositHtml=appliedDeposit>0?'<p class="cust-record-meta">Dùng cọc '+E(M(appliedDeposit))+
+   (documentAmount!=null?' · Tổng ghi trên phiếu '+E(M(documentAmount)):'')+'</p>':'';
+  return record(deposit?'Nhận cọc sửa máy':appliedDeposit>0&&!amount?'Cấn cọc vào phiếu':direct?'Thu trên phiếu':'Khách thanh toán','income',t,M(amount),
+   (meta?'<p class="cust-record-meta">'+E(meta)+'</p>':'')+text(t)+depositHtml+
+   (allocationsHtml?'<ul class="cust-pay-allocations" aria-label="Các khoản đã thanh toán">'+allocationsHtml+'</ul>':'')+
+   unallocatedHtml+(direct&&!allocations.length?'<div class="cust-record-actions">'+action(t.id)+'</div>':''));
+ }
+ function adjustmentRow({tx:t,amount,archived,deposit}){
+  const adjustment=Number(t.debtAdjustment)||0;
+  const details=[adjustment<0?'Giảm nợ '+M(-adjustment):adjustment>0?'Tăng nợ '+M(adjustment):'',method(t),archived?'Phiếu lưu trữ':''].filter(Boolean).join(' · ');
+  return record(deposit?'Hoàn cọc sửa máy':amount>0?'Hoàn tiền':'Trả hàng / điều chỉnh','expense',t,amount>0?M(amount):'',
+   (details?'<p class="cust-record-meta">'+E(details)+'</p>':'')+text(t)+
+   (linkedDocs.has(t.originalTxId)?'<div class="cust-record-actions">'+action(t.originalTxId)+'</div>':''));
+ }
+ const blank=message=>'<div class="cust-record-empty">'+E(message)+'</div>';
+ function matches(row,query){
+  if(!query)return true;
+  const t=row.tx;
+  const ids=[t.id,t.originalTxId,...(row.allocations||[]).map(a=>a.invoiceId)].filter(Boolean);
+  const itemText=Object.values(t.itemsRaw||{}).filter(Boolean).flatMap(i=>[i.name,i.note]);
+  return LGCompact.fold([...ids,...ids.map(i=>short(i)),t.details,t.note,t.reason,vnDate(t.date),...itemText].join(' ')).includes(query);
+ }
+ function activityRows(query){
+  const rows=[...purchases.map(row=>({...row,isPurchase:true})),...adjustments].filter(r=>matches(r,query));
+  rows.sort((a,b)=>(String(b.tx.date||'')+' '+String(b.tx.time||'')).localeCompare(String(a.tx.date||'')+' '+String(a.tx.time||''))||
+   String(b.tx.id||'').localeCompare(String(a.tx.id||'')));
+  return rows.length?rows.map(row=>row.isPurchase?purchaseRow(row):adjustmentRow(row)).join(''):
+   blank(query?'Không tìm thấy giao dịch phù hợp.':'Chưa có phiếu mua hàng, sửa máy hoặc điều chỉnh của khách này.');
+ }
+ function unpaidRows(query){
+  const heading='<div class="cust-unpaid-total"><span>Còn nợ theo phiếu</span><strong>'+E(M(unpaid.total))+'</strong></div>';
+  const offInvoice=unpaid.unitemized>0?'<p class="note">Số dư chưa có đủ chứng từ chi tiết · <strong>'+E(M(unpaid.unitemized))+'</strong></p>':'';
+  const openingNote=unpaid.distributedOpening?'<p class="note">Khoản thu gắn với số dư chuyển sang được phân bổ theo thứ tự ngày phiếu để tính phần còn nợ.</p>':'';
+  const difference=unpaid.total+unpaid.unitemized!==balance&&(unpaid.total>0||balance>0)
+   ?'<p class="note">Số dư trên sổ khác tổng theo từng phiếu. Xem các khoản thu và điều chỉnh để đối chiếu.</p>':'';
+  const matchesQuery=unpaid.docs.filter(row=>matches(row,query));
+  return heading+offInvoice+openingNote+difference+(matchesQuery.length?matchesQuery.map(row=>purchaseRow(row,true)).join(''):
+    blank(query?'Không tìm thấy phiếu còn nợ phù hợp.':balance>0?'Chưa có phiếu chi tiết khớp với số dư công nợ.':'Khách không có phiếu còn nợ.'));
+ }
+ function showDocument(invoiceId){
+  const row=linkedDocs.get(invoiceId);
+  if(!row)return toast('Không tìm thấy chứng từ trong lịch sử khách.');
+  const t=row.tx;
+  if(row.archived||t.openingBalance){
+   const lines=LGDebtArchive.lines(t);
+   panel((t.openingBalance?'Số dư chuyển sang':'Phiếu lưu trữ')+' · '+reference(t),
+    '<p class="cust-record-meta">'+E([customer.name,stamp(t)].filter(Boolean).join(' · '))+'</p>'+
+    text(t)+list(lines.map(line=>({title:line.name,note:line.qty==null?'':'SL '+line.qty,amount:M(line.amount)})))+
+    (row.due==null?'':'<p>Còn nợ phiếu <strong>'+E(M(row.due))+'</strong></p>'));
+  }else{
+   invoice(invoiceId);
+  }
+  const dialog=by('sheet').querySelector('.panel');
+  if(!dialog||dialog.querySelector('#cust-history-sections'))return;
+  const back=document.createElement('button');
+  back.type='button';back.className='subbtn cust-history-back';back.textContent='← Về lịch sử khách';
+  back.onclick=()=>showCustomerHistory(id,selected);
+  dialog.querySelector('.dialog-heading')?.after(back);
+  back.focus({preventScroll:true});
+ }
+ function summary(label,value,{kind='',detail=''}={}){
+  return '<div class="cust-history-card '+kind+'"><span>'+E(label)+'</span><strong>'+E(M(value))+'</strong>'+
+   (detail?'<small>'+E(detail)+'</small>':'')+'</div>';
+ }
+ const info=[customer.phone,customer.address].filter(Boolean).join(' · ');
+ const cancelledCount=purchases.filter(r=>r.cancelled).length;
+ const purchaseCount=totals.purchaseCount??purchases.length;
+ const paymentCount=totals.paymentCount??payments.length;
+ panel('Lịch sử khách · '+customer.name,
+  (info?'<p class="cust-history-contact">'+E(info)+'</p>':'')+
+  '<div class="cust-history-summary">'+summary('Tổng phiếu mua và sửa',totals.purchases,{detail:purchaseCount+' phiếu'+(cancelledCount?' · gồm '+cancelledCount+' phiếu hủy':'')})+
+  summary('Đã thanh toán',totals.paid,{detail:paymentCount+' lần ghi nhận'})+
+  (totals.refunded>0?summary('Đã hoàn tiền',totals.refunded):'')+
+  summary(balance<0?'Khách trả dư':'Còn nợ',Math.abs(balance),{kind:'cust-history-balance'})+'</div>'+
+  (archiveWarning?'<p class="note cust-history-warning">'+E(archiveWarning)+'</p>':'')+
+  '<div class="cust-history-toolbar"><div class="cust-history-sections" id="cust-history-sections" role="group" aria-label="Mục lịch sử khách">'+
+  views.map(([key,label])=>'<button type="button" class="subbtn" data-customer-history-section="'+key+
+    '" aria-controls="cust-history-results" aria-pressed="'+(selected===key)+'">'+label+'</button>').join('')+'</div>'+
+  button('cust-history-export','Xuất bảng kê công nợ','subbtn')+'</div>'+
+  '<input id="cust-history-search" type="search" aria-label="Tìm trong lịch sử khách" placeholder="Mã phiếu, mặt hàng, ghi chú">'+
+  '<section id="cust-history-results" aria-label="Chứng từ của khách"></section>');
+ const results=by('cust-history-results');
+ function draw(){
+  for(const b of by('cust-history-sections').children)b.setAttribute('aria-pressed',String(b.dataset.customerHistorySection===selected));
+  const query=LGCompact.fold(by('cust-history-search').value);
+  if(selected==='activity')results.innerHTML=activityRows(query);
+  if(selected==='payments'){
+   const rows=payments.filter(row=>matches(row,query));
+   results.innerHTML=rows.length?rows.map(paymentRow).join(''):
+    blank(query?'Không tìm thấy khoản thanh toán phù hợp.':'Chưa ghi nhận thanh toán của khách này.');
+  }
+  if(selected==='unpaid')results.innerHTML=unpaidRows(query);
+ }
+ by('cust-history-sections').onclick=event=>{
+  const button=event.target.closest('[data-customer-history-section]');
+  if(button){selected=button.dataset.customerHistorySection;draw();}
+ };
+ results.onclick=event=>{
+  const button=event.target.closest('[data-customer-history-invoice]');
+  if(button)showDocument(button.dataset.customerHistoryInvoice);
+ };
+ by('cust-history-search').oninput=draw;
+ by('cust-history-export').onclick=()=>window.lgCustomerStatement(id);
+ draw();
+}
+window.lgCustomerHistory=showCustomerHistory;
+function customersView(){by('app').classList.remove('compact-debts','compact-repairs');reportSub='cust';const a=A.report(D,'1900-01-01',today());
  by('app').innerHTML='<input id="cust-search" type="search" placeholder="Tìm khách theo tên hoặc số điện thoại" value="'+E(q)+'" autocomplete="off"><div class="wide-row" style="margin:10px 0">'+button('cust-new','＋ Khách mới','subbtn')+'</div><div id="cust-list" class="list"></div>';
  const draw=()=>{const kw=fold6(q),all=D.customers.filter(c=>fold6(c.name+' '+(c.phone||'')).includes(kw)).sort((x,y)=>String(x.name).localeCompare(String(y.name),'vi')),rows=all.slice(0,60);
-  by('cust-list').innerHTML=rows.map(c=>{const debt=a.customerBalances[c.id]||0;return '<div class="item"><div><b>'+E(c.name)+'</b><small>'+E(c.phone||'Chưa có số điện thoại')+(debt>0?' · nợ '+M(debt):'')+'</small></div><div class="wide-row"><button class="subbtn" data-cedit="'+E(c.id)+'">Sửa</button><button class="subbtn" data-cdel="'+E(c.id)+'">Xóa</button></div></div>';}).join('')||'<p class="empty">Không thấy khách này.</p>';
+  by('cust-list').innerHTML=rows.map(c=>{const debt=a.customerBalances[c.id]||0;return '<div class="item customer-directory-row"><div><b>'+E(c.name)+'</b><small>'+E(c.phone||'Chưa có số điện thoại')+(debt>0?' · nợ '+M(debt):debt<0?' · thu dư '+M(-debt):'')+'</small></div><div class="customer-directory-actions"><button type="button" class="subbtn customer-directory-history" data-cledger="'+E(c.id)+'">Xem giao dịch</button><button type="button" class="subbtn" data-cedit="'+E(c.id)+'">Sửa</button><button type="button" class="subbtn" data-cdel="'+E(c.id)+'">Xóa</button></div></div>';}).join('')||'<p class="empty">Không thấy khách này.</p>';
   if(all.length>60)by('cust-list').insertAdjacentHTML('beforeend','<p class="hint">Đang hiện 60 trên '+all.length+' khách. Gõ tên hoặc số điện thoại để tìm.</p>');};
  by('cust-search').oninput=e=>{q=e.target.value;draw();};draw();
  by('cust-new').onclick=()=>newCust(()=>setTimeout(customersView,120));
- by('app').onclick=e=>{const x=e.target.closest('[data-cedit]'),y=e.target.closest('[data-cdel]');if(x)customerEditor(x.dataset.cedit);if(y)customerDelete(y.dataset.cdel);};
+ by('app').onclick=e=>{
+  const history=e.target.closest('[data-cledger]');
+  if(history){showCustomerHistory(history.dataset.cledger);return;}
+  const edit=e.target.closest('[data-cedit]'),remove=e.target.closest('[data-cdel]');
+  if(edit)customerEditor(edit.dataset.cedit);
+  if(remove)customerDelete(remove.dataset.cdel);
+ };
  reportHeader('cust');}
 function customerEditor(id){const c=D.customers.find(x=>x.id===id);if(!c)return;
  panel('Sửa khách hàng',field('ce-name','Tên khách',c.name)+field('ce-phone','Số điện thoại',c.phone||'')+field('ce-addr','Địa chỉ',c.address||'')+button('ce-save','Lưu'));
@@ -2454,5 +2693,177 @@ body:has(#auth-form) main#app {padding-top:12px}
 .stock-log-row .stock-log-kind{color:var(--pri);font-weight:680}
 .stock-log-row button{flex-shrink:0}
 @media(max-width:480px){.stock-log-row{flex-wrap:wrap}.stock-log-row>div{width:100%}}
+</style>
+<style>
+.customers-from-debt{margin:9px 0 14px}
+.customers-from-debt .subbtn,.customer-directory-history{color:var(--pri)}
+.customer-directory-actions{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}
+#sheet .customer-export{max-width:850px}
+#sheet .customer-export-heading{display:flex;align-items:center;justify-content:space-between}
+.customer-export-filters{display:flex;align-items:end;flex-wrap:wrap;gap:8px}
+.customer-export-filters>div{flex:1;min-width:140px}
+.customer-export-filters button{flex-shrink:0}
+#archive-preview{display:block;width:100%;height:min(62dvh,700px);border:1px solid var(--line);border-radius:8px;background:white}
+#archive-preview[hidden]{display:none}
+@media(max-width:480px){
+ #app .customer-directory-row{align-items:flex-start;flex-direction:column}
+ .customer-directory-actions{justify-content:flex-start}
+}
+</style>
+<style id="lg-v18-customer-history">
+.cust-history-contact {
+  color:var(--mut);
+  margin:0 0 12px;
+  overflow-wrap:anywhere;
+}
+.cust-history-summary {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(min(135px,100%),1fr));
+  gap:8px;
+  margin-bottom:14px;
+}
+.cust-history-card {
+  min-width:0;
+  padding:11px 12px;
+  background:var(--field);
+  border:1px solid var(--line);
+  border-radius:10px;
+}
+.cust-history-card span,.cust-history-card strong {display:block}
+.cust-history-card span {font-size:.8rem;font-weight:645;color:var(--mut)}
+.cust-history-card strong {
+  margin-top:3px;
+  overflow-wrap:anywhere;
+  font-size:1.1rem;
+  line-height:1.25;
+}
+.cust-history-balance {
+  color:var(--pri);
+  border-color:color-mix(in srgb,var(--pri) 25%,var(--line));
+  background:var(--soft);
+}
+.cust-history-balance span {color:inherit}
+.cust-history-warning {color:var(--warn);overflow-wrap:anywhere}
+.cust-history-toolbar {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:8px;
+  margin:15px 0 11px;
+}
+.cust-history-sections {
+  display:flex;
+  flex-wrap:wrap;
+  gap:4px;
+  padding:4px;
+  border:1px solid var(--line);
+  background:var(--field);
+  border-radius:10px;
+}
+.cust-history-sections .subbtn {
+  background:transparent;
+  border-color:transparent;
+  color:var(--mut);
+  padding-inline:11px;
+}
+.cust-history-sections .subbtn[aria-pressed="true"] {
+  background:var(--soft);
+  color:var(--pri);
+}
+#cust-history-export {min-height:44px;color:var(--pri)}
+.cust-record {
+  --record:var(--sale);
+  min-width:0;
+  border:1px solid var(--line);
+  border-inline-start:3px solid var(--record);
+  border-radius:10px;
+  background:var(--card);
+  padding:11px 13px;
+  margin:0 0 8px;
+}
+.cust-record[data-history-category="repair"] {--record:var(--repair)}
+.cust-record[data-history-category="income"] {--record:var(--income)}
+.cust-record[data-history-category="expense"] {--record:var(--expense)}
+.cust-record-top,.cust-pay-allocations li>div,.cust-unpaid-total {
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:6px 10px;
+  flex-wrap:wrap;
+}
+.cust-record-top>div,.cust-record-amount {min-width:0}
+.cust-record h3 {
+  margin:0;
+  color:var(--record);
+  font-size:.96rem;
+  font-weight:750;
+}
+.cust-record-meta,.cust-record-text {margin:4px 0 0;overflow-wrap:anywhere}
+.cust-record-meta {color:var(--mut);font-size:.8rem}
+.cust-record-text {white-space:pre-wrap;font-size:.875rem}
+.cust-record-amount {font-size:1rem;overflow-wrap:anywhere}
+.cust-record-actions {
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:5px;
+  margin-top:8px;
+}
+.cust-record-status {
+  display:inline-block;
+  background:var(--field);
+  color:var(--mut);
+  border-radius:6px;
+  padding:3px 7px;
+  white-space:normal;
+  font-size:.76rem;
+  font-weight:670;
+}
+.cust-record-status.due {
+  background:color-mix(in srgb,var(--import) 12%,var(--card));
+  color:var(--import);
+}
+.cust-record-status.paid {
+  background:color-mix(in srgb,var(--income) 11%,var(--card));
+  color:var(--income);
+}
+.cust-doc-link,.cust-history-back {min-height:44px;color:var(--pri);font-size:.82rem}
+.cust-pay-allocations {list-style:none;padding:0;margin:8px 0 0}
+.cust-pay-allocations li {
+  border-top:1px solid var(--line);
+  padding:7px 0 0;
+  margin-top:7px;
+  font-size:.84rem;
+}
+.cust-pay-allocations .cust-doc-link {margin-top:5px}
+.cust-unpaid-total {
+  align-items:center;
+  padding:10px 12px;
+  border:1px solid var(--line);
+  border-radius:9px;
+  background:var(--field);
+  margin-bottom:9px;
+  font-size:.88rem;
+}
+.cust-unpaid-total strong {color:var(--pri)}
+.cust-record-empty {
+  text-align:center;
+  color:var(--mut);
+  padding:22px 12px;
+  margin-top:8px;
+  border:1px dashed var(--line);
+  border-radius:10px;
+  background:var(--field);
+}
+@media (max-width:520px) {
+  .cust-history-toolbar,.cust-history-sections,#cust-history-export {width:100%}
+  .cust-history-sections {display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+  .cust-history-sections .subbtn {min-width:0;padding-inline:3px;line-height:1.25}
+  .cust-history-summary {grid-template-columns:repeat(2,minmax(0,1fr))}
+  .cust-history-balance:last-child:nth-child(odd) {grid-column:1/-1}
+}
+.cust-history-card small {display:block;margin-top:4px;color:var(--mut);font-size:.75rem;overflow-wrap:anywhere}
+#cust-history-search {margin-bottom:10px}
 </style>
 </body></html>
