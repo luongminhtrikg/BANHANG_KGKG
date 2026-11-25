@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="vi">
+<head>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+ <meta name="referrer" content="no-referrer">
+ <meta name="robots" content="noindex, nofollow">
+ <meta name="lg-repair-tracking-v19" content="1">
+ <title>Tra cứu sửa máy · Lương Gia KG</title>
+ <style>
+  :root{color-scheme:light;font:16px/1.5 system-ui,sans-serif;color:#15283a;background:#edf3f6}
+  *{box-sizing:border-box}body{margin:0}
+  main{max-width:620px;padding:24px 16px 48px;margin:auto}
+  header{display:flex;align-items:center;gap:12px;margin:0 0 26px}
+  .mark{background:#12483e;color:#fff;border-radius:14px;padding:11px;font-weight:800;letter-spacing:.06em}
+  .brand{font-weight:750}small{color:#496174}
+  section,details{background:white;border:1px solid #d5e1e8;border-radius:20px;padding:22px;margin:14px 0}
+  h1,h2,p{margin:0 0 12px}h1{font-size:clamp(24px,5vw,34px);line-height:1.22}h2{font-size:22px;overflow-wrap:anywhere}
+  label{display:block;margin:12px 0 5px;font-weight:650}
+  input,button{font:inherit;padding:10px 12px;border-radius:10px;min-height:44px}
+  input{width:100%;min-width:0;border:1px solid #9db1c0}
+  button{border:1px solid #12483e;background:#12483e;color:#fff;font-weight:700;cursor:pointer}
+  button.secondary{background:white;color:#12483e}
+  button:disabled{opacity:.6;cursor:wait}
+  :focus-visible{outline:3px solid #217b72;outline-offset:2px}
+  .row{display:flex;gap:8px}.row button{flex-shrink:0}
+  #message:empty{display:none}
+  #message{color:#36566b;margin:12px 0}
+  .badge{display:inline-block;background:#ddf4e8;border-radius:100px;padding:6px 12px;font-weight:750;color:#134a39;margin-bottom:14px}
+  .badge[data-stage="parts"],.badge[data-stage="checking"]{background:#fef0ce;color:#6b4200}
+  .badge[data-stage="cancelled"]{background:#fce6e5;color:#842423}
+  dl{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}
+  dt{font-size:.85rem;color:#496174}dd{margin:2px 0 0;font-weight:650}
+  .notice{background:#edf3f6;padding:14px;border-radius:12px;margin:12px 0;white-space:pre-wrap;overflow-wrap:anywhere}
+  .bottom{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px}
+  summary{cursor:pointer;font-weight:650}
+  @media(max-width:400px){section,details{padding:16px}.row{flex-wrap:wrap}.row button{width:100%}dl{grid-template-columns:1fr}}
+ </style>
+</head>
+<body>
+<main>
+ <header><span class="mark" aria-hidden="true">LG</span><div><div class="brand">Lương Gia KG</div><small>Dịch vụ sửa máy</small></div></header>
+ <section aria-labelledby="title">
+  <h1 id="title">Tra cứu tình trạng sửa máy</h1>
+  <p id="message" role="status" aria-live="polite"></p>
+  <article id="result" hidden>
+   <span id="stage" class="badge"></span>
+   <h2 id="model"></h2>
+   <dl><div><dt>Ngày nhận máy</dt><dd id="received"></dd></div>
+    <div id="price-row" hidden><dt id="price-label">Báo giá</dt><dd id="price"></dd></div></dl>
+   <div id="notice-row" hidden><strong>Thông báo từ tiệm</strong><p id="notice" class="notice"></p></div>
+   <div class="bottom"><small id="updated"></small><button class="secondary" id="reload" type="button">Cập nhật</button></div>
+  </article>
+ </section>
+ <details id="lookup" open><summary>Nhập mã hoặc link tra cứu</summary>
+  <form id="form"><label for="code">Mã hoặc link tiệm gửi</label>
+   <div class="row"><input id="code" spellcheck="false" autocomplete="off" autocapitalize="off" maxlength="1024" required><button type="submit">Tra cứu</button></div>
+  </form>
+ </details>
+</main>
+<script>
+ 'use strict';
+ const path='https://luonggiakg-default-rtdb.asia-southeast1.firebasedatabase.app/_repairTracking/';
+ const labels={received:'Đã nhận máy',checking:'Đang kiểm tra',processing:'Đang sửa',parts:'Chờ linh kiện',
+  waiting:'Đã sửa xong · Chờ nhận máy',delivered:'Đã giao máy',cancelled:'Đã hủy phiếu'};
+ const by=id=>document.getElementById(id);
+ const validToken=/^[a-f0-9]{48}$/;
+ const dateTime=new Intl.DateTimeFormat('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',dateStyle:'short',timeStyle:'short'});
+ let active='',sequence=0,pending;
+ function hashCode(){return location.hash.slice(1).toLowerCase();}
+ function lookupCode(input){const text=input.trim().toLowerCase();return text.includes('#')?text.split('#').pop():text;}
+ function message(text){by('message').textContent=text;}
+ async function refresh(token,showLoading){
+  const current=++sequence;
+  pending?.abort();
+  const controller=new AbortController();
+  pending=controller;
+  const timeout=setTimeout(()=>controller.abort(),12000);
+  if(showLoading){by('result').hidden=true;message('Đang tải tình trạng máy…');}
+  by('reload').disabled=true;
+  try{
+   const response=await fetch(path+token+'.json',{cache:'no-store',credentials:'omit',referrerPolicy:'no-referrer',signal:controller.signal});
+   if(current!==sequence)return;
+   if(response.status===401||response.status===403)throw new Error('missing');
+   if(!response.ok)throw new Error('network');
+   const data=await response.json();
+   if(current!==sequence)return;
+   if(!data||!Object.hasOwn(labels,data.status)||data.expiresAt<=Date.now())throw new Error('missing');
+   const step=data.status==='processing'&&['received','checking','processing','parts'].includes(data.step)?data.step:data.status;
+   by('stage').dataset.stage=step;by('stage').textContent=labels[step];
+   by('model').textContent=data.model||'Máy gửi sửa';
+   by('received').textContent=/^\d{4}-\d{2}-\d{2}$/.test(data.received)?data.received.split('-').reverse().join('/'):'—';
+   by('price-row').hidden=!data.showQuote||!Number.isSafeInteger(data.quote)||data.quote<0;
+   by('price-label').textContent=data.status==='delivered'?'Chi phí sửa máy':'Báo giá hiện tại';
+   by('price').textContent=Number(data.quote).toLocaleString('vi-VN')+' đ';
+   by('notice-row').hidden=!data.note;by('notice').textContent=data.note||'';
+   by('updated').textContent='Tiệm cập nhật lúc '+dateTime.format(new Date(data.updatedAt));
+   by('result').hidden=false;by('lookup').open=false;message('');
+  }catch(e){
+   if(current!==sequence)return;
+   if(e.message==='missing'){
+    by('result').hidden=true;by('lookup').open=true;active='';
+    message('Link không hợp lệ, đã hết hạn hoặc đã được tiệm tắt. Liên hệ tiệm để lấy link mới.');
+   }else{
+    by('result').hidden=true;by('lookup').open=true;message('Chưa kết nối được. Kiểm tra mạng rồi bấm Tra cứu lại.');
+   }
+  }finally{clearTimeout(timeout);if(current===sequence)by('reload').disabled=false;}
+ }
+ function start(token){
+  if(!validToken.test(token)){
+   ++sequence;pending?.abort();active='';by('result').hidden=true;by('lookup').open=true;
+   message(token?'Mã chưa đúng. Dán nguyên link hoặc mã tiệm gửi.':'Mở link tiệm gửi hoặc nhập mã bên dưới.');return;
+  }
+  active=token;by('code').value=token;refresh(token,true);
+ }
+ by('form').onsubmit=e=>{e.preventDefault();const token=lookupCode(by('code').value);if(validToken.test(token)&&hashCode()!==token)history.replaceState(null,'','#'+token);start(token);};
+ by('reload').onclick=()=>{if(active)refresh(active,false);};
+ addEventListener('hashchange',()=>start(hashCode()));
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&active)refresh(active,false);});
+ setInterval(()=>{if(active&&!document.hidden&&!by('reload').disabled)refresh(active,false);},20000);
+ start(hashCode());
+</script>
+</body>
+</html>
